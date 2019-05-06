@@ -1,4 +1,4 @@
-{-# Language OverloadedStrings, TemplateHaskell, FlexibleInstances, PackageImports #-}
+{-# Language OverloadedStrings, FlexibleInstances, PackageImports #-}
 
 module Api.Services.EstablishSecret where
 
@@ -14,10 +14,9 @@ import Snap.Snaplet
 import qualified Data.ByteString.Char8 as B 
 
 import Api.Services.SavedUser                ( SavedUser (..), Hashed )
+import Constants                             ( sessionKeysFile, userFile, secretFile, publicExponent, keySize )
 
 data SecretService = SecretService
-
--- makeLenses ''SecretService
 
 secretRoutes :: [(B.ByteString, Handler b SecretService ())]
 secretRoutes = [("/", method POST createSecret)]
@@ -35,7 +34,7 @@ createSecret = do
         modifyResponse (setResponseCode 201)
     else do
         writeBS authentificationError
-        modifyResponse (setResponseCode 403)
+        modifyResponse (setResponseCode 401)
 
 {- For future reference. 
 createSecret :: Handler b SecretService ()
@@ -57,6 +56,8 @@ sessionKeyLabel = B.pack "sessionKey"
 type UserName = B.ByteString
 type Password = B.ByteString
 
+-- | Verifies that the user is known and that the supplied password is correct.
+--   Both values are fetched from a local data storage.
 verifyUser :: UserName -> Password -> IO Bool
 verifyUser username password = 
     fmap (verifyUserWithUsers username password . map (read :: String -> SavedUser) . lines) (readFile userFile)
@@ -83,20 +84,7 @@ createKeyPair user = do
 removeInit :: B.ByteString -> [B.ByteString] -> [B.ByteString]
 removeInit init = filter (not . B.isPrefixOf init) 
 
-sessionKeysFile :: String
-sessionKeysFile = "./db/sessionKeys.txt"
 
-userFile :: String
-userFile = "./db/users.txt"
-
-secretFile :: String
-secretFile = "./db/secrets.txt"
-
-publicExponent :: Integer
-publicExponent = 103787
-
-keySize :: Int
-keySize = 2048
 
 secretServiceInit :: SnapletInit b SecretService
 secretServiceInit = makeSnaplet "secret" "Secret Service" Nothing $ do
