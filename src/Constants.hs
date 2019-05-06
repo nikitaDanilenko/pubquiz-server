@@ -1,7 +1,10 @@
+{-# Language OverloadedStrings #-}
+
 module Constants where
 
-import Data.List       ( intercalate )
-import System.FilePath ( pathSeparator )
+import Data.List                            ( intercalate )
+import qualified Data.ByteString.Char8 as B
+import System.FilePath                      ( pathSeparator )
 
 sessionKeysFile :: String
 sessionKeysFile = addSeparator [".", "db", "sessionKeys.txt"]
@@ -20,6 +23,9 @@ addSeparator = intercalate [pathSeparator]
 
 locked :: String
 locked = ".locked"
+
+lock :: B.ByteString
+lock = "lock"
 
 publicExponent :: Integer
 publicExponent = 103787
