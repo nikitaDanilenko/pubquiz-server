@@ -30,7 +30,6 @@ quizRoutes = [
 sendAvailable :: Handler b QuizService ()
 sendAvailable = do
     nonLockedQuizzes <- liftIO getNonLockedQuizzes
-    liftIO (writeFile "foo.txt" (unlines nonLockedQuizzes))
     writeBS (B.pack (unlines nonLockedQuizzes))
     modifyResponse (setResponseCode 200)
 
