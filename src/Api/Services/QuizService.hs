@@ -30,6 +30,7 @@ quizRoutes = [
 sendAvailable :: Handler b QuizService ()
 sendAvailable = do
     nonLockedQuizzes <- liftIO getNonLockedQuizzes
+    liftIO (writeFile "foo.txt" (unlines nonLockedQuizzes))
     writeBS (B.pack (unlines nonLockedQuizzes))
     modifyResponse (setResponseCode 200)
 
@@ -58,7 +59,7 @@ getNonLockedQuizzes = do
     filterM isQuizOpen proper
 
 isQuizOpen :: String -> IO Bool
-isQuizOpen folder = doesFileExist (addSeparator [folder, locked])
+isQuizOpen folder = fmap not (doesFileExist (addSeparator [folder, locked]))
 
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
 readQuizFile quiz = fmap Just (B.readFile filePath) `catch` handle where
@@ -70,6 +71,5 @@ readQuizFile quiz = fmap Just (B.readFile filePath) `catch` handle where
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit = do
     makeSnaplet "quiz" "Quiz Service" Nothing $ do
-    addRoutes quizRoutes
-    return QuizService
-
+        addRoutes quizRoutes
+        return QuizService
