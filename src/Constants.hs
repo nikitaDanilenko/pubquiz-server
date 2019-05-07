@@ -27,6 +27,12 @@ locked = ".locked"
 lock :: B.ByteString
 lock = "lock"
 
+quiz :: B.ByteString
+quiz = "quiz"
+
+roundsFile :: B.ByteString
+roundsFile = "rounds.txt"
+
 publicExponent :: Integer
 publicExponent = 103787
 
