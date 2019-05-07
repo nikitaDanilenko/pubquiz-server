@@ -10,7 +10,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe                           ( maybe )
 import Snap.Core                            ( method, Method ( GET, POST ), writeBS, modifyResponse,
                                               setResponseCode, getPostParam )
-import Snap.Snaplet                         ( Handler )
+import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
 import System.Directory                     ( doesFileExist, getDirectoryContents )
 
 import Constants                            ( quizzesFolder, locked, addSeparator, lock, quiz,
@@ -66,4 +66,10 @@ readQuizFile quiz = fmap Just (B.readFile filePath) `catch` handle where
     
     handle :: IOException -> IO (Maybe B.ByteString)
     handle _ = putStrLn (filePath ++ " does not exist.") >> return Nothing
+
+quizServiceInit :: SnapletInit b QuizService
+quizServiceInit = do
+    makeSnaplet "quiz" "Quiz Service" Nothing $ do
+    addRoutes quizRoutes
+    return QuizService
 
