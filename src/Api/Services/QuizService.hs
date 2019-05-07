@@ -46,8 +46,8 @@ updateQuiz = undefined
 
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
-    quiz <- getPostParam lock
-    let act = maybe (pure ()) (\q -> writeFile (addSeparator [quizzesFolder, B.unpack q]) "") quiz
+    mQuiz <- getPostParam lock
+    let act = maybe (pure ()) (\q -> writeFile (addSeparator [quizzesFolder, B.unpack q]) "") mQuiz
     liftIO act
     modifyResponse (setResponseCode 201)
 
