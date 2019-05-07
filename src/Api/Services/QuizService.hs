@@ -26,9 +26,7 @@ quizRoutes = [
 -- Finds the list of unlocked quizzes and returns it in bulk.
 sendAvailable :: Handler b QuizService ()
 sendAvailable = do
-    quizzes <- liftIO (getDirectoryContents quizzesFolder)
-    let proper = drop 2 quizzes -- Drops "." and "..". 
-    nonLockedQuizzes <- liftIO (filterM isQuizOpen proper)
+    nonLockedQuizzes <- liftIO getNonLockedQuizzes
     writeBS (B.pack (unlines nonLockedQuizzes))
     modifyResponse (setResponseCode 200)
 
@@ -44,6 +42,12 @@ lockQuiz = do
     let act = maybe (pure ()) (\q -> writeFile (addSeparator [quizzesFolder, B.unpack q]) "") quiz
     liftIO act
     modifyResponse (setResponseCode 200)
+
+getNonLockedQuizzes :: IO [String]
+getNonLockedQuizzes = do
+    quizzes <- getDirectoryContents quizzesFolder
+    let proper = drop 2 quizzes -- Drops "." and "..".
+    filterM isQuizOpen proper
 
 isQuizOpen :: String -> IO Bool
 isQuizOpen folder = doesFileExist (addSeparator [folder, locked])
