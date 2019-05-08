@@ -27,10 +27,19 @@ locked = ".locked"
 lock :: B.ByteString
 lock = "lock"
 
+prefix :: B.ByteString
+prefix = "prefix"
+
+rounds :: B.ByteString
+rounds = "rounds"
+
+pageGenerator :: String
+pageGenerator = addSeparator [".", "runGenerator"]
+
 quiz :: B.ByteString
 quiz = "quiz"
 
-roundsFile :: B.ByteString
+roundsFile :: String
 roundsFile = "rounds.txt"
 
 publicExponent :: Integer
