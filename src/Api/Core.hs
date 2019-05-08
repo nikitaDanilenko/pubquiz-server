@@ -23,7 +23,7 @@ respondOk = modifyResponse $ setResponseCode 200
 
 apiInit :: SnapletInit b Api
 apiInit = makeSnaplet "api" "Core Api" Nothing $ do
-    secretService <- nestSnaplet "secrets" secretService secretServiceInit
-    quizService <- nestSnaplet "quiz" quizService quizServiceInit
+    secretServiceInstance <- nestSnaplet "secrets" secretService secretServiceInit
+    quizServiceInstance <- nestSnaplet "quiz" quizService quizServiceInit
     addRoutes apiRoutes
-    return $ Api secretService quizService
+    return $ Api secretServiceInstance quizServiceInstance
