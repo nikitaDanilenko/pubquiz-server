@@ -2,14 +2,11 @@
 
 module Api.Services.EstablishSecret where
 
-import Control.Applicative                   ( liftA2 )
-import Control.Lens
 import Control.Monad.IO.Class
 import Crypto.PubKey.RSA                     ( generate, PublicKey )
 import "cryptonite" Crypto.Hash              ( hash )
-import Data.List                             ( isPrefixOf )
 import Data.Maybe                            ( fromMaybe )
-import Snap.Core
+import Snap.Core hiding                      ( pass )
 import Snap.Snaplet
 import qualified Data.ByteString.Char8 as B 
 
@@ -60,7 +57,8 @@ type Password = B.ByteString
 --   Both values are fetched from a local data storage.
 verifyUser :: UserName -> Password -> IO Bool
 verifyUser username password = 
-    fmap (verifyUserWithUsers username password . map (read :: String -> SavedUser) . lines) (readFile userFile)
+    fmap (verifyUserWithUsers username password . map (read :: String -> SavedUser) . lines) 
+         (readFile userFile)
 
 verifyUserWithUsers :: UserName -> Password -> [SavedUser] -> Bool
 verifyUserWithUsers username password users = fromMaybe False maybeVerified where
