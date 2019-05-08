@@ -47,7 +47,8 @@ updateQuiz = undefined
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
     mQuiz <- getPostParam lock
-    let act = maybe (pure ()) (\q -> writeFile (addSeparator [quizzesFolder, B.unpack q]) "") mQuiz
+    let act = maybe (pure ()) 
+                    (\q -> writeFile (addSeparator [quizzesFolder, B.unpack q, locked]) "") mQuiz
     liftIO act
     modifyResponse (setResponseCode 201)
 
@@ -58,11 +59,11 @@ getNonLockedQuizzes = do
     filterM isQuizOpen proper
 
 isQuizOpen :: String -> IO Bool
-isQuizOpen folder = fmap not (doesFileExist (addSeparator [folder, locked]))
+isQuizOpen folder = fmap not (doesFileExist (addSeparator [quizzesFolder, folder, locked]))
 
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
-readQuizFile quiz = fmap Just (B.readFile filePath) `catch` handle where
-    filePath = (addSeparator [quizzesFolder, B.unpack quiz, B.unpack roundsFile])
+readQuizFile quizPath = fmap Just (B.readFile filePath) `catch` handle where
+    filePath = (addSeparator [quizzesFolder, B.unpack quizPath, B.unpack roundsFile])
     
     handle :: IOException -> IO (Maybe B.ByteString)
     handle _ = putStrLn (filePath ++ " does not exist.") >> return Nothing
