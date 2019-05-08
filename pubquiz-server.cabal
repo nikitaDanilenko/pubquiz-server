@@ -37,7 +37,8 @@ executable pubquiz-server
     lens >=4.17 && <4.18,
     filepath >= 1.4 && < 2.0,
     cryptonite >= 0.2 && < 1,
-    directory >= 1 && < 2
+    directory >= 1 && < 2,
+    process >= 1 && < 2
   hs-source-dirs:      src
   default-language:    Haskell2010
 
