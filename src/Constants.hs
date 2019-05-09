@@ -34,7 +34,7 @@ rounds :: B.ByteString
 rounds = "rounds"
 
 pageGenerator :: String
-pageGenerator = addSeparator [".", "runGenerator"]
+pageGenerator = addSeparator [".", "runGenerator.sh"]
 
 quiz :: B.ByteString
 quiz = "quiz"
