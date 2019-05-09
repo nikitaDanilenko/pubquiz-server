@@ -54,18 +54,27 @@ updateQuiz = do
                                          quiz, "=", B.pack (show mQuiz), "\n", 
                                          rounds, "=", B.pack (show mNewContent)])
                       modifyResponse (setResponseCode 406)
-        Just _ -> modifyResponse (setResponseCode 200)
+        Just io -> do isOpen <- liftIO io 
+                      if isOpen then
+                        modifyResponse (setResponseCode 200)
+                      else writeBS "Requested quiz is locked."
 
 mkKV :: String -> String -> String
 mkKV key value = concat [key, "=", value]
 
-updateFile :: String -> String -> IO ()
-updateFile quizPath content = 
-    writeFile fullQuizPath content >>
-    callProcess pageGenerator 
-                (map (\(k, v) -> mkKV (B.unpack k) v) [(prefix, quizPath), (rounds, fullQuizPath)])
+updateFile :: String -> String -> IO Bool
+updateFile quizPath content = do
+    isOpen <- isQuizOpen quizPath
+    if isOpen then
+        writeFile fullQuizPath content >>
+        callProcess pageGenerator 
+                    (map (\(k, v) -> mkKV (B.unpack k) v) [(prefix, fullQuizDir), 
+                                                           (rounds, fullQuizPath)]) >>
+        return True
+    else return False
 
-    where fullQuizPath = (addSeparator [quizPath, roundsFile])
+    where fullQuizPath = addSeparator [quizzesFolder, quizPath, roundsFile]
+          fullQuizDir = addSeparator [quizzesFolder, quizPath, ""]
 
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
