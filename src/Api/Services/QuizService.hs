@@ -87,7 +87,7 @@ lockQuiz = do
 getNonLockedQuizzes :: IO [String]
 getNonLockedQuizzes = do
     quizzes <- getDirectoryContents quizzesFolder
-    let proper = drop 2 quizzes -- Drops "." and "..".
+    let proper = filter (not . (\x -> x `elem` [".", ".."])) quizzes -- Drops "." and "..".
     filterM isQuizOpen proper
 
 isQuizOpen :: String -> IO Bool
