@@ -37,3 +37,31 @@
      1. `--ssl-key=<privatekey>`, wobei `<privatekey>` der zum Zertifikat gehörige private Schlüssel
         ist. Welchen man verwendet, kann man ebenfalls in der Datei
         `/etc/apache2/sites-enabled/default-ssl.conf` nachlesen.
+
+* Um ein Programm als `root` auszuführen, gehe man wie folgt vor:
+
+  1. Lege `/etc/systemd/system/myservice.service` an.
+
+  1. In diese Datei schreibe
+
+     ~~~~
+     [Unit]
+     Description=<Describe what your service does>
+     [Service]
+     WorkingDirectory=/path/to/dir/of/your/program/
+     ExecStart=/path/to/dir/of/your/program/precise/program arguments
+     [Install]
+     WantedBy=multi.user.target
+     ~~~~
+
+     So wird das Programm als `root` ausgeführt, ansonsten muss man bei `Service` noch einen
+     Benutzer setzen.
+
+  1. Erlaube Nutzung `sudo systemctl enable myservice.service`.
+
+  1. Starte den Service-Provider neu: `sudo systemctl daemon-reload`.
+
+  1. Starte den Service `sudo systemctl start myservice.service`
+
+  1. Den Status des Programms kann man sich ansehen `sudo systemctl status myservice.service`.
+
