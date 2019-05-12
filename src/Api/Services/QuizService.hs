@@ -16,7 +16,7 @@ import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, m
 import System.Directory                     ( doesFileExist, getDirectoryContents )
 import System.Process                       ( callProcess )
 
-import Constants                            ( quizzesFolder, locked, addSeparator, lock, quiz,
+import Constants                            ( quizzesFolderIO, locked, addSeparator, lock, quiz,
                                               roundsFile, rounds, pageGenerator, prefix )
 
 data QuizService = QuizService
@@ -65,40 +65,55 @@ mkKV key value = concat [key, "=", value]
 updateFile :: String -> String -> IO Bool
 updateFile quizPath content = do
     isOpen <- isQuizOpen quizPath
-    if isOpen then
-        writeFile fullQuizPath content >>
+    if isOpen then do
+        quizzesFolder <- quizzesFolderIO
+        let fullQuizPath = addSeparator [quizzesFolder, quizPath, roundsFile]
+            fullQuizDir = addSeparator [quizzesFolder, quizPath, ""]
+        writeFile fullQuizPath content
         callProcess pageGenerator 
                     (map (\(k, v) -> mkKV (B.unpack k) v) [(prefix, fullQuizDir), 
-                                                           (rounds, fullQuizPath)]) >>
+                                                           (rounds, fullQuizPath)])
         return True
     else return False
-
-    where fullQuizPath = addSeparator [quizzesFolder, quizPath, roundsFile]
-          fullQuizDir = addSeparator [quizzesFolder, quizPath, ""]
 
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
     mQuiz <- getPostParam lock
     let act = maybe (pure ()) 
-                    (\q -> writeFile (addSeparator [quizzesFolder, B.unpack q, locked]) "") mQuiz
+                    (\q -> quizzesFolderIO >>= 
+                            \quizzesFolder -> 
+                                writeFile (addSeparator [quizzesFolder, B.unpack q, locked]) "") 
+                                          mQuiz
     liftIO act
     modifyResponse (setResponseCode 201)
 
 getNonLockedQuizzes :: IO [String]
 getNonLockedQuizzes = do
+    quizzesFolder <- liftIO quizzesFolderIO
     quizzes <- getDirectoryContents quizzesFolder
     let proper = filter (not . (\x -> x `elem` [".", ".."])) quizzes -- Drops "." and "..".
     filterM isQuizOpen proper
 
 isQuizOpen :: String -> IO Bool
-isQuizOpen folder = fmap not (doesFileExist (addSeparator [quizzesFolder, folder, locked]))
+isQuizOpen folder = do
+    quizzesFolder <- quizzesFolderIO
+    ex <- doesFileExist (addSeparator [quizzesFolder, folder, locked])
+    return (not ex)
 
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
-readQuizFile quizPath = fmap Just (B.readFile filePath) `catch` handle where
-    filePath = (addSeparator [quizzesFolder, B.unpack quizPath, roundsFile])
+readQuizFile quizPath = (do 
+    filePath <- filePathIO 
+    file <- B.readFile filePath
+    return (Just file)) `catch` handle where
     
     handle :: IOException -> IO (Maybe B.ByteString)
-    handle _ = putStrLn (filePath ++ " does not exist.") >> return Nothing
+    handle _ = filePathIO >>= \filePath -> putStrLn (filePath ++ " does not exist.") 
+                          >> return Nothing
+
+    filePathIO :: IO String
+    filePathIO = do
+        quizzesFolder <- quizzesFolderIO
+        return (addSeparator [quizzesFolder, B.unpack quizPath, roundsFile])
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit = do

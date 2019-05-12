@@ -3,6 +3,7 @@
 module Constants where
 
 import Data.List                            ( intercalate )
+import Data.Maybe                           ( fromMaybe )
 import qualified Data.ByteString.Char8 as B
 import System.FilePath                      ( pathSeparator )
 
@@ -15,8 +16,20 @@ userFile = addSeparator [".", "db", "users.txt"]
 secretFile :: String
 secretFile = addSeparator [".", "db", "secrets.txt"]
 
-quizzesFolder :: String
-quizzesFolder = addSeparator [".", "quizzes"]
+quizzesFolderIO :: IO String
+quizzesFolderIO = do
+        text <- readFile pageGenerator
+        let settings = map splitOnSetter (lines text)
+            folder = fromMaybe defaultFolder (lookup "quizzesFolder" settings)
+        return folder
+
+
+
+    where defaultFolder = addSeparator [".", "quizzes"]
+
+splitOnSetter :: String -> (String, String)
+splitOnSetter str = (key, drop 1 preValue) where
+  (key, preValue) = span ((/=) '=') str
 
 addSeparator :: [String] -> String
 addSeparator = intercalate [pathSeparator]
