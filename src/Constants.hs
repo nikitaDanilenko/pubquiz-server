@@ -46,6 +46,12 @@ prefix = "prefix"
 rounds :: B.ByteString
 rounds = "rounds"
 
+labels :: B.ByteString
+labels = "labels"
+
+colors :: B.ByteString
+colors = "colors"
+
 pageGenerator :: String
 pageGenerator = addSeparator [".", "runGenerator.sh"]
 
