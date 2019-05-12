@@ -1,3 +1,5 @@
+# Readme
+
 1. The file `SheetMaker.hs` is a separate script, which can be compiled with
    ~~~~
    ghc --make SheetMaker.hs -o sheetMaker
