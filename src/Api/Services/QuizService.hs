@@ -17,7 +17,8 @@ import System.Directory                     ( doesFileExist, getDirectoryContent
 import System.Process                       ( callProcess )
 
 import Constants                            ( quizzesFolderIO, locked, addSeparator, lock, quiz,
-                                              roundsFile, rounds, pageGenerator, prefix )
+                                              roundsFile, labelsFile, colorsFile, rounds, labels,
+                                              colors, pageGenerator, prefix )
 
 data QuizService = QuizService
 
@@ -67,12 +68,19 @@ updateFile quizPath content = do
     isOpen <- isQuizOpen quizPath
     if isOpen then do
         quizzesFolder <- quizzesFolderIO
-        let fullQuizPath = addSeparator [quizzesFolder, quizPath, roundsFile]
-            fullQuizDir = addSeparator [quizzesFolder, quizPath, ""]
+        let mkFull :: String -> String
+            mkFull relative = addSeparator [quizzesFolder, quizPath, relative]
+
+            fullQuizDir = mkFull ""
+            fullQuizPath = mkFull roundsFile
+            fullLabelPath = mkFull labelsFile
+            fullColorsPath = mkFull colorsFile
         writeFile fullQuizPath content
         callProcess pageGenerator 
                     (map (\(k, v) -> mkKV (B.unpack k) v) [(prefix, fullQuizDir), 
-                                                           (rounds, fullQuizPath)])
+                                                           (rounds, fullQuizPath),
+                                                           (labels, fullLabelPath),
+                                                           (colors, fullColorsPath)])
         return True
     else return False
 
