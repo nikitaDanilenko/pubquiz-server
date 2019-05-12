@@ -65,3 +65,5 @@
 
   1. Den Status des Programms kann man sich ansehen `sudo systemctl status myservice.service`.
 
+1. `curl` findet nicht auf Anhieb die richtigen Zertifikate für SSL.
+   Man kann die Verifikation mit dem Parameter `-k` (bzw. `--insecure`) unterdrücken.
