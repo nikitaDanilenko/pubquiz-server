@@ -61,6 +61,12 @@ quiz = "quiz"
 roundsFile :: String
 roundsFile = "rounds.txt"
 
+labelsFile :: String
+labelsFile = "labels.txt"
+
+colorsFile :: String
+colorsFile = "colors.txt"
+
 publicExponent :: Integer
 publicExponent = 103787
 
