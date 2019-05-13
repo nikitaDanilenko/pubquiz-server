@@ -11,7 +11,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Function                        ( on )
 import Data.Maybe                           ( maybe )
 import Snap.Core                            ( method, Method ( GET, POST ), writeBS, modifyResponse,
-                                              setResponseCode, getPostParam )
+                                              setResponseCode, getPostParam, getQueryParam )
 import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
 import Snap.Util.CORS                       ( applyCORS, defaultOptions )
 import System.Directory                     ( doesFileExist, getDirectoryContents )
@@ -42,7 +42,8 @@ sendAvailable = do
     modifyResponse (setResponseCode 200)
 
 getSingleQuizData :: Handler b QuizService ()
-getSingleQuizData = getPostParam quiz >>= maybe (modifyResponse (setResponseCode 400)) perQuiz where
+getSingleQuizData = 
+    getQueryParam quiz >>= maybe (modifyResponse (setResponseCode 400)) perQuiz where
     
     perQuiz :: B.ByteString -> Handler b QuizService ()
     perQuiz q = liftIO (readQuizFile q) 
@@ -114,7 +115,7 @@ isQuizOpen folder = do
 
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
 readQuizFile quizPath = (do 
-    filePath <- filePathIO 
+    filePath <- filePathIO
     file <- B.readFile filePath
     return (Just file)) `catch` handle where
     
