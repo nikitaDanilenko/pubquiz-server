@@ -1,6 +1,6 @@
 {-# Language OverloadedStrings, FlexibleInstances, PackageImports #-}
 
-module Api.Services.QuizService where
+module Api.Services.QuizService ( quizServiceInit, QuizService ) where
 
 import Control.Applicative                  ( liftA2 )
 import Control.Exception                    ( catch )
@@ -17,7 +17,7 @@ import Snap.Util.CORS                       ( applyCORS, defaultOptions )
 import System.Directory                     ( doesFileExist, getDirectoryContents )
 import System.Process                       ( callProcess )
 
-import Constants                            ( quizzesFolderIO, locked, addSeparator, lock, quiz,
+import Constants                            ( quizzesFolderIO, locked, addSeparator, quiz,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
                                               colors, pageGenerator, prefix )
 
@@ -91,7 +91,7 @@ updateFile quizPath content = do
 
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
-    mQuiz <- getPostParam lock
+    mQuiz <- getPostParam quiz
     let act = maybe (pure ()) 
                     (\q -> quizzesFolderIO >>= 
                             \quizzesFolder -> 
