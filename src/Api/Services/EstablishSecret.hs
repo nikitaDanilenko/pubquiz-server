@@ -10,8 +10,9 @@ import Snap.Core hiding                      ( pass )
 import Snap.Snaplet
 import qualified Data.ByteString.Char8 as B 
 
-import Api.Services.SavedUser                ( SavedUser (..), Hashed )
-import Constants                             ( sessionKeysFile, userFile, secretFile, publicExponent, keySize )
+import Api.Services.SavedUser                ( SavedUser (..), UserName, Password, mkHash )
+import Constants                             ( sessionKeysFile, userFile, secretFile, 
+                                               publicExponent, keySize )
 
 data SecretService = SecretService
 
@@ -50,9 +51,6 @@ authentificationError = B.pack "Failed to authenticate: user name or password is
 sessionKeyLabel :: B.ByteString
 sessionKeyLabel = B.pack "sessionKey"
 
-type UserName = B.ByteString
-type Password = B.ByteString
-
 -- | Verifies that the user is known and that the supplied password is correct.
 --   Both values are fetched from a local data storage.
 verifyUser :: UserName -> Password -> IO Bool
@@ -66,9 +64,8 @@ verifyUserWithUsers username password users = fromMaybe False maybeVerified wher
     maybeVerified = fmap (verifyPassword username password) candidate
 
 verifyPassword :: UserName -> Password -> SavedUser -> Bool
-verifyPassword username password savedUser = B.pack (show hashed) == hashValue savedUser where
-    hashed :: Hashed
-    hashed = hash (B.unwords [username, password, salt savedUser])
+verifyPassword username password savedUser = hash == hashValue savedUser where
+    hash = mkHash username password (salt savedUser)
 
 createKeyPair :: UserName -> IO PublicKey
 createKeyPair user = do
