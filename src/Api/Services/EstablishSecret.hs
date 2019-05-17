@@ -1,18 +1,19 @@
 {-# Language OverloadedStrings, FlexibleInstances, PackageImports #-}
 
-module Api.Services.EstablishSecret where
+module Api.Services.EstablishSecret ( SecretService, secretServiceInit ) where
 
 import Control.Monad.IO.Class
 import Crypto.PubKey.RSA                     ( generate, PublicKey )
 import "cryptonite" Crypto.Hash              ( hash )
+import qualified Data.ByteString.Char8 as B 
 import Data.Maybe                            ( fromMaybe )
 import Snap.Core hiding                      ( pass )
 import Snap.Snaplet
-import qualified Data.ByteString.Char8 as B 
 
 import Api.Services.SavedUser                ( SavedUser (..), UserName, Password, mkHash )
 import Constants                             ( sessionKeysFile, userFile, secretFile, 
                                                publicExponent, keySize )
+import Utils                                 ( readOrCreate )
 
 data SecretService = SecretService
 
@@ -64,12 +65,12 @@ verifyUserWithUsers username password users = fromMaybe False maybeVerified wher
     maybeVerified = fmap (verifyPassword username password) candidate
 
 verifyPassword :: UserName -> Password -> SavedUser -> Bool
-verifyPassword username password savedUser = hash == hashValue savedUser where
-    hash = mkHash username password (salt savedUser)
+verifyPassword username password savedUser = hash == userHash savedUser where
+    hash = mkHash username password (userSalt savedUser)
 
 createKeyPair :: UserName -> IO PublicKey
 createKeyPair user = do
-    lines <- fmap B.lines (B.readFile sessionKeysFile)
+    lines <- fmap B.lines (readOrCreate sessionKeysFile)
     let clearedLines = removeInit user lines
     (public, private) <- generate keySize publicExponent
     let newLines = B.unwords [user, B.pack (show private)] : clearedLines
@@ -78,8 +79,6 @@ createKeyPair user = do
 
 removeInit :: B.ByteString -> [B.ByteString] -> [B.ByteString]
 removeInit init = filter (not . B.isPrefixOf init) 
-
-
 
 secretServiceInit :: SnapletInit b SecretService
 secretServiceInit = makeSnaplet "secret" "Secret Service" Nothing $ do
