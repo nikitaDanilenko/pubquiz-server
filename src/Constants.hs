@@ -72,3 +72,6 @@ publicExponent = 103787
 
 keySize :: Int
 keySize = 2048
+
+saltSize :: Int
+saltSize = 24
