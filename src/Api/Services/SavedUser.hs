@@ -39,7 +39,7 @@ mkUser user pass = do
 
 mkAndSaveUser :: UserName -> Password -> IO ()
 mkAndSaveUser user pass = do
-    text <- readOrCreate useFile
+    text <- readOrCreate userFile
     let ls = lines text
         users = map (read :: String -> SavedUser) ls
         exists = any (\u -> userName u == user) users
