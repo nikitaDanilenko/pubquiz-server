@@ -23,8 +23,6 @@ quizzesFolderIO = do
             folder = fromMaybe defaultFolder (lookup "quizzesFolder" settings)
         return folder
 
-
-
     where defaultFolder = addSeparator [".", "quizzes"]
 
 splitOnSetter :: String -> (String, String)
@@ -71,7 +69,7 @@ publicExponent :: Integer
 publicExponent = 103787
 
 keySize :: Int
-keySize = 2048
+keySize = 256
 
 saltSize :: Int
 saltSize = 24
