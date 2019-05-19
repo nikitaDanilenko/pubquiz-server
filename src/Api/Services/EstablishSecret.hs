@@ -4,15 +4,13 @@ module Api.Services.EstablishSecret ( SecretService, secretServiceInit ) where
 
 import Control.Monad.IO.Class
 import Crypto.PubKey.RSA                     ( generate, PublicKey )
-import "cryptonite" Crypto.Hash              ( hash )
 import qualified Data.ByteString.Char8 as B 
 import Data.Maybe                            ( fromMaybe )
 import Snap.Core hiding                      ( pass )
 import Snap.Snaplet
 
 import Api.Services.SavedUser                ( SavedUser (..), UserName, Password, mkHash )
-import Constants                             ( sessionKeysFile, userFile, secretFile, 
-                                               publicExponent, keySize )
+import Constants                             ( sessionKeysFile, userFile, publicExponent, keySize )
 import Utils                                 ( readOrCreate, (+>) )
 
 data SecretService = SecretService
@@ -70,15 +68,15 @@ verifyPassword username password savedUser = hash == userHash savedUser where
 
 createKeyPair :: UserName -> IO PublicKey
 createKeyPair user = do
-    lines <- fmap (B.lines . B.pack) (readOrCreate sessionKeysFile)
-    let clearedLines = removeInit user lines
+    ls <- fmap (B.lines . B.pack) (readOrCreate sessionKeysFile)
+    let clearedLines = removeInit user ls
     (public, private) <- generate keySize publicExponent
     let newLines = B.unwords [user, B.pack (show private)] : clearedLines
     B.writeFile sessionKeysFile (B.unlines newLines)
     return public
 
 removeInit :: B.ByteString -> [B.ByteString] -> [B.ByteString]
-removeInit init = filter (not . B.isPrefixOf init) 
+removeInit prefix = filter (not . B.isPrefixOf prefix) 
 
 secretServiceInit :: SnapletInit b SecretService
 secretServiceInit = makeSnaplet "secret" "Secret Service" Nothing $ do
