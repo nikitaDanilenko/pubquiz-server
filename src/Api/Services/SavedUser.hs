@@ -6,7 +6,6 @@ import "cryptonite" Crypto.Hash             ( Digest, hash )
 import "cryptonite" Crypto.Hash.Algorithms  ( SHA3_512 )
 import qualified Data.ByteString.Char8 as B ( ByteString, pack, concat, unpack )
 import Data.Char                            ( chr )
-import System.Directory                     ( doesFileExist )
 import System.Random                        ( newStdGen, randomRs )
 
 import Constants                            ( userFile, saltSize )
