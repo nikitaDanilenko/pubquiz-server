@@ -13,26 +13,24 @@ import Data.Maybe                           ( maybe )
 import Snap.Core                            ( method, Method ( GET, POST ), writeBS, modifyResponse,
                                               setResponseCode, getPostParam, getQueryParam )
 import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
-import Snap.Util.CORS                       ( applyCORS, defaultOptions )
+
 import System.Directory                     ( doesFileExist, getDirectoryContents )
 import System.Process                       ( callProcess )
 
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quiz,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
                                               colors, pageGenerator, prefix )
+import Utils                                ( (+>) )
 
 data QuizService = QuizService
 
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
-quizRoutes = map (\(name, handler) -> (name, mkCORS handler)) [
-    ("all", method GET sendAvailable),
-    ("getQuizData", method GET getSingleQuizData),
-    ("update", method POST updateQuiz),
-    ("lock", method POST lockQuiz)
+quizRoutes = [
+    "all" +> method GET sendAvailable,
+    "getQuizData" +> method GET getSingleQuizData,
+    "update" +> method POST updateQuiz,
+    "lock" +> method POST lockQuiz
     ]
-
-mkCORS :: Handler b QuizService () -> Handler b QuizService ()
-mkCORS = applyCORS defaultOptions
 
 -- Finds the list of unlocked quizzes and returns it in bulk.
 sendAvailable :: Handler b QuizService ()
