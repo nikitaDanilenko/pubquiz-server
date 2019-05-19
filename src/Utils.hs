@@ -10,6 +10,11 @@ readOrCreate filePath = do
     exists <- doesFileExist filePath
     if exists then readFile filePath else return ""
 
+readOrCreateBS :: FilePath -> IO B.ByteString
+readOrCreateBS filePath = do
+    exists <- doesFileExist filePath
+    if exists then B.readFile filePath else return (B.pack "")
+
 (+>) :: B.ByteString -> Handler b service () -> (B.ByteString, Handler b service ())
 (+>) = mkRoute
 
