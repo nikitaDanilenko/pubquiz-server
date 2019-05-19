@@ -13,12 +13,12 @@ import Snap.Snaplet
 import Api.Services.SavedUser                ( SavedUser (..), UserName, Password, mkHash )
 import Constants                             ( sessionKeysFile, userFile, secretFile, 
                                                publicExponent, keySize )
-import Utils                                 ( readOrCreate )
+import Utils                                 ( readOrCreate, (+>) )
 
 data SecretService = SecretService
 
 secretRoutes :: [(B.ByteString, Handler b SecretService ())]
-secretRoutes = [("/", method POST createSecret)]
+secretRoutes = ["/" +> method POST createSecret]
 
 createSecret :: Handler b SecretService ()
 createSecret = do
@@ -70,7 +70,7 @@ verifyPassword username password savedUser = hash == userHash savedUser where
 
 createKeyPair :: UserName -> IO PublicKey
 createKeyPair user = do
-    lines <- fmap B.lines (readOrCreate sessionKeysFile)
+    lines <- fmap (B.lines . B.pack) (readOrCreate sessionKeysFile)
     let clearedLines = removeInit user lines
     (public, private) <- generate keySize publicExponent
     let newLines = B.unwords [user, B.pack (show private)] : clearedLines
