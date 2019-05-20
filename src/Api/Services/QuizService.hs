@@ -14,7 +14,8 @@ import Snap.Core                            ( method, Method ( GET, POST ), writ
                                               setResponseCode, getPostParam, getQueryParam )
 import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
 
-import System.Directory                     ( doesFileExist, getDirectoryContents )
+import System.Directory                     ( doesFileExist, getDirectoryContents, 
+                                              doesDirectoryExist, createDirectory )
 import System.Process                       ( callProcess )
 
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quiz,
@@ -29,7 +30,8 @@ quizRoutes = [
     "all" +> method GET sendAvailable,
     "getQuizData" +> method GET getSingleQuizData,
     "update" +> method POST updateQuiz,
-    "lock" +> method POST lockQuiz
+    "lock" +> method POST lockQuiz,
+    "new" +> method POST newQuiz
     ]
 
 -- Finds the list of unlocked quizzes and returns it in bulk.
@@ -62,6 +64,21 @@ updateQuiz = do
                       if isOpen then
                         modifyResponse (setResponseCode 200)
                       else writeBS "Requested quiz is locked."
+
+newQuiz :: Handler b QuizService ()
+newQuiz = do
+    mQuiz <- getPostParam quiz
+    case mQuiz of
+        Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
+        Just name -> do 
+            success <- liftIO (createOrFail (B.unpack name))
+            if success 
+             then do
+              writeBS (B.unwords ["Created quiz", name]) 
+              modifyResponse (setResponseCode 201)
+             else do
+              writeBS (B.unwords ["Quiz", name, "already exists"])
+              modifyResponse (setResponseCode 406)
 
 mkKV :: String -> String -> String
 mkKV key value = concat [key, "=", value]
@@ -125,6 +142,16 @@ readQuizFile quizPath = (do
     filePathIO = do
         quizzesFolder <- quizzesFolderIO
         return (addSeparator [quizzesFolder, B.unpack quizPath, roundsFile])
+
+createOrFail :: FilePath -> IO Bool
+createOrFail path = do
+    quizzesFolder <- quizzesFolderIO
+    let fullPath = addSeparator [quizzesFolder, path]
+    b <- doesDirectoryExist fullPath
+    if b then return False else do
+        createDirectory fullPath
+        writeFile (addSeparator [fullPath, roundsFile]) ""
+        return True
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit = do
