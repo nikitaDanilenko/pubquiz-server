@@ -5,11 +5,9 @@ module Api.Services.SavedUser where
 import "cryptonite" Crypto.Hash             ( Digest, hash )
 import "cryptonite" Crypto.Hash.Algorithms  ( SHA3_512 )
 import qualified Data.ByteString.Char8 as B ( ByteString, pack, concat, unpack )
-import Data.Char                            ( chr )
-import System.Random                        ( newStdGen, randomRs )
 
 import Constants                            ( userFile, saltSize )
-import Utils                                ( readOrCreate )
+import Utils                                ( readOrCreate, randomStringIO )
 
 type Hashed = Digest SHA3_512
 
@@ -29,9 +27,8 @@ instance Eq SavedUser where
 
 mkUser :: UserName -> Password -> IO SavedUser
 mkUser user pass = do
-    gen <- newStdGen
-    let randomChars = map chr (randomRs (33, 126) gen)
-        salt = B.pack (take saltSize randomChars)
+    randomChars <- randomStringIO
+    let salt = B.pack (take saltSize randomChars)
         hashValue = mkHash user pass salt
         savedUser = Saved user salt hashValue
     return savedUser
