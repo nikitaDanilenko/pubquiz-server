@@ -24,7 +24,8 @@ Flag development
 
 executable pubquiz-server
   main-is:             Main.hs
-  other-modules:       Api.Core, Application, Site
+  other-modules:       Api.Core, Application, Site, Api.Services.EstablishSecret,
+                       Api.Services.QuizService, Api.Services.SavedUser, Constants, Utils
   other-extensions:    OverloadedStrings, CPP, TemplateHaskell
   build-depends:       
     base >=4.9 && <4.13, 
