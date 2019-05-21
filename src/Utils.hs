@@ -1,9 +1,11 @@
 module Utils where
 
+import Data.Char                            ( chr )
 import qualified Data.ByteString.Char8 as B 
 import Snap.Snaplet                         ( Handler )
 import Snap.Util.CORS                       ( applyCORS, defaultOptions )
 import System.Directory                     ( doesFileExist )
+import System.Random                        ( newStdGen, randomRs )
 
 readOrCreate :: FilePath -> IO String
 readOrCreate filePath = do
@@ -23,3 +25,6 @@ mkRoute path service = (path, mkCORS service)
 
 mkCORS :: Handler b service () -> Handler b service ()
 mkCORS = applyCORS defaultOptions
+
+randomStringIO :: IO String
+randomStringIO = fmap (map chr . randomRs (33, 126)) newStdGen
