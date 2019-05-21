@@ -10,8 +10,9 @@ import Snap.Core hiding                      ( pass )
 import Snap.Snaplet
 
 import Api.Services.SavedUser                ( SavedUser (..), UserName, Password, mkHash )
-import Constants                             ( sessionKeysFile, userFile, publicExponent, keySize )
-import Utils                                 ( readOrCreateBS, (+>) )
+import Constants                             ( sessionKeysFile, userFile, publicExponent, keySize,
+                                               oneWayHashSize )
+import Utils                                 ( readOrCreateBS, (+>), randomStringIO )
 
 data SecretService = SecretService
 
@@ -26,8 +27,8 @@ createSecret = do
         (Just user, Just pass) -> verifyUser user pass
         _                      -> pure False
     if valid then do
-        public <- liftIO (createKeyPair (fromMaybe "error" mUser))
-        writeBS (B.concat [sessionKeyLabel, "=", B.pack (show public)])
+        oneWayHash <- liftIO (createHash (fromMaybe "error" mUser))
+        writeBS (B.concat [sessionKeyLabel, "=", B.pack oneWayHash])
         modifyResponse (setResponseCode 201)
     else do
         writeBS authentificationError
@@ -65,6 +66,15 @@ verifyUserWithUsers username password users = fromMaybe False maybeVerified wher
 verifyPassword :: UserName -> Password -> SavedUser -> Bool
 verifyPassword username password savedUser = hash == userHash savedUser where
     hash = mkHash username password (userSalt savedUser)
+
+createHash :: UserName -> IO String
+createHash user = do
+    ls <- fmap B.lines (readOrCreateBS sessionKeysFile)
+    oneWayHash <- fmap (take oneWayHashSize) randomStringIO
+    let clearedLines = removeInit user ls
+        newLines = B.unwords [user, B.pack oneWayHash] : clearedLines
+    B.writeFile sessionKeysFile (B.unlines newLines)
+    return oneWayHash
 
 createKeyPair :: UserName -> IO PublicKey
 createKeyPair user = do

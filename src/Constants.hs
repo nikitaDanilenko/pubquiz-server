@@ -71,5 +71,8 @@ publicExponent = 103787
 keySize :: Int
 keySize = 256
 
+oneWayHashSize :: Int
+oneWayHashSize = 2048
+
 saltSize :: Int
 saltSize = 24
