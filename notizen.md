@@ -67,3 +67,8 @@
 
 1. `curl` findet nicht auf Anhieb die richtigen Zertifikate für SSL.
    Man kann die Verifikation mit dem Parameter `-k` (bzw. `--insecure`) unterdrücken.
+
+1. Wichtig: Snap muss mit `-fopenssl` installiert werden.
+   Erst danach kann man mit `sudo cabal install -fopenssl` das eigentliche Projekt bauen.
+   Falls es mit SSL sofort nach dem Start beendet, heißt das wahrscheinlich,
+   dass genau die SSL-Bibliothek fehlt.
