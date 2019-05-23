@@ -65,6 +65,30 @@ labelsFile = "labels.txt"
 colorsFile :: String
 colorsFile = "colors.txt"
 
+roundParam :: B.ByteString
+roundParam = "roundLabel"
+
+groupParam :: B.ByteString
+groupParam = "groupLabel"
+
+ownPointsParam :: B.ByteString
+ownPointsParam = "ownPointsLabel"
+
+maxReachedParam :: B.ByteString
+maxReachedParam = "maxReachedLabel"
+
+maxReachableParam :: B.ByteString
+maxReachableParam = "maxReachableParam"
+
+backToChartViewParam :: B.ByteString
+backToChartViewParam = "backToChartViewLabel"
+
+mainParam :: B.ByteString
+mainParam = "mainLabel"
+
+ownPageParam :: B.ByteString
+ownPageParam = "ownPageLabel"
+
 publicExponent :: Integer
 publicExponent = 103787
 

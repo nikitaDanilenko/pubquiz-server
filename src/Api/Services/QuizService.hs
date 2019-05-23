@@ -20,7 +20,10 @@ import System.Process                       ( callProcess )
 
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quiz,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
-                                              colors, pageGenerator, prefix )
+                                              colors, pageGenerator, prefix, roundParam, groupParam,
+                                              ownPointsParam, maxReachedParam, maxReachableParam, 
+                                              backToChartViewParam, mainParam, ownPageParam )
+import Labels                               ( Labels, mkLabels )
 import Utils                                ( (+>) )
 
 data QuizService = QuizService
@@ -68,17 +71,33 @@ updateQuiz = do
 newQuiz :: Handler b QuizService ()
 newQuiz = do
     mQuiz <- getPostParam quiz
+    lbls <- fetchLabels
     case mQuiz of
         Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
         Just name -> do 
             success <- liftIO (createOrFail (B.unpack name))
             if success 
              then do
+              liftIO (writeLabels name lbls)
               writeBS (B.unwords ["Created quiz", name]) 
               modifyResponse (setResponseCode 201)
              else do
               writeBS (B.unwords ["Quiz", name, "already exists"])
               modifyResponse (setResponseCode 406)
+
+-- todo: better with JSON directly.
+fetchLabels :: Handler b QuizService Labels
+fetchLabels = do
+  params <- mapM getPostParam [roundParam, groupParam, ownPointsParam, maxReachedParam,
+                               maxReachableParam, backToChartViewParam, mainParam, ownPageParam]
+  let r : g : opts : mred : mrable : b : m : opg : _ = map (maybe "" (B.unpack)) params
+      lbls = mkLabels r g opts mred mrable b m opg
+  return lbls
+
+writeLabels :: B.ByteString -> Labels -> IO ()
+writeLabels quizPath lbls = do
+  fullPath <- mkFullPathIO quizPath labelsFile
+  writeFile fullPath (show lbls)
 
 mkKV :: String -> String -> String
 mkKV key value = concat [key, "=", value]
@@ -139,9 +158,12 @@ readQuizFile quizPath = (do
                           >> return Nothing
 
     filePathIO :: IO String
-    filePathIO = do
-        quizzesFolder <- quizzesFolderIO
-        return (addSeparator [quizzesFolder, B.unpack quizPath, roundsFile])
+    filePathIO = mkFullPathIO quizPath roundsFile
+
+mkFullPathIO :: B.ByteString -> FilePath -> IO String
+mkFullPathIO quizPath filePath = do
+  quizzesFolder <- quizzesFolderIO
+  return (addSeparator [quizzesFolder, B.unpack quizPath, filePath])
 
 createOrFail :: FilePath -> IO Bool
 createOrFail path = do
