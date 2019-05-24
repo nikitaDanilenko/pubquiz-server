@@ -1,7 +1,6 @@
-module SheetMaker where
+module SheetMaker ( createSheetWith ) where
 
-import System.Directory   ( setCurrentDirectory, copyFile, getCurrentDirectory )
-import System.Environment ( getArgs )
+import System.Directory   ( setCurrentDirectory, getCurrentDirectory )
 import System.Process     ( callProcess )
 
 import Constants          ( quizzesFolderIO, addSeparator )
@@ -59,12 +58,3 @@ createSheetWith groupLabel rounds prefix endings = do
     cleanImages endings
     cleanLatex
     setCurrentDirectory currentDir
-
-
-main :: IO ()
-main = do
-    prefix : endings <- getArgs
-    mapM_ (createQR prefix) endings
-    createPDF endings
-    cleanImages endings
-    cleanLatex
