@@ -1,7 +1,11 @@
-module Main where
+module SheetMaker where
 
+import System.Directory   ( setCurrentDirectory, copyFile, getCurrentDirectory )
 import System.Environment ( getArgs )
 import System.Process     ( callProcess )
+
+import Constants          ( quizzesFolderIO, addSeparator )
+import Sheet.Tex          ( mkSheet )
 
 type Prefix = String
 type Ending = String
@@ -23,16 +27,39 @@ createLatexVariable es = writeFile variableFile variable where
 sheet :: String
 sheet = "Sheet"
 
+sheetTex :: String
+sheetTex = concat [sheet, ".tex"]
+
 createPDF :: [Ending] -> IO ()
 createPDF es = do
     createLatexVariable es
-    callProcess "pdflatex" [concat [sheet, ".tex"]]
+    callProcess "pdflatex" [sheetTex]
 
 cleanLatex :: IO ()
-cleanLatex = callProcess "rm" [concat [sheet, ".log"], concat [sheet, ".aux"]]
+cleanLatex = callProcess "rm" [concat [sheet, ".log"], 
+                               concat [sheet, ".aux"],
+                               concat [sheet, ".tex"],
+                               variableFile
+                               ]
 
 cleanImages :: [Ending] -> IO ()
 cleanImages es = callProcess "rm" (map (++ ".png") es)
+
+createSheetWith :: String -> Int -> Prefix -> [Ending] -> IO ()
+createSheetWith groupLabel rounds prefix endings = do
+    quizzesFolder <- quizzesFolderIO
+    currentDir <- getCurrentDirectory
+    let fullPath = addSeparator [quizzesFolder, prefix]
+        sheet = mkSheet groupLabel rounds
+    setCurrentDirectory fullPath
+    writeFile sheetTex sheet 
+    mapM_ (createQR prefix) endings
+
+    createPDF endings
+    cleanImages endings
+    cleanLatex
+    setCurrentDirectory currentDir
+
 
 main :: IO ()
 main = do
