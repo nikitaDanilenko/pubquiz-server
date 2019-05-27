@@ -89,6 +89,9 @@ mainParam = "mainLabel"
 ownPageParam :: B.ByteString
 ownPageParam = "ownPageLabel"
 
+server :: String
+server = "https://www.danilenko.io"
+
 publicExponent :: Integer
 publicExponent = 103787
 
