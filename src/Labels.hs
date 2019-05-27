@@ -1,4 +1,4 @@
-module Labels ( Labels, defaultLabels, mkLabels ) where
+module Labels ( Labels, defaultLabels, mkLabels, groupLabel ) where
 
 data Labels = Labels { 
   roundLabel :: String,
