@@ -1,4 +1,4 @@
-module Sheet.SheetMaker ( createSheetWith ) where
+module Sheet.SheetMaker ( createSheetWith, defaultEndings ) where
 
 import System.Directory   ( setCurrentDirectory, getCurrentDirectory )
 import System.Process     ( callProcess )
@@ -27,6 +27,14 @@ createSheetWith groupLabel rounds prefix server endings = do
     cleanImages endings
     cleanLatex sheetFile
     setCurrentDirectory currentDir
+
+defaultEndings :: [Ending]
+defaultEndings = [
+        "sdig1o", "aikp25", "vzt35d", "fs7g5r", "9hf347",
+        "f853q7", "pwi5q3", "weu429", "8fwr7h", "hu5p73",
+        "yle8rf", "mdl20a", "84hrui", "c8vb3w", "la9inh",
+        "k6bghz", "jwb54g", "4geu7y", "nbc6t4", "amv6zh"
+    ]
 
 createQR :: Prefix -> Ending -> IO ()
 createQR prefix ending = 
