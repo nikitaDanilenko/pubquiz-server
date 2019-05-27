@@ -22,8 +22,10 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
                                               colors, pageGenerator, prefix, roundParam, groupParam,
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
-                                              backToChartViewParam, mainParam, ownPageParam )
-import Labels                               ( Labels, mkLabels )
+                                              backToChartViewParam, mainParam, ownPageParam, 
+                                              server )
+import Labels                               ( Labels, mkLabels, groupLabel )
+import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
 import Utils                                ( (+>) )
 
 data QuizService = QuizService
@@ -75,10 +77,12 @@ newQuiz = do
     case mQuiz of
         Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
         Just name -> do 
-            success <- liftIO (createOrFail (B.unpack name))
+            let uName = B.unpack name
+            success <- liftIO (createOrFail uName)
             if success 
              then do
-              liftIO (writeLabels name lbls)
+              liftIO $ (writeLabels name lbls >> 
+                        createSheetWith (groupLabel lbls) 4 uName server defaultEndings)
               writeBS (B.unwords ["Created quiz", name]) 
               modifyResponse (setResponseCode 201)
              else do
@@ -172,7 +176,7 @@ createOrFail path = do
     b <- doesDirectoryExist fullPath
     if b then return False else do
         createDirectory fullPath
-        writeFile (addSeparator [fullPath, roundsFile]) ""
+        writeFile (addSeparator [fullPath, roundsFile]) (unwords defaultEndings)
         return True
 
 quizServiceInit :: SnapletInit b QuizService
