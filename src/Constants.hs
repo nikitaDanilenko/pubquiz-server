@@ -2,6 +2,8 @@
 
 module Constants where
 
+import Control.Exception                    ( catch )
+import Control.Exception.Base               ( IOException )
 import Data.List                            ( intercalate )
 import Data.Maybe                           ( fromMaybe )
 import qualified Data.ByteString.Char8 as B
@@ -21,7 +23,7 @@ configFile = "./config.txt"
 
 quizzesFolderIO :: IO String
 quizzesFolderIO = do
-        text <- readFile configFile `handle` noConfigFile
+        text <- readFile configFile `catch` noConfigFile
         let settings = map splitOnSetter (lines text)
             folder = fromMaybe defaultFolder (lookup "quizzesFolder" settings)
         return folder
@@ -30,7 +32,7 @@ quizzesFolderIO = do
           
           noConfigFile :: IOException -> IO String
           noConfigFile _ = do 
-            putStrLn "No config file found. This should not happen. Created an empty one".
+            putStrLn "No config file found. This should not happen. Created an empty one."
             writeFile configFile ""
             return ""
 
