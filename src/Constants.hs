@@ -16,14 +16,24 @@ userFile = addSeparator [".", "db", "users.txt"]
 secretFile :: String
 secretFile = addSeparator [".", "db", "secrets.txt"]
 
+configFile :: String
+configFile = "./config.txt"
+
 quizzesFolderIO :: IO String
 quizzesFolderIO = do
-        text <- readFile pageGenerator
+        text <- readFile configFile `handle` noConfigFile
         let settings = map splitOnSetter (lines text)
             folder = fromMaybe defaultFolder (lookup "quizzesFolder" settings)
         return folder
 
     where defaultFolder = addSeparator [".", "quizzes"]
+          
+          noConfigFile :: IOException -> IO String
+          noConfigFile _ = do 
+            putStrLn "No config file found. This should not happen. Created an empty one".
+            writeFile configFile ""
+            return ""
+
 
 splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
