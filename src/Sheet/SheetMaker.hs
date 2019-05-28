@@ -17,7 +17,7 @@ createSheetWith groupLabel rounds prefix server endings = do
     quizzesFolder <- quizzesFolderIO
     currentDir <- getCurrentDirectory
     let fullPath = addSeparator [quizzesFolder, prefix]
-        fullServerPath = addSeparator [server, quizzesFolder, prefix, ""]
+        fullServerPath = addSeparator [server, simplify quizzesFolder, prefix, ""]
         sht = mkSheet groupLabel rounds
         sheetFile = mkSheetFile prefix
         texFile = concat [sheetFile, ".tex"]
@@ -38,6 +38,10 @@ createSheetWith groupLabel rounds prefix server endings = do
 
         noPDFLatex :: IOException -> IO ()
         noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
+
+simplify :: FilePath -> FilePath
+simplify ('.' : '/' : actualPath) = actualPath
+simplify other                    = other
 
 defaultEndings :: [Ending]
 defaultEndings = [
