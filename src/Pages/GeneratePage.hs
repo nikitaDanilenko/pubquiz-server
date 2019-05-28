@@ -1,3 +1,5 @@
+module Pages.GeneratePage where
+
 import Control.Arrow          ( second, (&&&), (***), (>>>) )
 import Control.Exception      ( catch )
 import Control.Exception.Base ( IOException )
