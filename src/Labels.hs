@@ -1,4 +1,6 @@
-module Labels ( Labels, defaultLabels, mkLabels, groupLabel ) where
+module Labels ( Labels, defaultLabels, mkLabels, groupLabel, ownPointsLabel,
+                maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
+                htmlSafeString, mainLabel, roundLabel ) where
 
 data Labels = Labels { 
   roundLabel :: String,
