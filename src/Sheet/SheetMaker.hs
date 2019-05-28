@@ -1,10 +1,12 @@
 module Sheet.SheetMaker ( createSheetWith, defaultEndings ) where
 
-import System.Directory   ( setCurrentDirectory, getCurrentDirectory )
-import System.Process     ( callProcess )
-
-import Constants          ( quizzesFolderIO, addSeparator )
-import Sheet.Tex          ( mkSheet )
+import Control.Exception       ( catch )
+import Control.Exception.Base  ( IOException )
+import System.Directory        ( setCurrentDirectory, getCurrentDirectory )
+import System.Process          ( callProcess )
+     
+import Constants               ( quizzesFolderIO, addSeparator )
+import Sheet.Tex               ( mkSheet )
 
 type Prefix = String
 type Server = String
@@ -19,14 +21,23 @@ createSheetWith groupLabel rounds prefix server endings = do
         sht = mkSheet groupLabel rounds
         sheetFile = mkSheetFile prefix
         texFile = concat [sheetFile, ".tex"]
-    setCurrentDirectory fullPath
-    writeFile texFile sht 
-    mapM_ (createQR fullServerPath) endings
 
-    createPDF texFile endings
+    setCurrentDirectory fullPath
+
+    writeFile texFile sht 
+    let trySheet = do 
+            b <- (mapM_ (createQR fullServerPath) endings >> return True) `catch` noQREncode
+            if b then createPDF texFile endings `catch` noPDFLatex else return ()
+
+    trySheet
     cleanImages endings
     cleanLatex sheetFile
     setCurrentDirectory currentDir
+  where noQREncode :: IOException -> IO Bool
+        noQREncode _ = putStrLn "qrencode not found. No sheet created." >> return False
+
+        noPDFLatex :: IOException -> IO ()
+        noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
 
 defaultEndings :: [Ending]
 defaultEndings = [
@@ -59,7 +70,7 @@ mkSheetFile prefix = concat [prefix, "-", sheet]
 createPDF :: String -> [Ending] -> IO ()
 createPDF texFile es = do
     createLatexVariable es
-    callProcess "pdflatex" [texFile]
+    callProcess "pdflatex" ["-interaction=nonstopmode", texFile]
 
 cleanLatex :: String -> IO ()
 cleanLatex sheetFile = callProcess "rm" [concat [sheetFile, ".log"], 
