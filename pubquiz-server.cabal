@@ -29,7 +29,8 @@ executable pubquiz-server
   other-extensions:    OverloadedStrings, CPP, TemplateHaskell
   build-depends:       
     base >=4.9 && <4.13, 
-    bytestring >=0.10 && <0.11, 
+    bytestring >=0.10 && <0.11,
+    containers >=0.1 && < 1,  
     snap >=1.1 && <1.2, 
     text >=1.2 && <1.3, 
     snap-server >=1.1 && <1.2,
