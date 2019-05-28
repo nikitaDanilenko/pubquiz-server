@@ -295,18 +295,20 @@ splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
   (key, preValue) = span ((/=) '=') str
 
+createWith :: [(String, String)] -> IO ()
+createWith associations = do
+    labels <- readLabels labelsPath
+    (codes, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
+    colors <- readColors colorsPath
+    let groups = mkGroups rounds
+        n = length rounds
+    writePointPages prefix labels groups colors
+    writeGraphPage prefix labels n groups colors
+  where kvs = fromList associations
+        labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
+        colorsPath = fromMaybe "colors.txt" (lookup "colors" kvs)
+        roundsPath = fromMaybe "rounds.txt" (lookup "rounds" kvs)
+        prefix     = fromMaybe "./"         (lookup "prefix" kvs)
+
 main :: IO ()
-main = do
-  args <- getArgs
-  let kvs = fromList (map splitOnSetter args)
-      labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
-      colorsPath = fromMaybe "colors.txt" (lookup "colors" kvs)
-      roundsPath = fromMaybe "rounds.txt" (lookup "rounds" kvs)
-      prefix     = fromMaybe "./"         (lookup "prefix" kvs)
-  labels <- readLabels labelsPath
-  (codes, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
-  colors <- readColors colorsPath
-  let groups = mkGroups rounds
-      n = length rounds
-  writePointPages prefix labels groups colors
-  writeGraphPage prefix labels n groups colors
+main = getArgs >>= createWith . map splitOnSetter
