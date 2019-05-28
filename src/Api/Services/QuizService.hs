@@ -24,6 +24,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               server )
+import Pages.GeneratePage                   ( createWith )
 import Labels                               ( Labels, mkLabels, groupLabel )
 import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
 import Utils                                ( (+>) )
@@ -103,8 +104,6 @@ writeLabels quizPath lbls = do
   fullPath <- mkFullPathIO quizPath labelsFile
   writeFile fullPath (show lbls)
 
-mkKV :: String -> String -> String
-mkKV key value = concat [key, "=", value]
 
 updateFile :: String -> String -> IO Bool
 updateFile quizPath content = do
@@ -119,11 +118,10 @@ updateFile quizPath content = do
             fullLabelPath = mkFull labelsFile
             fullColorsPath = mkFull colorsFile
         writeFile fullQuizPath content
-        callProcess pageGenerator 
-                    (map (\(k, v) -> mkKV (B.unpack k) v) [(prefix, fullQuizDir), 
-                                                           (rounds, fullQuizPath),
-                                                           (labels, fullLabelPath),
-                                                           (colors, fullColorsPath)])
+        createWith (map (\(k, v) -> (B.unpack k, v)) [(prefix, fullQuizDir), 
+                                                      (rounds, fullQuizPath),
+                                                      (labels, fullLabelPath),
+                                                      (colors, fullColorsPath)])
         return True
     else return False
 
