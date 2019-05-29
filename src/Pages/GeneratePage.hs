@@ -14,7 +14,7 @@ import Prelude hiding         ( lookup )
 
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
-                                groupLabel, defaultLabels )
+                                groupLabel, defaultLabels, unEscape )
 
 data RoundRating = RoundRating { 
   roundNumber :: Int, 
@@ -248,7 +248,7 @@ graphPage labels rounds groups colors =
   \     display: true,\
   \     text: '"
   ++ 
-  mainLabel labels 
+  unEscape (mainLabel labels)
   ++ 
   "\'"
   ++
