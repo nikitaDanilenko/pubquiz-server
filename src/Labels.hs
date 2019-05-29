@@ -1,6 +1,6 @@
 module Labels ( Labels, defaultLabels, mkLabels, groupLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
-                htmlSafeString, mainLabel, roundLabel ) where
+                htmlSafeString, mainLabel, roundLabel, unEscape ) where
 
 data Labels = Labels { 
   roundLabel :: String,
@@ -21,9 +21,9 @@ mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl ma
         ownPointsLabel = htmlSafeString ownPointsLbl,
         maxReachedLabel = htmlSafeString maxReachedLbl,
         maxReachableLabel = htmlSafeString maxReachableLbl,
-        backToChartView = backLbl,
-        mainLabel = mainLbl,
-        ownPageLabel = ownPageLbl
+        backToChartView = htmlSafeString backLbl,
+        mainLabel = htmlSafeString mainLbl,
+        ownPageLabel = htmlSafeString ownPageLbl
     } 
 
 htmlSafeChar :: Char -> String
@@ -33,17 +33,44 @@ htmlSafeChar 'ü' = "&uuml;"
 htmlSafeChar 'ß' = "&szlig;"
 htmlSafeChar c = [c]
 
+doubleEscape :: String -> String
+doubleEscape [] = []
+doubleEscape str = prefix ++ doubleEscape rest where
+  (prefix, rest) = case str of
+    '\195' : '\164' : cs -> ("&auml;", cs)
+    '\195' : '\182' : cs -> ("&ouml;", cs)
+    '\195' : '\188' : cs -> ("&uuml;", cs)
+    '\195' : '\132' : cs -> ("&Auml;", cs)
+    '\195' : '\150' : cs -> ("&Ouml;", cs)
+    '\195' : '\156' : cs -> ("&Uuml;", cs)
+    '\195' : '\159' : cs -> ("&szlig;", cs)
+    c : cs               -> ([c], cs)
+    []                   -> ([], [])
+
+unEscape :: String -> String
+unEscape [] = []
+unEscape str = prefix ++ unEscape rest where
+  (prefix, rest) = case str of
+    '&' : 'a' : 'u' : 'm' : 'l' : ';' : rest       -> ("ä", rest)
+    '&' : 'o' : 'u' : 'm' : 'l' : ';' : rest       -> ("ö", rest)
+    '&' : 'u' : 'u' : 'm' : 'l' : ';' : rest       -> ("ü", rest)
+    '&' : 'A' : 'u' : 'm' : 'l' : ';' : rest       -> ("Ä", rest)
+    '&' : 'O' : 'u' : 'm' : 'l' : ';' : rest       -> ("Ö", rest)
+    '&' : 'U' : 'u' : 'm' : 'l' : ';' : rest       -> ("Ü", rest)
+    '&' : 's' : 'z' : 'l' : 'i' : 'g' : ';' : rest -> ("ß", rest)
+    c : cs                                         -> ([c], cs)
+    []                                             -> ([], [])
+
 htmlSafeString :: String -> String
-htmlSafeString = concatMap htmlSafeChar
+htmlSafeString = doubleEscape . concatMap htmlSafeChar
 
 defaultLabels :: Labels
-defaultLabels = Labels { 
-  roundLabel = htmlSafeString "Runde",
-  groupLabel = htmlSafeString "Gruppe",
-  ownPointsLabel = htmlSafeString "Erreichte Punkte", 
-  maxReachedLabel = htmlSafeString "Erreichte Höchstpunktzahl",
-  maxReachableLabel = htmlSafeString "Erreichbare Punkte",
-  backToChartView = htmlSafeString "Gesamtansicht",
-  mainLabel = htmlSafeString "Pubquiz",
-  ownPageLabel = htmlSafeString "Eigene Punkte"
-}
+defaultLabels = mkLabels
+   "Runde"
+   "Gruppe"
+   "Erreichte Punkte"
+   "Erreichte Höchstpunktzahl"
+   "Erreichbare Punkte"
+   "Gesamtansicht"
+   "Pubquiz"
+   "Eigene Punkte"
