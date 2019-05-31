@@ -1,5 +1,9 @@
+{-# Language PackageImports #-}
+
 module Utils where
 
+import "cryptonite" Crypto.Hash             ( Digest, hash )
+import "cryptonite" Crypto.Hash.Algorithms  ( SHA512 )
 import Data.Char                            ( chr )
 import qualified Data.ByteString.Char8 as B 
 import Snap.Snaplet                         ( Handler )
@@ -28,3 +32,8 @@ mkCORS = applyCORS defaultOptions
 
 randomStringIO :: IO String
 randomStringIO = fmap (map chr . randomRs (33, 126)) newStdGen
+
+type Hashed = Digest SHA512
+
+mkHashed :: B.ByteString -> Hashed
+mkHashed = hash

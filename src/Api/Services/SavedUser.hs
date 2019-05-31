@@ -1,17 +1,13 @@
-{-# Language OverloadedStrings, PackageImports #-}
+{-# Language OverloadedStrings #-}
 
 module Api.Services.SavedUser where
 
 import Control.Exception                    ( catch )
 import Control.Exception.Base               ( IOException )
-import "cryptonite" Crypto.Hash             ( Digest, hash )
-import "cryptonite" Crypto.Hash.Algorithms  ( SHA3_512 )
 import qualified Data.ByteString.Char8 as B ( ByteString, pack, concat, unpack )
 
 import Constants                            ( userFile, saltSize )
-import Utils                                ( readOrCreate, randomStringIO )
-
-type Hashed = Digest SHA3_512
+import Utils                                ( readOrCreate, randomStringIO, mkHashed, Hashed )
 
 type UserName = B.ByteString
 type Password = B.ByteString
@@ -57,8 +53,8 @@ handleWriteFailure _ =
 
 data Status = Success | Exists B.ByteString | Failure B.ByteString
 
-mkHashed :: UserName -> Password -> Salt -> Hashed
-mkHashed user pass salt = hash (B.concat [user, pass, salt])
+mkUserHashed :: UserName -> Password -> Salt -> Hashed
+mkUserHashed user pass salt = mkHashed (B.concat [user, pass, salt])
 
 mkHash :: UserName -> Password -> Salt -> HashValue
-mkHash user pass salt = B.pack (show (mkHashed user pass salt))
+mkHash user pass salt = B.pack (show (mkUserHashed user pass salt))
