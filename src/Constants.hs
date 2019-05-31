@@ -7,6 +7,7 @@ import Control.Exception.Base               ( IOException )
 import Data.List                            ( intercalate )
 import Data.Maybe                           ( fromMaybe )
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T             ( Text )
 import System.FilePath                      ( pathSeparator )
 
 sessionKeysFile :: String
@@ -62,9 +63,6 @@ labels = "labels"
 colors :: B.ByteString
 colors = "colors"
 
-pageGenerator :: String
-pageGenerator = addSeparator [".", "runGenerator.sh"]
-
 quiz :: B.ByteString
 quiz = "quiz"
 
@@ -109,6 +107,18 @@ passwordParam = "pass"
 
 server :: String
 server = "https://www.danilenko.io"
+
+apiPath :: T.Text
+apiPath = "api"
+
+secretPath :: T.Text
+secretPath = "secrets"
+
+quizPath :: T.Text
+quizPath = "quiz"
+
+userPath :: T.Text
+userPath = "users"
 
 publicExponent :: Integer
 publicExponent = 103787
