@@ -16,14 +16,13 @@ import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, m
 
 import System.Directory                     ( doesFileExist, getDirectoryContents, 
                                               doesDirectoryExist, createDirectory )
-import System.Process                       ( callProcess )
 
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quiz,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
-                                              colors, pageGenerator, prefix, roundParam, groupParam,
+                                              colors, prefix, roundParam, groupParam,
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
-                                              server )
+                                              server, quizPath )
 import Pages.GeneratePage                   ( createWith )
 import Labels                               ( Labels, mkLabels, groupLabel )
 import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
@@ -100,18 +99,18 @@ fetchLabels = do
   return lbls
 
 writeLabels :: B.ByteString -> Labels -> IO ()
-writeLabels quizPath lbls = do
-  fullPath <- mkFullPathIO quizPath labelsFile
+writeLabels quizLocation lbls = do
+  fullPath <- mkFullPathIO quizLocation labelsFile
   writeFile fullPath (show lbls)
 
 
 updateFile :: String -> String -> IO Bool
-updateFile quizPath content = do
-    isOpen <- isQuizOpen quizPath
+updateFile quizLocation content = do
+    isOpen <- isQuizOpen quizLocation
     if isOpen then do
         quizzesFolder <- quizzesFolderIO
         let mkFull :: String -> String
-            mkFull relative = addSeparator [quizzesFolder, quizPath, relative]
+            mkFull relative = addSeparator [quizzesFolder, quizLocation, relative]
 
             fullQuizDir = mkFull ""
             fullQuizPath = mkFull roundsFile
@@ -150,7 +149,7 @@ isQuizOpen folder = do
     return (not ex)
 
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
-readQuizFile quizPath = (do 
+readQuizFile quizLocation = (do 
     filePath <- filePathIO
     file <- B.readFile filePath
     return (Just file)) `catch` handle where
@@ -160,12 +159,12 @@ readQuizFile quizPath = (do
                           >> return Nothing
 
     filePathIO :: IO String
-    filePathIO = mkFullPathIO quizPath roundsFile
+    filePathIO = mkFullPathIO quizLocation roundsFile
 
 mkFullPathIO :: B.ByteString -> FilePath -> IO String
-mkFullPathIO quizPath filePath = do
+mkFullPathIO quizLocation filePath = do
   quizzesFolder <- quizzesFolderIO
-  return (addSeparator [quizzesFolder, B.unpack quizPath, filePath])
+  return (addSeparator [quizzesFolder, B.unpack quizLocation, filePath])
 
 createOrFail :: FilePath -> IO Bool
 createOrFail path = do
@@ -179,6 +178,6 @@ createOrFail path = do
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit = do
-    makeSnaplet "quiz" "Quiz Service" Nothing $ do
+    makeSnaplet quizPath "Quiz Service" Nothing $ do
         addRoutes quizRoutes
         return QuizService
