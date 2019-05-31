@@ -1,17 +1,23 @@
 {-# Language OverloadedStrings, TemplateHaskell #-}
 
-module Api.Core where
+module Api.Core ( Api, apiInit ) where
 
-import           Control.Lens                ( makeLenses )
+import           Control.Lens                 ( makeLenses )
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T               ( Text )
+import qualified Data.Text.Encoding as E      ( encodeUtf8 )
 import           Snap.Core
 import           Snap.Snaplet
 
-import           Api.Services.EstablishSecret
-import           Api.Services.QuizService
+import           Api.Services.EstablishSecret ( SecretService, secretServiceInit )
+import           Api.Services.QuizService     ( QuizService, quizServiceInit ) 
+import           Api.Services.UserService     ( UserService, userServiceInit )
+import           Constants                    ( apiPath, secretPath, quizPath, userPath )
 
 data Api = Api { _secretService :: Snaplet SecretService,
-                 _quizService :: Snaplet QuizService }
+                 _quizService :: Snaplet QuizService ,
+                 _userService :: Snaplet UserService
+               }
 
 makeLenses ''Api
 
@@ -21,9 +27,13 @@ apiRoutes = [("status", method GET respondOk)]
 respondOk :: Handler b Api ()
 respondOk = modifyResponse $ setResponseCode 200
 
+asBS :: T.Text -> B.ByteString
+asBS = E.encodeUtf8
+
 apiInit :: SnapletInit b Api
-apiInit = makeSnaplet "api" "Core Api" Nothing $ do
-    secretServiceInstance <- nestSnaplet "secrets" secretService secretServiceInit
-    quizServiceInstance <- nestSnaplet "quiz" quizService quizServiceInit
+apiInit = makeSnaplet apiPath "Core Api" Nothing $ do
+    secretServiceInstance <- nestSnaplet (asBS secretPath) secretService secretServiceInit
+    quizServiceInstance <- nestSnaplet (asBS quizPath) quizService quizServiceInit
+    userServiceInstance <- nestSnaplet (asBS userPath) userService userServiceInit
     addRoutes apiRoutes
-    return $ Api secretServiceInstance quizServiceInstance
+    return $ Api secretServiceInstance quizServiceInstance userServiceInstance
