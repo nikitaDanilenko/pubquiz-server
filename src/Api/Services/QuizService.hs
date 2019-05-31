@@ -1,4 +1,4 @@
-{-# Language OverloadedStrings, FlexibleInstances, PackageImports #-}
+{-# Language OverloadedStrings, FlexibleInstances #-}
 
 module Api.Services.QuizService ( quizServiceInit, QuizService ) where
 
