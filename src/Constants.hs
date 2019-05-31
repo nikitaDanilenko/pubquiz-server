@@ -88,7 +88,7 @@ maxReachedParam :: B.ByteString
 maxReachedParam = "maxReachedLabel"
 
 maxReachableParam :: B.ByteString
-maxReachableParam = "maxReachableParam"
+maxReachableParam = "maxReachableLabel"
 
 backToChartViewParam :: B.ByteString
 backToChartViewParam = "backToChartViewLabel"
