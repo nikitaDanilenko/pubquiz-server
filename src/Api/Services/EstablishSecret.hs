@@ -11,7 +11,7 @@ import Snap.Snaplet
 
 import Api.Services.SavedUser                ( SavedUser (..), UserName, Password, mkHash )
 import Constants                             ( sessionKeysFile, userFile, publicExponent, keySize,
-                                               oneWayHashSize )
+                                               oneWayHashSize, userParam, passwordParam )
 import Utils                                 ( readOrCreateBS, (+>), randomStringIO )
 
 data SecretService = SecretService
@@ -21,8 +21,8 @@ secretRoutes = ["/" +> method POST createSecret]
 
 createSecret :: Handler b SecretService ()
 createSecret = do
-    mUser <- getPostParam "user"
-    mPass <- getPostParam "pass"
+    mUser <- getPostParam userParam
+    mPass <- getPostParam passwordParam
     valid <- liftIO $ case (mUser, mPass) of
         (Just user, Just pass) -> verifyUser user pass
         _                      -> pure False

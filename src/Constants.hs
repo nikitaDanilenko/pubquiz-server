@@ -101,6 +101,12 @@ mainParam = "mainLabel"
 ownPageParam :: B.ByteString
 ownPageParam = "ownPageLabel"
 
+userParam :: B.ByteString
+userParam = "user"
+
+passwordParam :: B.ByteString
+passwordParam = "pass"
+
 server :: String
 server = "https://www.danilenko.io"
 
