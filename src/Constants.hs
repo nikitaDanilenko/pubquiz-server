@@ -105,6 +105,9 @@ userParam = "user"
 passwordParam :: B.ByteString
 passwordParam = "pass"
 
+signatureParam :: B.ByteString
+signatureParam = "signature"
+
 server :: String
 server = "https://www.danilenko.io"
 
