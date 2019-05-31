@@ -2,6 +2,8 @@
 
 module Api.Services.SavedUser where
 
+import Control.Exception                    ( catch )
+import Control.Exception.Base               ( IOException )
 import "cryptonite" Crypto.Hash             ( Digest, hash )
 import "cryptonite" Crypto.Hash.Algorithms  ( SHA3_512 )
 import qualified Data.ByteString.Char8 as B ( ByteString, pack, concat, unpack )
@@ -33,19 +35,27 @@ mkUser user pass = do
         savedUser = Saved user salt hashValue
     return savedUser
 
-mkAndSaveUser :: UserName -> Password -> IO ()
+mkAndSaveUser :: UserName -> Password -> IO Status
 mkAndSaveUser user pass = do
     text <- readOrCreate userFile
     let ls = lines text
         users = map (read :: String -> SavedUser) ls
         exists = any (\u -> userName u == user) users
     if exists 
-        then putStrLn (unwords ["User", B.unpack user, "already exists.", "Nothing changed."])
+        then let u = B.unpack user
+             in do putStrLn (unwords ["User", u, "already exists.", "Nothing changed."])
+                   return (Exists user)
         else do
             newUser <- mkUser user pass
             let newLs = show newUser : ls
                 newText = unlines newLs
-            writeFile userFile newText
+            (writeFile userFile newText >> return Success) `catch` handleWriteFailure
+
+handleWriteFailure :: IOException -> IO Status
+handleWriteFailure _ = 
+    return (Failure "Something went wrong while writing to user file. Nothing changed.")
+
+data Status = Success | Exists B.ByteString | Failure B.ByteString
 
 mkHashed :: UserName -> Password -> Salt -> Hashed
 mkHashed user pass salt = hash (B.concat [user, pass, salt])
