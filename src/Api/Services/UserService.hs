@@ -2,23 +2,28 @@
 
 module Api.Services.UserService where
 
+import Control.Monad.IO.Class               ( liftIO )
 import qualified Data.ByteString.Char8 as B 
+import Snap.Core                            ( method, Method ( POST ), writeBS, modifyResponse,
+                                              setResponseCode, getPostParam )
+import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
 
 import Api.Services.SavedUser               ( mkAndSaveUser, Status ( .. ) )
-import Constants                            ( userParam, passwordParam )
+import Constants                            ( userParam, passwordParam, userPath )
+import Utils                                ( (+>) )
 
 data UserService = UserService
 
 userRoutes :: [(B.ByteString, Handler b UserService ())]
 userRoutes = ["createUser" +> method POST createUser]
 
-quizServiceInit :: SnapletInit b QuizService
-quizServiceInit = do
-    makeSnaplet "users" "User Service" Nothing $ do
+userServiceInit :: SnapletInit b UserService
+userServiceInit = do
+    makeSnaplet userPath "User Service" Nothing $ do
         addRoutes userRoutes
         return UserService
 
-createUser :: Handler b QuizService ()
+createUser :: Handler b UserService ()
 createUser = do
   mUser <- getPostParam userParam
   mPass <- getPostParam passwordParam
