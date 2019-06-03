@@ -28,7 +28,7 @@ createSecret = do
         _                      -> pure False
     if valid then do
         oneWayHash <- liftIO (createHash (fromMaybe "error" mUser))
-        writeBS (B.concat [sessionKeyLabel, "=", B.pack oneWayHash])
+        writeBS (B.pack oneWayHash)
         modifyResponse (setResponseCode 201)
     else do
         writeBS authentificationError
