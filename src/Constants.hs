@@ -63,8 +63,8 @@ labels = "labels"
 colors :: B.ByteString
 colors = "colors"
 
-quiz :: B.ByteString
-quiz = "quiz"
+quizParam :: B.ByteString
+quizParam = "quiz"
 
 roundsFile :: String
 roundsFile = "rounds.txt"
