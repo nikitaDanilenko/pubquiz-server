@@ -17,12 +17,13 @@ import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, m
 import System.Directory                     ( doesFileExist, getDirectoryContents, 
                                               doesDirectoryExist, createDirectory )
 
-import Constants                            ( quizzesFolderIO, locked, addSeparator, quiz,
+import Api.Services.HashCheck               ( mkVerifiedRequest )
+import Constants                            ( quizzesFolderIO, locked, addSeparator, quizParam,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
                                               colors, prefix, roundParam, groupParam,
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
-                                              server, quizPath )
+                                              server, quizPath, signatureParam, userParam )
 import Pages.GeneratePage                   ( createWith )
 import Labels                               ( Labels, mkLabels, groupLabel )
 import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
@@ -48,7 +49,7 @@ sendAvailable = do
 
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = 
-    getQueryParam quiz >>= maybe (modifyResponse (setResponseCode 400)) perQuiz where
+    getQueryParam quizParam >>= maybe (modifyResponse (setResponseCode 400)) perQuiz where
     
     perQuiz :: B.ByteString -> Handler b QuizService ()
     perQuiz q = liftIO (readQuizFile q) 
@@ -57,37 +58,45 @@ getSingleQuizData =
         
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
-    mQuiz <- getPostParam quiz
+    mQuiz <- getPostParam quizParam
     mNewContent <- getPostParam rounds
-    let act = liftA2 (updateFile `on` B.unpack) mQuiz mNewContent
-    case act of
+    mUser <- getPostParam userParam
+    mSignature <- getPostParam signatureParam
+    verified <- authenticate mUser mSignature [(quizParam, mQuiz), (rounds, mNewContent)]
+    failIfUnverified verified $
+      let act = liftA2 (updateFile `on` B.unpack) mQuiz mNewContent
+      in case act of
         Nothing -> do writeBS (B.concat ["Malfolmed request:\n", 
-                                         quiz, "=", B.pack (show mQuiz), "\n", 
+                                         quizParam, "=", B.pack (show mQuiz), "\n", 
                                          rounds, "=", B.pack (show mNewContent)])
                       modifyResponse (setResponseCode 406)
         Just io -> do isOpen <- liftIO io 
                       if isOpen then
                         modifyResponse (setResponseCode 200)
                       else writeBS "Requested quiz is locked."
-
+    
 newQuiz :: Handler b QuizService ()
 newQuiz = do
-    mQuiz <- getPostParam quiz
+    mQuiz <- getPostParam quizParam
     lbls <- fetchLabels
-    case mQuiz of
-        Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
-        Just name -> do 
-            let uName = B.unpack name
-            success <- liftIO (createOrFail uName)
-            if success 
-             then do
-              liftIO $ (writeLabels name lbls >> 
-                        createSheetWith (groupLabel lbls) 4 uName server defaultEndings)
-              writeBS (B.unwords ["Created quiz", name]) 
-              modifyResponse (setResponseCode 201)
-             else do
-              writeBS (B.unwords ["Quiz", name, "already exists"])
-              modifyResponse (setResponseCode 406)
+    mUser <- getPostParam userParam
+    mSignature <- getPostParam signatureParam
+    verified <- authenticate mUser mSignature [(quizParam, mQuiz)]
+    failIfUnverified verified $
+      case mQuiz of
+          Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
+          Just name -> do 
+              let uName = B.unpack name
+              success <- liftIO (createOrFail uName)
+              if success 
+               then do
+                liftIO $ (writeLabels name lbls >> 
+                          createSheetWith (groupLabel lbls) 4 uName server defaultEndings)
+                writeBS (B.unwords ["Created quiz", name]) 
+                modifyResponse (setResponseCode 201)
+               else do
+                writeBS (B.unwords ["Quiz", name, "already exists"])
+                modifyResponse (setResponseCode 406)
 
 -- todo: better with JSON directly.
 fetchLabels :: Handler b QuizService Labels
@@ -102,7 +111,6 @@ writeLabels :: B.ByteString -> Labels -> IO ()
 writeLabels quizLocation lbls = do
   fullPath <- mkFullPathIO quizLocation labelsFile
   writeFile fullPath (show lbls)
-
 
 updateFile :: String -> String -> IO Bool
 updateFile quizLocation content = do
@@ -126,7 +134,7 @@ updateFile quizLocation content = do
 
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
-    mQuiz <- getPostParam quiz
+    mQuiz <- getPostParam quizParam
     let act = maybe (pure ()) 
                     (\q -> quizzesFolderIO >>= 
                             \quizzesFolder -> 
@@ -165,6 +173,17 @@ mkFullPathIO :: B.ByteString -> FilePath -> IO String
 mkFullPathIO quizLocation filePath = do
   quizzesFolder <- quizzesFolderIO
   return (addSeparator [quizzesFolder, B.unpack quizLocation, filePath])
+
+authenticate :: Maybe B.ByteString
+             -> Maybe B.ByteString
+             -> [(B.ByteString, Maybe B.ByteString)]
+             -> Handler b QuizService Bool
+authenticate mUser mSig params = liftIO (mkVerifiedRequest mUser mSig params)
+
+failIfUnverified :: Bool -> Handler b QuizService () -> Handler b QuizService ()
+failIfUnverified verified handle = 
+  if verified then handle 
+              else writeBS "Authentication failed" >> modifyResponse (setResponseCode 406)
 
 createOrFail :: FilePath -> IO Bool
 createOrFail path = do
