@@ -63,6 +63,12 @@ labels = "labels"
 colors :: B.ByteString
 colors = "colors"
 
+actionParam :: B.ByteString
+actionParam = "action"
+
+createQuiz :: B.ByteString
+createQuiz = "createQuiz"
+
 quizParam :: B.ByteString
 quizParam = "quiz"
 
@@ -101,6 +107,9 @@ ownPageParam = "ownPageLabel"
 
 userParam :: B.ByteString
 userParam = "user"
+
+newUserParam :: B.ByteString
+newUserParam = "newUser"
 
 passwordParam :: B.ByteString
 passwordParam = "pass"
