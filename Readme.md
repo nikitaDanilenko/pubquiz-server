@@ -1,16 +1,23 @@
 # Readme
 
-1. The file `SheetMaker.hs` is a separate script, which can be compiled with
-   ~~~~
-   ghc --make SheetMaker.hs -o sheetMaker
-   ~~~~
-   The resulting script takes as first parameter the full prefix of the online resource where
-   the scores will be visible e.g. `https://www.example.com/`.
-   Every following parameter is interpreted as anonymous group ending.
-   The script then creates QR codes for these addresses,
-   creates a `.tex` file,
-   and compiles this file to obtain the necessary sheets.
-   Afterwards, the QR codes and the standard latex noise is cleaned.
+## Features
 
-   This script requires `pdflatex` and `qrencode`, which are both available free of charge
-   for linux.
+### Usability
+
+1. When you create a new quiz, a sheet for the regular rounds is automatically created.
+   This sheet contains the QR codes to quickly get to the corresponding sites.
+   To get the sheet, you need `pdflatex` with some standard libraries,
+   and `qrencode`.
+   Both tools are available free of charge under Ubuntu.
+   If either of these is missing, you will get a corresponding failure message and 
+   no quiz sheet will be created.
+   If both tools exist, you will get a link to the path on the quiz editing page.
+
+### Technology
+
+1. Sensitive REST requests (i.e. posts) are secured by HMAC.
+   This means that you cannot arbitrarily manipulate the quizzes,
+   because you need a session key, which is only delivered upon login.
+   You can, however, resend a previous update to post an earlier state,
+   if you manage a man in the middle scenario.
+   Still, this might prove difficult, if the connection is encrypted.
