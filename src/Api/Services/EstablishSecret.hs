@@ -48,9 +48,6 @@ createSecret = do
 authentificationError :: B.ByteString
 authentificationError = B.pack "Failed to authenticate: user name or password is wrong."
 
-sessionKeyLabel :: B.ByteString
-sessionKeyLabel = B.pack "sessionKey"
-
 -- | Verifies that the user is known and that the supplied password is correct.
 --   Both values are fetched from a local data storage.
 verifyUser :: UserName -> Password -> IO Bool
