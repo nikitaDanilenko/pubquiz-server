@@ -9,7 +9,9 @@ import Snap.Core                            ( method, Method ( POST ), writeBS, 
 import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
 
 import Api.Services.SavedUser               ( mkAndSaveUser, Status ( .. ) )
-import Constants                            ( userParam, passwordParam, userPath )
+import Api.Services.HashCheck               ( authenticate, failIfUnverified )
+import Constants                            ( userParam, newUserParam, passwordParam, 
+                                              signatureParam, userPath )
 import Utils                                ( (+>) )
 
 data UserService = UserService
@@ -26,8 +28,11 @@ userServiceInit = do
 createUser :: Handler b UserService ()
 createUser = do
   mUser <- getPostParam userParam
+  mNewUser <- getPostParam newUserParam
   mPass <- getPostParam passwordParam
-  case (mUser, mPass) of
+  mSig <- getPostParam signatureParam
+  verified <- authenticate mUser mSig [(newUserParam, mNewUser), (passwordParam, mPass)]
+  failIfUnverified verified $ case (mNewUser, mPass) of
     (Just user, Just pass) -> do
       status <- liftIO (mkAndSaveUser user pass)
       case status of
