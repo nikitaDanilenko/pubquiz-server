@@ -24,7 +24,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               server, quizPath, signatureParam, userParam,
-                                              actionParam, createQuiz, lock )
+                                              actionParam, createQuiz, lock, roundsNumberParam )
 import Pages.GeneratePage                   ( createWith )
 import Labels                               ( Labels, mkLabels, groupLabel )
 import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
@@ -80,6 +80,7 @@ newQuiz :: Handler b QuizService ()
 newQuiz = do
     mQuiz <- getPostParam quizParam
     lbls <- fetchLabels
+    mRounds <- getPostParam roundsNumberParam
     mUser <- getPostParam userParam
     mSignature <- getPostParam signatureParam
     verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just createQuiz)]
@@ -91,8 +92,9 @@ newQuiz = do
               success <- liftIO (createOrFail uName)
               if success 
                then do
+                let rs = maybe 4 (read . B.unpack) mRounds
                 liftIO $ (writeLabels name lbls >> 
-                          createSheetWith (groupLabel lbls) 4 uName server defaultEndings)
+                          createSheetWith (groupLabel lbls) rs uName server defaultEndings)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
                else do
