@@ -17,13 +17,14 @@ import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, m
 import System.Directory                     ( doesFileExist, getDirectoryContents, 
                                               doesDirectoryExist, createDirectory )
 
-import Api.Services.HashCheck               ( mkVerifiedRequest )
+import Api.Services.HashCheck               ( failIfUnverified, authenticate )
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quizParam,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
                                               colors, prefix, roundParam, groupParam,
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
-                                              server, quizPath, signatureParam, userParam )
+                                              server, quizPath, signatureParam, userParam,
+                                              actionParam, createQuiz, lock )
 import Pages.GeneratePage                   ( createWith )
 import Labels                               ( Labels, mkLabels, groupLabel )
 import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
@@ -81,7 +82,7 @@ newQuiz = do
     lbls <- fetchLabels
     mUser <- getPostParam userParam
     mSignature <- getPostParam signatureParam
-    verified <- authenticate mUser mSignature [(quizParam, mQuiz)]
+    verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just createQuiz)]
     failIfUnverified verified $
       case mQuiz of
           Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
@@ -135,12 +136,15 @@ updateFile quizLocation content = do
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
     mQuiz <- getPostParam quizParam
+    mUser <- getPostParam userParam
+    mSignature <- getPostParam signatureParam
+    verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just lock)]
     let act = maybe (pure ()) 
                     (\q -> quizzesFolderIO >>= 
                             \quizzesFolder -> 
                                 writeFile (addSeparator [quizzesFolder, B.unpack q, locked]) "") 
                                           mQuiz
-    liftIO act
+    failIfUnverified verified (liftIO act)
     modifyResponse (setResponseCode 201)
 
 getNonLockedQuizzes :: IO [String]
@@ -173,17 +177,6 @@ mkFullPathIO :: B.ByteString -> FilePath -> IO String
 mkFullPathIO quizLocation filePath = do
   quizzesFolder <- quizzesFolderIO
   return (addSeparator [quizzesFolder, B.unpack quizLocation, filePath])
-
-authenticate :: Maybe B.ByteString
-             -> Maybe B.ByteString
-             -> [(B.ByteString, Maybe B.ByteString)]
-             -> Handler b QuizService Bool
-authenticate mUser mSig params = liftIO (mkVerifiedRequest mUser mSig params)
-
-failIfUnverified :: Bool -> Handler b QuizService () -> Handler b QuizService ()
-failIfUnverified verified handle = 
-  if verified then handle 
-              else writeBS "Authentication failed" >> modifyResponse (setResponseCode 406)
 
 createOrFail :: FilePath -> IO Bool
 createOrFail path = do
