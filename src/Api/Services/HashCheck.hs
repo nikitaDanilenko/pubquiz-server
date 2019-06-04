@@ -3,8 +3,11 @@
 module Api.Services.HashCheck where
 
 import Control.Arrow                        ( second )
+import Control.Monad.IO.Class               ( liftIO )  
 import qualified Data.ByteString.Char8 as B 
 import Data.Maybe                           ( maybe, fromMaybe )
+import Snap.Core                            ( writeBS, modifyResponse, setResponseCode )
+import Snap.Snaplet                         ( Handler )
 
 import Constants                            ( sessionKeysFile, userParam )
 import Utils                                ( mkHashed, readOrCreateBS )
@@ -52,3 +55,14 @@ mkVerifiedRequest :: Maybe B.ByteString
                    -> [(B.ByteString, Maybe B.ByteString)] 
                    -> IO Bool
 mkVerifiedRequest mUser mSig kMvs = verifyHashFromFile (mkAttemptWithMaybe mUser mSig kMvs)
+
+authenticate :: Maybe B.ByteString
+             -> Maybe B.ByteString
+             -> [(B.ByteString, Maybe B.ByteString)]
+             -> Handler b service Bool
+authenticate mUser mSig params = liftIO (mkVerifiedRequest mUser mSig params)
+
+failIfUnverified :: Bool -> Handler b service () -> Handler b service ()
+failIfUnverified verified handle = 
+  if verified then handle 
+              else writeBS "Authentication failed" >> modifyResponse (setResponseCode 406)
