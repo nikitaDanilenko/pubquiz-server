@@ -92,7 +92,7 @@ centerDiv :: String -> String
 centerDiv = tagged "div" . tagged "center"
 
 cssPath :: String
-cssPath = "<link rel='stylesheet' type='text/css' href='style.css'/>"
+cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
 
 pointPage :: Labels -> Color -> Points -> String
 pointPage labels color points =
