@@ -26,8 +26,8 @@ data RoundRating = RoundRating {
 type Points = [RoundRating]
 
 score :: Points -> (Double, Double)
-score points = 
-  foldr (\rating (o, r) -> ((ownPoints &&& reachablePoints) >>> ((+ o) *** (+ r))) rating) (0, 0) points
+score ps = 
+  foldr (\rating (o, r) -> ((ownPoints &&& reachablePoints) >>> ((+ o) *** (+ r))) rating) (0, 0) ps
 
 mkSum :: Points -> String
 mkSum = score >>> uncurry (\own reachable -> concat [prettyDouble own, "/", prettyDouble reachable])
@@ -50,8 +50,8 @@ simplePoints = map ownPoints . points
 data Round = Round { name :: String, number :: Int, possible :: Double, groupRatings :: [GroupRating] }
 
 fromIndex :: [Code] -> String -> Int -> Double -> [Double] -> Round
-fromIndex groupCodes name number possible points = Round name number possible ratings where
-  ratings = zipWith3 (\i c p -> (GroupKey i c, p)) [1 .. ] groupCodes points
+fromIndex groupCodes nm n maxPossible ps = Round nm n maxPossible ratings where
+  ratings = zipWith3 (\i c p -> (GroupKey i c, p)) [1 .. ] groupCodes ps
 
 type Code = String
 
@@ -68,12 +68,12 @@ maxInRound :: Round -> Double
 maxInRound = snd . maximumBy (comparing snd) . groupRatings
 
 roundRating :: Round -> Map GroupKey Points
-roundRating round = fromList ratings where
-  n = number round
-  reachable = possible round
-  maxReached = maxInRound round
-  gs = groupRatings round
-  ratings = map (second (pure . RoundRating n maxReached reachable)) gs
+roundRating rd = fromList ratings where
+  n = number rd
+  reachable = possible rd
+  maxAny = maxInRound rd
+  gs = groupRatings rd
+  ratings = map (second (pure . RoundRating n maxAny reachable)) gs
  
 mkGroups :: [Round] -> [Group]
 mkGroups = map (uncurry Group) . toList . unionsWith (++) . map roundRating
@@ -95,12 +95,12 @@ cssPath :: String
 cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
 
 pointPage :: Labels -> Color -> Points -> String
-pointPage labels color points =
+pointPage labels color ps =
   "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n" ++
   (tagged "html" . tagged "head") 
     (tagged "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath) ++
-  centerDiv (h1With coloured (mkSum points)) ++
-  centerDiv (mkTable labels points) ++
+  centerDiv (h1With coloured (mkSum ps)) ++
+  centerDiv (mkTable labels ps) ++
   centerDiv (mkButton (backToChartView labels)) ++
   "</body></html>" where
     coloured = "style=\"color:" ++ color ++ "\""
@@ -142,11 +142,11 @@ tableHeader labels =
   )
 
 mkTable :: Labels -> Points -> String
-mkTable labels points = 
+mkTable labels ps = 
   concat [
   openTable, 
   tableHeader labels, 
-  concatMap mkTableLine points,
+  concatMap mkTableLine ps,
   closeTable] where
     (openTable, closeTable) = tag "table"
 
@@ -187,14 +187,14 @@ defaultColors = cycle [
   ]
 
 toDataset :: String -> String -> Group -> Color -> String
-toDataset round group g c =
+toDataset rd group g c =
   "{" ++ "label: '" ++ unwords [group, show (groupNumber (groupKey g))] ++ "'" ++
   "," ++ "borderColor: " ++ show c ++
   "," ++ "backgroundColor: " ++ show c ++
   "," ++ "fill: " ++ "false" ++
   "," ++ "data: [" ++ intercalate ","
                             (zipWith (\x y -> "{ x: '" ++ x ++ "' , y: '" ++ show y ++ "'}")
-                                     (roundListInf round)
+                                     (roundListInf rd)
                                      (tail (scanl (+) 0 (simplePoints g)))) ++
   "]}"
 
@@ -205,7 +205,7 @@ roundList roundName n = intercalate "," (map enclose (take n (roundListInf round
 
 roundListInf :: String -> [String]
 roundListInf roundName = 
-  zipWith (\r i -> concat [r, " ", show i]) (repeat roundName) [1 ..]
+  zipWith (\r i -> concat [r, " ", show i]) (repeat roundName) [(1 :: Int) ..]
 
 graphPage :: Labels -> Int -> [Group] -> [Color] -> String
 graphPage labels rounds groups colors =
@@ -281,13 +281,13 @@ parseCodesAndRounds _ [] = ([], [])
 parseCodesAndRounds roundName text = (codes, rounds) where
   (l : ls) = lines text
   codes = words l
-  points = map readPoints ls
-  indexedPoints = zip [1 ..] points
+  pts = map readPoints ls
+  indexedPoints = zip [1 ..] pts
   rounds = map (\(i, (total, ps)) -> fromIndex codes roundName i total ps) indexedPoints
 
 readCodesAndRounds :: String -> String -> IO ([String], [Round])
-readCodesAndRounds roundsPath roundLabel =
-  fmap (parseCodesAndRounds roundLabel) (readFile roundsPath) `catch` handle where
+readCodesAndRounds roundsPath rdLabel =
+  fmap (parseCodesAndRounds rdLabel) (readFile roundsPath) `catch` handle where
     handle :: IOException -> IO ([String], [Round]) 
     handle e = putStrLn (show e) >> 
                putStrLn "Unexpected format or missing file. No output generated." >> 
