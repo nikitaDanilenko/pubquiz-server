@@ -11,8 +11,8 @@ import Snap.Util.CORS                       ( applyCORS, defaultOptions )
 import System.Directory                     ( doesFileExist )
 import System.Random                        ( newStdGen, randomRs )
 
-readOrCreate :: FilePath -> IO String
-readOrCreate filePath = do
+readOrEmpty :: FilePath -> IO String
+readOrEmpty filePath = do
     exists <- doesFileExist filePath
     if exists then readFile filePath else return ""
 
