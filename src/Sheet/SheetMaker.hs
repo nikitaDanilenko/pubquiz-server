@@ -17,7 +17,7 @@ createSheetWith groupLabel rounds prefix server endings = do
     quizzesFolder <- quizzesFolderIO
     currentDir <- getCurrentDirectory
     let fullPath = addSeparator [quizzesFolder, prefix]
-        fullServerPath = addSeparator [server, simplify quizzesFolder, prefix, ""]
+        fullServerPath = addSeparator [server, prefix, ""]
         sht = mkSheet groupLabel rounds
         sheetFile = mkSheetFile prefix
         texFile = concat [sheetFile, ".tex"]
