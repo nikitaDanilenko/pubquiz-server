@@ -23,7 +23,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               colors, prefix, roundParam, groupParam,
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
-                                              server, quizPath, signatureParam, userParam,
+                                              serverQuizPathIO, quizPath, signatureParam, userParam,
                                               actionParam, createQuiz, lock, roundsNumberParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
@@ -94,9 +94,10 @@ newQuiz = do
               if success 
                then do
                 let rs = maybe 4 (read . B.unpack) mRounds
-                liftIO $ (writeLabels name lbls >> 
-                          createSheetWith (groupLabel lbls) rs uName server defaultEndings >>
-                          createFrontPage)
+                liftIO (do writeLabels name lbls 
+                           serverPath <- serverQuizPathIO
+                           createSheetWith (groupLabel lbls) rs uName serverPath defaultEndings
+                           createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
                else do
