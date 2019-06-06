@@ -15,6 +15,8 @@ import Prelude hiding         ( lookup )
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 groupLabel, defaultLabels, unEscape )
+import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
+                                mkButton, pageHeader )
 
 data RoundRating = RoundRating { 
   roundNumber :: Int, 
@@ -88,39 +90,22 @@ writeGraphPage prefix labels rounds groups colors =
   writeFile (prefix ++ "index.html")
             (graphPage labels rounds groups colors)
 
-centerDiv :: String -> String
-centerDiv = tagged "div" . tagged "center"
-
 cssPath :: String
 cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
 
 pointPage :: Labels -> Color -> Points -> String
 pointPage labels color ps =
-  "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n" ++
-  (tagged "html" . tagged "head") 
-    (tagged "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath) ++
-  centerDiv (h1With coloured (mkSum ps)) ++
-  centerDiv (mkTable labels ps) ++
-  centerDiv (mkButton (backToChartView labels)) ++
-  "</body></html>" where
-    coloured = "style=\"color:" ++ color ++ "\""
-
-h1 :: String -> String
-h1 = tagged "h1"
-
-h1With :: String -> String -> String
-h1With attrs text = concat [openWith, text, close] where
-  (_, close) = tag "h1"
-  openWith = concat ["<h1 ", attrs, ">"]
-
-tableCell :: String -> String
-tableCell = tagged "td"
-
-tableRow :: String -> String
-tableRow  = (++ "\n") . tagged "tr"
-
-headerCell :: String -> String
-headerCell = tagged "th"
+  pageHeader ++
+    tagged "html" ( 
+      tagged "head" 
+             (tagged "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath) ++
+      tagged "body" (
+        centerDiv (h1With coloured (mkSum ps)) ++
+        centerDiv (mkTable labels ps) ++
+        centerDiv (mkButton (backToChartView labels))
+      )
+    )
+  where coloured = "style=\"color:" ++ color ++ "\""
 
 mkTableLine :: RoundRating -> String
 mkTableLine rating =   
@@ -149,16 +134,6 @@ mkTable labels ps =
   concatMap mkTableLine ps,
   closeTable] where
     (openTable, closeTable) = tag "table"
-
-tag :: String -> (String, String)
-tag t = (concat ["<", t, ">"], concat ["</", t, ">"])
-
-tagged :: String -> String -> String
-tagged t text = concat [open, text, close] where
-  (open, close) = tag t
-
-mkButton :: String -> String
-mkButton text = concat ["<a href=\"./index.html\" class=\"button\">", text, "</a>"]
 
 type Color = String
 
