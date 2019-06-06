@@ -22,20 +22,21 @@ userFile = addSeparator [".", dbFolder, "users.txt"]
 configFile :: String
 configFile = "./config.txt"
 
-quizzesFolderIO :: IO String
-quizzesFolderIO = do
-        text <- readFile configFile `catch` noConfigFile
-        let settings = map splitOnSetter (lines text)
-            folder = fromMaybe defaultFolder (lookup "quizzesFolder" settings)
-        return folder
+readFromConfigFile :: String -> String -> IO String
+readFromConfigFile param dft = do
+  text <- readFile configFile `catch` noConfigFile
+  let settings = map splitOnSetter (lines text)
+      path = fromMaybe dft (lookup param settings)
+  return path
 
-    where defaultFolder = addSeparator [".", "quizzes"]
+quizzesFolderIO :: IO String
+quizzesFolderIO = readFromConfigFile "quizzesFolder" (addSeparator [".", "quizzes"])
           
-          noConfigFile :: IOException -> IO String
-          noConfigFile _ = do 
-            putStrLn "No config file found. This should not happen. Created an empty one."
-            writeFile configFile ""
-            return ""
+noConfigFile :: IOException -> IO String
+noConfigFile _ = do 
+  putStrLn "No config file found. This should not happen. Created an empty one."
+  writeFile configFile ""
+  return ""
 
 splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
@@ -121,6 +122,9 @@ signatureParam = "signature"
 
 server :: String
 server = "https://www.danilenko.io"
+
+serverQuizPathIO :: IO String
+serverQuizPathIO = readFromConfigFile "serverRelativeQuizPath" (addSeparator [".", "quizzes"])
 
 apiPath :: T.Text
 apiPath = "api"
