@@ -26,6 +26,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               server, quizPath, signatureParam, userParam,
                                               actionParam, createQuiz, lock, roundsNumberParam )
 import Pages.GeneratePage                   ( createWith )
+import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, mkLabels, groupLabel )
 import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
 import Utils                                ( (+>) )
@@ -94,7 +95,8 @@ newQuiz = do
                then do
                 let rs = maybe 4 (read . B.unpack) mRounds
                 liftIO $ (writeLabels name lbls >> 
-                          createSheetWith (groupLabel lbls) rs uName server defaultEndings)
+                          createSheetWith (groupLabel lbls) rs uName server defaultEndings >>
+                          createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
                else do
@@ -153,14 +155,15 @@ getNonLockedQuizzes :: IO [String]
 getNonLockedQuizzes = do
     quizzesFolder <- liftIO quizzesFolderIO
     quizzes <- getDirectoryContents quizzesFolder
-    let proper = filter (not . (\x -> x `elem` [".", ".."])) quizzes -- Drops "." and "..".
-    filterM isQuizOpen proper
+    let withFull = map (\q -> (q, addSeparator [quizzesFolder, q])) quizzes
+    qs <- filterM (\ff -> liftA2 (&&) (areLabelsPresent (snd ff)) (isQuizOpen (snd ff))) withFull
+    return (map fst qs)
+
+areLabelsPresent :: String -> IO Bool
+areLabelsPresent folder = doesFileExist (addSeparator [folder, labelsFile])
 
 isQuizOpen :: String -> IO Bool
-isQuizOpen folder = do
-    quizzesFolder <- quizzesFolderIO
-    ex <- doesFileExist (addSeparator [quizzesFolder, folder, locked])
-    return (not ex)
+isQuizOpen folder = fmap not (doesFileExist (addSeparator [folder, locked]))
 
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
 readQuizFile quizLocation = (do 
