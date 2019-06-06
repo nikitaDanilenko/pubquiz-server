@@ -7,7 +7,7 @@ import Control.Exception.Base               ( IOException )
 import qualified Data.ByteString.Char8 as B ( ByteString, pack, concat, unpack )
 
 import Constants                            ( userFile, saltSize )
-import Utils                                ( readOrCreate, randomStringIO, mkHashed, Hashed )
+import Utils                                ( readOrEmpty, randomStringIO, mkHashed, Hashed )
 
 type UserName = B.ByteString
 type Password = B.ByteString
@@ -33,7 +33,7 @@ mkUser user pass = do
 
 mkAndSaveUser :: UserName -> Password -> IO Status
 mkAndSaveUser user pass = do
-    text <- readOrCreate userFile
+    text <- readOrEmpty userFile
     let ls = lines text
         users = map (read :: String -> SavedUser) ls
         exists = any (\u -> userName u == user) users
