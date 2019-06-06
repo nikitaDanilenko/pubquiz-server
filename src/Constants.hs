@@ -10,14 +10,14 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T             ( Text )
 import System.FilePath                      ( pathSeparator )
 
+dbFolder :: String
+dbFolder = "db"
+
 sessionKeysFile :: String
-sessionKeysFile = addSeparator [".", "db", "sessionKeys.txt"]
+sessionKeysFile = addSeparator [".", dbFolder, "sessionKeys.txt"]
 
 userFile :: String
-userFile = addSeparator [".", "db", "users.txt"]
-
-secretFile :: String
-secretFile = addSeparator [".", "db", "secrets.txt"]
+userFile = addSeparator [".", dbFolder, "users.txt"]
 
 configFile :: String
 configFile = "./config.txt"
@@ -36,7 +36,6 @@ quizzesFolderIO = do
             putStrLn "No config file found. This should not happen. Created an empty one."
             writeFile configFile ""
             return ""
-
 
 splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
