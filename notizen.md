@@ -72,3 +72,8 @@
    Erst danach kann man mit `sudo cabal install -fopenssl` das eigentliche Projekt bauen.
    Falls es mit SSL sofort nach dem Start beendet, heißt das wahrscheinlich,
    dass genau die SSL-Bibliothek fehlt.
+
+1. Wichtig: Es reicht aber nach einem Update einfach nur `sudo cabal install` zu machen.
+   Damit wird im Normalfall bereits alles Neue installiert und man hat keinerlei zusätzlichen
+   Aufwand.
+   Für vollständige Neuinstallationen gibt es jetzt allerdings auch ein Skript auf dem Server.
