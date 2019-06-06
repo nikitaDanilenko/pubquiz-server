@@ -24,7 +24,8 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               serverQuizPathIO, quizPath, signatureParam, userParam,
-                                              actionParam, createQuiz, lock, roundsNumberParam )
+                                              actionParam, createQuiz, lock, roundsNumberParam,
+                                              server )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, mkLabels, groupLabel )
@@ -96,6 +97,7 @@ newQuiz = do
                 let rs = maybe 4 (read . B.unpack) mRounds
                 liftIO (do writeLabels name lbls 
                            serverPath <- serverQuizPathIO
+                           let fullServerPath = addSeparator [server, serverPath]
                            createSheetWith (groupLabel lbls) rs uName serverPath defaultEndings
                            createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 

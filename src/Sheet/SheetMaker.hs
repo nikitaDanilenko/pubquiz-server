@@ -39,10 +39,6 @@ createSheetWith groupLabel rounds prefix server endings = do
         noPDFLatex :: IOException -> IO ()
         noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
 
-simplify :: FilePath -> FilePath
-simplify ('.' : '/' : actualPath) = actualPath
-simplify other                    = other
-
 defaultEndings :: [Ending]
 defaultEndings = [
         "sdig1o", "aikp25", "vzt35d", "fs7g5r", "9hf347",
