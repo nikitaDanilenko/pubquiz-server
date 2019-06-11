@@ -30,14 +30,21 @@ createSheetWith groupLabel rounds prefix server endings = do
             if b then createPDF texFile endings `catch` noPDFLatex else return ()
 
     trySheet
-    cleanImages endings
-    cleanLatex sheetFile
+    cleanImages endings `catch` noRm
+    cleanLatex sheetFile `catch` noRm
     setCurrentDirectory currentDir
   where noQREncode :: IOException -> IO Bool
         noQREncode _ = putStrLn "qrencode not found. No sheet created." >> return False
 
         noPDFLatex :: IOException -> IO ()
         noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
+
+        noRm :: IOException -> IO ()
+        noRm _ = putStrLn (concat ["rm not found.",
+                                   "Files have not been cleaned up.",
+                                   "You may want to clean up the folder for the quiz",
+                                   prefix,
+                                   "manually."])
 
 defaultEndings :: [Ending]
 defaultEndings = [
