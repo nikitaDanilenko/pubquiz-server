@@ -71,7 +71,8 @@ a.quizLinkButton {
 
   display: block;
   float: center;
-  width: 50%;
+  text-align: center;
+  width: 35%;
 
   text-decoration: none;
   font-family: arial, sans-serif;
