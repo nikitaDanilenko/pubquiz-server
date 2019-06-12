@@ -1,4 +1,4 @@
-module Sheet.SheetMaker ( createSheetWith, defaultEndings ) where
+module Sheet.SheetMaker ( createSheetWith, defaultEndings, Ending ) where
 
 import Control.Exception       ( catch )
 import Control.Exception.Base  ( IOException )
