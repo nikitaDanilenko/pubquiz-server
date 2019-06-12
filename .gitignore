@@ -3,3 +3,6 @@ cabal.sandbox.config
 
 brokenSB/*
 linuxSB/*
+quizzes/*
+
+!quizzes/style.css
