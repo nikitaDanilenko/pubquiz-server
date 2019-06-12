@@ -120,6 +120,9 @@ passwordParam = "pass"
 signatureParam :: B.ByteString
 signatureParam = "signature"
 
+numberOfGroupsParam :: B.ByteString
+numberOfGroupsParam = "numberOfGroups"
+
 server :: String
 server = "https://www.danilenko.io"
 
