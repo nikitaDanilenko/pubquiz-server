@@ -25,12 +25,12 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               serverQuizPathIO, quizPath, signatureParam, userParam,
                                               actionParam, createQuiz, lock, roundsNumberParam,
-                                              server )
+                                              server, numberOfGroupsParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, mkLabels, groupLabel )
-import Sheet.SheetMaker                     ( createSheetWith, defaultEndings )
-import Utils                                ( (+>) )
+import Sheet.SheetMaker                     ( createSheetWith, Ending )
+import Utils                                ( (+>), randomDistinctAlphaNumeric )
 
 data QuizService = QuizService
 
@@ -85,20 +85,24 @@ newQuiz = do
     mRounds <- getPostParam roundsNumberParam
     mUser <- getPostParam userParam
     mSignature <- getPostParam signatureParam
-    verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just createQuiz)]
+    mNumberOfGroups <- getPostParam numberOfGroupsParam
+    verified <- authenticate mUser mSignature [(quizParam, mQuiz),
+                                               (actionParam, Just createQuiz)]
     failIfUnverified verified $
       case mQuiz of
           Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
           Just name -> do 
               let uName = B.unpack name
-              success <- liftIO (createOrFail uName)
+                  gs = maybe 20 (read . B.unpack) mNumberOfGroups
+              endings <- liftIO (randomDistinctAlphaNumeric gs 6)
+              success <- liftIO (createOrFail uName endings)
               if success 
                then do
                 let rs = maybe 4 (read . B.unpack) mRounds
                 liftIO (do writeLabels name lbls 
                            serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
-                           createSheetWith (groupLabel lbls) rs uName fullServerPath defaultEndings
+                           createSheetWith (groupLabel lbls) rs uName fullServerPath endings
                            createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
@@ -186,14 +190,14 @@ mkFullPathIO quizLocation filePath = do
   quizzesFolder <- quizzesFolderIO
   return (addSeparator [quizzesFolder, B.unpack quizLocation, filePath])
 
-createOrFail :: FilePath -> IO Bool
-createOrFail path = do
+createOrFail :: FilePath -> [Ending] -> IO Bool
+createOrFail path endings = do
     quizzesFolder <- quizzesFolderIO
     let fullPath = addSeparator [quizzesFolder, path]
     b <- doesDirectoryExist fullPath
     if b then return False else do
         createDirectory fullPath
-        writeFile (addSeparator [fullPath, roundsFile]) (unwords defaultEndings)
+        writeFile (addSeparator [fullPath, roundsFile]) (unwords endings)
         return True
 
 quizServiceInit :: SnapletInit b QuizService
