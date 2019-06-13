@@ -6,6 +6,7 @@ import System.Directory        ( setCurrentDirectory, getCurrentDirectory )
 import System.Process          ( callProcess )
      
 import Constants               ( quizzesFolderIO, addSeparator )
+import Labels                  ( unEscape )
 import Sheet.Tex               ( mkSheet )
 
 type Prefix = String
@@ -18,7 +19,7 @@ createSheetWith groupLabel rounds prefix server endings = do
     currentDir <- getCurrentDirectory
     let fullPath = addSeparator [quizzesFolder, prefix]
         fullServerPath = addSeparator [server, prefix, ""]
-        sht = mkSheet groupLabel rounds
+        sht = mkSheet (safeTeX groupLabel) rounds
         sheetFile = mkSheetFile prefix
         texFile = concat [sheetFile, ".tex"]
 
@@ -88,3 +89,27 @@ cleanLatex sheetFile = callProcess "rm" [concat [sheetFile, ".log"],
 
 cleanImages :: [Ending] -> IO ()
 cleanImages es = callProcess "rm" (map (++ ".png") es)
+
+safeTeX :: String -> String
+safeTeX = concatMap safeTeXChar . unEscape
+
+safeTeXChar :: Char -> String
+safeTeXChar c = case c of
+    'ä' -> "\\\"a"
+    'ö' -> "\\\"o"
+    'ü' -> "\\\"u"
+    'Ä' -> "\\\"A"
+    'Ö' -> "\\\"O"
+    'Ü' -> "\\\"U"
+    'ß' -> "\\ss{}"
+    '\\' -> "\\textbackslash"
+    '~' -> "\\textasciitilde"
+    '&' -> "\\&"
+    '%' -> "\\%"
+    '$' -> "\\$"
+    '#' -> "\\#"
+    '_' -> "\\_"
+    '{' -> "\\{"
+    '}' -> "\\}"
+    '^' -> "\\textasciicircum"
+    any   -> [any]
