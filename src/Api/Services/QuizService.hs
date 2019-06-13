@@ -76,7 +76,7 @@ updateQuiz = do
         Just io -> do isOpen <- liftIO io 
                       if isOpen then
                         modifyResponse (setResponseCode 200)
-                      else writeBS "Requested quiz is locked."
+                      else writeBS "Requested quiz is locked or the update contains invalid symbols."
     
 newQuiz :: Handler b QuizService ()
 newQuiz = do
@@ -107,7 +107,9 @@ newQuiz = do
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
                else do
-                writeBS (B.unwords ["Quiz", name, "already exists"])
+                writeBS (B.unwords ["Quiz", 
+                                    name, 
+                                    "already exists or its labels contain invalid symbols"])
                 modifyResponse (setResponseCode 406)
 
 -- todo: better with JSON directly.
@@ -127,7 +129,9 @@ writeLabels quizLocation lbls = do
 updateFile :: String -> String -> IO Bool
 updateFile quizLocation content = do
     isOpen <- isQuizOpen quizLocation
-    if isOpen then do
+    if isOpen && 
+       isValidStringWith validInternalQuizNameChars quizLocation && 
+       isValidStringWith validRoundsChars content then do
         quizzesFolder <- quizzesFolderIO
         let mkFull :: String -> String
             mkFull relative = addSeparator [quizzesFolder, quizLocation, relative]
@@ -195,10 +199,19 @@ createOrFail path endings = do
     quizzesFolder <- quizzesFolderIO
     let fullPath = addSeparator [quizzesFolder, path]
     b <- doesDirectoryExist fullPath
-    if b then return False else do
+    if b || not (isValidStringWith validInternalQuizNameChars path) then return False else do
         createDirectory fullPath
         writeFile (addSeparator [fullPath, roundsFile]) (unwords endings)
         return True
+
+validInternalQuizNameChars :: [Char]
+validInternalQuizNameChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ "-_"
+
+validRoundsChars :: [Char]
+validRoundsChars = validInternalQuizNameChars ++ " .,\n:"
+
+isValidStringWith :: [Char] -> String -> Bool
+isValidStringWith vcs = all (\c -> c `elem` vcs)
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit = do
