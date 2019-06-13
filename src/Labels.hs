@@ -33,7 +33,6 @@ htmlSafeChar 'ü' = "&uuml;"
 htmlSafeChar 'ß' = "&szlig;"
 htmlSafeChar '<' = "&lt;"
 htmlSafeChar '>' = "&gt;"
-htmlSafeChar '\\' = "/"
 htmlSafeChar '\n' = "&nbsp;"
 htmlSafeChar c = [c]
 
@@ -62,6 +61,9 @@ unEscape str = prefix ++ unEscape rest where
     '&' : 'O' : 'u' : 'm' : 'l' : ';' : cs       -> ("Ö", cs)
     '&' : 'U' : 'u' : 'm' : 'l' : ';' : cs       -> ("Ü", cs)
     '&' : 's' : 'z' : 'l' : 'i' : 'g' : ';' : cs -> ("ß", cs)
+    '&' : 'l' : 't' : ';' : cs                   -> ("<", cs)
+    '&' : 'g' : 't' : ';' : cs                   -> ("g", cs)
+    '&' : 'n' : 'b' : 's' : 'p' : ';' : cs       -> ("\n", cs)
     c : cs                                       -> ([c], cs)
     []                                           -> ([], [])
 
