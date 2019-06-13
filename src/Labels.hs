@@ -31,6 +31,10 @@ htmlSafeChar 'ö' = "&ouml;"
 htmlSafeChar 'ä' = "&auml;"
 htmlSafeChar 'ü' = "&uuml;"
 htmlSafeChar 'ß' = "&szlig;"
+htmlSafeChar '<' = "&lt;"
+htmlSafeChar '>' = "&gt;"
+htmlSafeChar '\\' = "/"
+htmlSafeChar '\n' = "&nbsp;"
 htmlSafeChar c = [c]
 
 doubleEscape :: String -> String
@@ -51,15 +55,15 @@ unEscape :: String -> String
 unEscape [] = []
 unEscape str = prefix ++ unEscape rest where
   (prefix, rest) = case str of
-    '&' : 'a' : 'u' : 'm' : 'l' : ';' : rest       -> ("ä", rest)
-    '&' : 'o' : 'u' : 'm' : 'l' : ';' : rest       -> ("ö", rest)
-    '&' : 'u' : 'u' : 'm' : 'l' : ';' : rest       -> ("ü", rest)
-    '&' : 'A' : 'u' : 'm' : 'l' : ';' : rest       -> ("Ä", rest)
-    '&' : 'O' : 'u' : 'm' : 'l' : ';' : rest       -> ("Ö", rest)
-    '&' : 'U' : 'u' : 'm' : 'l' : ';' : rest       -> ("Ü", rest)
-    '&' : 's' : 'z' : 'l' : 'i' : 'g' : ';' : rest -> ("ß", rest)
-    c : cs                                         -> ([c], cs)
-    []                                             -> ([], [])
+    '&' : 'a' : 'u' : 'm' : 'l' : ';' : cs       -> ("ä", cs)
+    '&' : 'o' : 'u' : 'm' : 'l' : ';' : cs       -> ("ö", cs)
+    '&' : 'u' : 'u' : 'm' : 'l' : ';' : cs       -> ("ü", cs)
+    '&' : 'A' : 'u' : 'm' : 'l' : ';' : cs       -> ("Ä", cs)
+    '&' : 'O' : 'u' : 'm' : 'l' : ';' : cs       -> ("Ö", cs)
+    '&' : 'U' : 'u' : 'm' : 'l' : ';' : cs       -> ("Ü", cs)
+    '&' : 's' : 'z' : 'l' : 'i' : 'g' : ';' : cs -> ("ß", cs)
+    c : cs                                       -> ([c], cs)
+    []                                           -> ([], [])
 
 htmlSafeString :: String -> String
 htmlSafeString = doubleEscape . concatMap htmlSafeChar
