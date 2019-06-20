@@ -9,7 +9,7 @@ mkSheet groupLabel n = concat [
     grp,
     centre,
     perGroup n,
-    footer 
+    footer groupLabel
     ]
     where grp = unwords ["    {\\Huge", 
                          groupLabel, 
@@ -59,14 +59,22 @@ centre = unlines [
     "\\mkHeader{#1}{#2}"
     ]
     
+simpleHeader :: String -> String
+simpleHeader groupLabel = unlines [
+        "\\newcommand{\\simpleHeader}[1]{%",
+        unwords ["    {\\Huge", groupLabel, "#1:}"],
+        "}"
+    ]
 
 perGroup :: Int -> String
-perGroup n = unlines (map (\ts -> unlines (ts ++ ["\\newpage"])) 
-                          (chunksOf 2 (replicate n "\\mkTable")))
+perGroup n = unlines ((intercalate ["\\newpage", "\\simpleHeader{#1}"] 
+                                   (chunksOf 2 (replicate n "\\mkTable"))) ++ ["\\newpage"])
 
-footer :: String
-footer = unlines [
+footer :: String -> String
+footer groupLabel = unlines [
     "}",
+    "",
+    simpleHeader groupLabel,
     "",
     "\\begin{document}",
     "",
