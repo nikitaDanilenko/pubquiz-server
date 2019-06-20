@@ -23,7 +23,7 @@ data RoundRating = RoundRating {
   maxReached :: Double, 
   reachablePoints :: Double, 
   ownPoints :: Double
-}
+} deriving Show
 
 type Points = [RoundRating]
 
@@ -45,11 +45,16 @@ type SimplePoints = [Double]
 type GroupRating = (GroupKey, Double)
 
 data Group = Group { groupKey :: GroupKey, points :: Points }
+  deriving Show
 
 simplePoints :: Group -> SimplePoints
 simplePoints = map ownPoints . points
 
 data Round = Round { name :: String, number :: Int, possible :: Double, groupRatings :: [GroupRating] }
+  deriving Show
+
+zeroRound :: String -> Int -> Round
+zeroRound nm nmb = Round nm nmb 0 [] 
 
 fromIndex :: [Code] -> String -> Int -> Double -> [Double] -> Round
 fromIndex groupCodes nm n maxPossible ps = Round nm n maxPossible ratings where
@@ -58,6 +63,7 @@ fromIndex groupCodes nm n maxPossible ps = Round nm n maxPossible ratings where
 type Code = String
 
 data GroupKey = GroupKey { groupNumber :: Int, code :: Code }
+  deriving Show
 
 instance Eq GroupKey where
   (==) = (==) `on` groupNumber
@@ -272,12 +278,19 @@ splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
   (key, preValue) = span ((/=) '=') str
 
+-- Creates groups with proper keys, but all points set to empty.
+mkEmptyGroups :: [Code] -> [Group]
+mkEmptyGroups = map (\(i, c) -> Group (GroupKey i c) []) . zip [1 ..]
+
 createWith :: [(String, String)] -> IO ()
 createWith associations = do
     labels <- readLabels labelsPath
     (codes, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
     colors <- readColors colorsPath
-    let groups = mkGroups rounds
+    let groupsCandidates = mkGroups rounds
+        -- If there are no rounds, we create groups that have not played any rounds yet.
+        -- This facilitates the initial creation of the point pages.
+        groups = if null groupsCandidates then mkEmptyGroups codes else groupsCandidates
         n = length rounds
     writePointPages prefix labels groups colors
     writeGraphPage prefix labels n groups colors
