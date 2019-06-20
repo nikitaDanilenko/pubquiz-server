@@ -103,7 +103,8 @@ newQuiz = do
                            serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
                            createSheetWith (groupLabel lbls) rs uName fullServerPath endings
-                           createFrontPage)
+                           createFrontPage
+                           updateFile (B.unpack name) (unwords endings))
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
                else do
