@@ -14,9 +14,9 @@ import Prelude hiding         ( lookup )
 
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
-                                groupLabel, defaultLabels, unEscape )
+                                groupLabel, defaultLabels, unEscape, viewPrevious )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
-                                mkButton, pageHeader )
+                                mkButton, mkButtonTo, pageHeader )
 
 data RoundRating = RoundRating { 
   roundNumber :: Int, 
@@ -240,6 +240,9 @@ graphPage labels rounds groups colors =
   \     ticks: { beginAtZero : true } } ]\
   \ }}});};</script>\
   \ <div id = 'copyright'>Powered by <a href='https://www.chartjs.org'>Chart.js</a></div>\
+  \ <div id ='allQuizzes'>"
+  ++ mkButtonTo "../index.html" (viewPrevious labels)
+  ++ "</div> \
   \</body></html>"
 
 readLabels :: String -> IO Labels
