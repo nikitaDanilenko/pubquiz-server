@@ -98,3 +98,7 @@ a.quizLinkButton {
 #copyright a:visited {
   color: rgb(80, 80, 80);
 }
+
+#allQuizzes {
+  text-align: center;
+}
