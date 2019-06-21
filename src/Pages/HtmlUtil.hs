@@ -32,6 +32,15 @@ tagged :: String -> String -> String
 tagged t text = concat [open, text, close] where
   (open, close) = tag t
 
+taggedH :: String -> String -> String
+taggedH t text = unlines [open, text, close] where
+  (open, close) = tag t
+
+taggedWith :: String -> String -> String -> String
+taggedWith attrs t text = unlines [open, text, close] where
+    open = concat ["<", t, " ", attrs, ">"]
+    close = concat ["</", t, ">"]
+
 mkButton :: String -> String
 mkButton = mkButtonTo "./index.html"
 
