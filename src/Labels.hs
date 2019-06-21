@@ -1,6 +1,6 @@
 module Labels ( Labels, defaultLabels, mkLabels, groupLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
-                htmlSafeString, mainLabel, roundLabel, unEscape ) where
+                htmlSafeString, mainLabel, roundLabel, unEscape, viewPrevious ) where
 
 data Labels = Labels { 
   roundLabel :: String,
@@ -12,6 +12,9 @@ data Labels = Labels {
   mainLabel :: String,
   ownPageLabel :: String
 } deriving (Show, Read)
+
+viewPrevious :: Labels -> String
+viewPrevious _ = "Frühere Quizzes"
 
 mkLabels :: String -> String -> String -> String -> String -> String -> String -> String -> Labels
 mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl =
