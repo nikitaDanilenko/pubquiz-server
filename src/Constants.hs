@@ -108,6 +108,9 @@ mainParam = "mainLabel"
 ownPageParam :: B.ByteString
 ownPageParam = "ownPageLabel"
 
+viewQuizzesParam :: B.ByteString
+viewQuizzesParam = "viewQuizzesLabel"
+
 userParam :: B.ByteString
 userParam = "user"
 
