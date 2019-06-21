@@ -10,14 +10,21 @@ data Labels = Labels {
   maxReachableLabel :: String,
   backToChartView :: String,
   mainLabel :: String,
-  ownPageLabel :: String
+  ownPageLabel :: String,
+  viewPrevious :: String
 } deriving (Show, Read)
 
-viewPrevious :: Labels -> String
-viewPrevious _ = "Frühere Quizzes"
-
-mkLabels :: String -> String -> String -> String -> String -> String -> String -> String -> Labels
-mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl =
+mkLabels :: String
+         -> String
+         -> String
+         -> String
+         -> String
+         -> String
+         -> String
+         -> String
+         -> String
+         -> Labels
+mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl viewPreviousLbl =
     Labels {
         roundLabel = htmlSafeString roundLbl,
         groupLabel = htmlSafeString groupLbl,
@@ -26,7 +33,8 @@ mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl ma
         maxReachableLabel = htmlSafeString maxReachableLbl,
         backToChartView = htmlSafeString backLbl,
         mainLabel = htmlSafeString mainLbl,
-        ownPageLabel = htmlSafeString ownPageLbl
+        ownPageLabel = htmlSafeString ownPageLbl,
+        viewPrevious = htmlSafeString viewPreviousLbl
     } 
 
 htmlSafeChar :: Char -> String
@@ -83,3 +91,4 @@ defaultLabels = mkLabels
    "Gesamtansicht"
    "Pubquiz"
    "Eigene Punkte"
+   "Alle Quizzes"
