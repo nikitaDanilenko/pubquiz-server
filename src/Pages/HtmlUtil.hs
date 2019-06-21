@@ -33,7 +33,10 @@ tagged t text = concat [open, text, close] where
   (open, close) = tag t
 
 mkButton :: String -> String
-mkButton text = concat ["<a href=\"./index.html\" class=\"button\">", text, "</a>"]
+mkButton = mkButtonTo "./index.html"
+
+mkButtonTo :: String -> String -> String
+mkButtonTo path text = concat ["<a href=\"", path, "\" class=\"button\">", text, "</a>"]
 
 pageHeader :: String
 pageHeader = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
