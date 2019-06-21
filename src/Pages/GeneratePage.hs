@@ -10,13 +10,13 @@ import Data.Maybe             ( fromMaybe )
 import Data.Ord               ( comparing )
 import System.Environment     ( getArgs )
 
-import Prelude hiding         ( lookup )
+import Prelude hiding         ( lookup, div )
 
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 groupLabel, defaultLabels, unEscape, viewPrevious )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
-                                mkButton, mkButtonTo, pageHeader )
+                                mkButton, mkButtonTo, pageHeader, taggedWith, div, taggedH )
 
 data RoundRating = RoundRating { 
   roundNumber :: Int, 
@@ -188,6 +188,68 @@ roundListInf :: String -> [String]
 roundListInf roundName = 
   zipWith (\r i -> concat [r, " ", show i]) (repeat roundName) [(1 :: Int) ..]
 
+addChartBlock :: String 
+              -> (String -> Labels -> Int -> [Group] -> [Color] -> String) 
+              -> Labels 
+              -> Int 
+              -> [Group]
+              -> [Color] 
+              -> String
+addChartBlock canvasLabel mkChart labels rounds groups colors =
+  unlines [
+    div (taggedWith (concat ["id='", canvasLabel, "'"]) "canvas" ""),
+    mkChart canvasLabel labels rounds groups colors
+  ]
+
+barChartLabel :: String
+barChartLabel = "barChart"
+
+mkBarChart :: String ->Labels -> Int -> [Group] -> [Color] -> String
+mkBarChart bcLabel labels rounds groups colors = 
+  taggedH "script"
+          (unlines [
+            "var lineChartData = {",
+            "   labels: [" ++ roundList (roundLabel labels) rounds ++ "],",
+            "   datasets: [" ++ 
+                    intercalate "," (zipWith (toDataset (roundLabel labels) (groupLabel labels))
+                                             groups 
+                                             colors) ++
+            "   ]",
+            "};",
+            "",
+            "window.onload = function() {",
+            "  var ctx = document.getElementById('" ++ bcLabel ++ "').getContext('2d');",
+            "  window.myLine = new Chart(ctx, {",
+            "      type: 'bar', ",
+            "      data: lineChartData,",
+            "      options: {",
+            "        responsive: true,",
+            "        hoverMode: 'index',",
+            "        stacked: false,", 
+            "        title: {",
+            "          display: true,",
+            "          text: '" ++ unEscape (mainLabel labels) ++ "'",
+            "        },",
+            "        scales: {",
+            "          yAxes: [",
+            "            {",
+            "              type: 'linear',",
+            "              display: true,",
+            "              position: 'left',",
+            "              id: 'y-axis-1',",
+            "              ticks: {",
+            "                beginAtZero: true",
+            "              }",
+            "            }",
+            "          ]",
+            "        }",
+            "      }",
+            "    }",
+            "  );",
+            "};"
+            ]
+          )
+
 graphPage :: Labels -> Int -> [Group] -> [Color] -> String
 graphPage labels rounds groups colors =
   "<html>\
@@ -200,46 +262,11 @@ graphPage labels rounds groups colors =
   cssPath
   ++
   "</head>\
-  \<body>\
-  \<div>\
-  \<canvas id='canvas'></canvas>\
-  \</div>\
-  \<script>\
-  \var lineChartData = {\
-  \    labels: ["
-  ++ 
-  roundList (roundLabel labels) rounds
-  ++ 
-  "], \ 
-  \    datasets:["
+  \<body>"
   ++
-  intercalate "," (zipWith (toDataset (roundLabel labels) (groupLabel labels)) groups colors)
+  addChartBlock barChartLabel mkBarChart labels rounds groups colors
   ++
-  "]};\
-  \window.onload = function() {\
-  \  var ctx = document.getElementById('canvas').getContext('2d');\
-  \  window.myLine = new Chart(ctx, {\
-  \   type: 'bar', \
-  \   data: lineChartData,\
-  \   options: {\
-  \   responsive: true,\
-  \   hoverMode: 'index',\
-  \   stacked: false,\
-  \   title: {\
-  \     display: true,\
-  \     text: '"
-  ++ 
-  unEscape (mainLabel labels)
-  ++ 
-  "\'"
-  ++
-  " },\
-  \ scales: {\
-  \ yAxes: [\
-  \   { type: 'linear', display: true, position: 'left', id: 'y-axis-1',\
-  \     ticks: { beginAtZero : true } } ]\
-  \ }}});};</script>\
-  \ <div id = 'copyright'>Powered by <a href='https://www.chartjs.org'>Chart.js</a></div>\
+  " <div id = 'copyright'>Powered by <a href='https://www.chartjs.org'>Chart.js</a></div>\
   \ <div id ='allQuizzes'>"
   ++ mkButtonTo "../index.html" (viewPrevious labels)
   ++ "</div> \
