@@ -16,7 +16,7 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 groupLabel, defaultLabels, unEscape, viewPrevious )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
-                                mkButton, mkButtonTo, pageHeader, taggedWith, div, taggedH )
+                                mkButton, mkButtonTo, pageHeader, taggedHWith, div, taggedH )
 
 data RoundRating = RoundRating { 
   roundNumber :: Int, 
@@ -188,24 +188,57 @@ roundListInf :: String -> [String]
 roundListInf roundName = 
   zipWith (\r i -> concat [r, " ", show i]) (repeat roundName) [(1 :: Int) ..]
 
-addChartBlock :: String 
-              -> (String -> Labels -> Int -> [Group] -> [Color] -> String) 
-              -> Labels 
-              -> Int 
-              -> [Group]
-              -> [Color] 
-              -> String
-addChartBlock canvasLabel mkChart labels rounds groups colors =
-  unlines [
-    div (taggedWith (concat ["id='", canvasLabel, "'"]) "canvas" ""),
-    mkChart canvasLabel labels rounds groups colors
-  ]
+addCanvas :: String -> String
+addCanvas canvasLabel = div (taggedHWith (concat ["id='", canvasLabel, "'"]) "canvas" "")
 
 barChartLabel :: String
 barChartLabel = "barChart"
 
-mkBarChart :: String ->Labels -> Int -> [Group] -> [Color] -> String
-mkBarChart bcLabel labels rounds groups colors = 
+lineChartLabel :: String
+lineChartLabel = "lineChart"
+
+data ChartType = Bar | Line
+
+chartTypeToConstructor :: ChartType -> String
+chartTypeToConstructor ct = case ct of
+  Bar -> "Chart"
+  Line -> "Chart.Line"
+
+mkChartEntry :: ChartType -> String -> String -> String
+mkChartEntry ct canvasLabel chartTitle = unlines [ 
+    "  var " ++ context ++ " = document.getElementById('" ++ canvasLabel ++ "').getContext('2d');",
+    "  window.myLine = new " ++ chartTypeToConstructor ct ++ "(" ++ context ++ ", {",
+    "      type: 'bar', ",
+    "      data: lineChartData,",
+    "      options: {",
+    "        responsive: true,",
+    "        hoverMode: 'index',",
+    "        stacked: false,", 
+    "        title: {",
+    "          display: true,",
+    "          text: '" ++ unEscape chartTitle ++ "'",
+    "        },",
+    "        scales: {",
+    "          yAxes: [",
+    "            {",
+    "              type: 'linear',",
+    "              display: true,",
+    "              position: 'left',",
+    "              id: 'y-axis-1',",
+    "              ticks: {",
+    "                beginAtZero: true",
+    "              }",
+    "            }",
+    "          ]",
+    "        }",
+    "      }",
+    "    }",
+    "  );"
+  ]
+  where context = canvasLabel ++ "Context"
+
+mkChartsWith :: Labels -> Int -> [Group] -> [Color] -> String
+mkChartsWith labels rounds groups colors = 
   taggedH "script"
           (unlines [
             "var lineChartData = {",
@@ -218,41 +251,15 @@ mkBarChart bcLabel labels rounds groups colors =
             "};",
             "",
             "window.onload = function() {",
-            "  var ctx = document.getElementById('" ++ bcLabel ++ "').getContext('2d');",
-            "  window.myLine = new Chart(ctx, {",
-            "      type: 'bar', ",
-            "      data: lineChartData,",
-            "      options: {",
-            "        responsive: true,",
-            "        hoverMode: 'index',",
-            "        stacked: false,", 
-            "        title: {",
-            "          display: true,",
-            "          text: '" ++ unEscape (mainLabel labels) ++ "'",
-            "        },",
-            "        scales: {",
-            "          yAxes: [",
-            "            {",
-            "              type: 'linear',",
-            "              display: true,",
-            "              position: 'left',",
-            "              id: 'y-axis-1',",
-            "              ticks: {",
-            "                beginAtZero: true",
-            "              }",
-            "            }",
-            "          ]",
-            "        }",
-            "      }",
-            "    }",
-            "  );",
+            mkChartEntry Bar barChartLabel (unEscape (mainLabel labels)),
+            mkChartEntry Line lineChartLabel "",
             "};"
             ]
           )
 
 graphPage :: Labels -> Int -> [Group] -> [Color] -> String
-graphPage labels rounds groups colors =
-  "<html>\
+graphPage labels rounds groups colors = unlines [
+  taggedH"<html>\
   \<head>"
   ++
   tagged "title" (mainLabel labels)
@@ -264,13 +271,18 @@ graphPage labels rounds groups colors =
   "</head>\
   \<body>"
   ++
-  addChartBlock barChartLabel mkBarChart labels rounds groups colors
+  addCanvas barChartLabel
+  ++
+  addCanvas lineChartLabel
+  ++
+  mkChartsWith labels rounds groups colors
   ++
   " <div id = 'copyright'>Powered by <a href='https://www.chartjs.org'>Chart.js</a></div>\
   \ <div id ='allQuizzes'>"
   ++ mkButtonTo "../index.html" (viewPrevious labels)
   ++ "</div> \
   \</body></html>"
+  ]
 
 readLabels :: String -> IO Labels
 readLabels labelsPath = fmap (read :: String -> Labels) (readFile labelsPath) `catch` handle where
