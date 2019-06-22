@@ -16,7 +16,8 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 groupLabel, defaultLabels, unEscape, viewPrevious )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
-                                mkButton, mkButtonTo, pageHeader, taggedHWith, div, taggedH )
+                                mkButton, mkButtonTo, pageHeader, taggedHWith, div, taggedH, 
+                                taggedWith )
 
 data RoundRating = RoundRating { 
   roundNumber :: Int, 
@@ -261,29 +262,36 @@ mkChartsWith labels rounds groups colors =
 
 graphPage :: Labels -> Int -> [Group] -> [Color] -> String
 graphPage labels rounds groups colors = unlines [
-  "<html>\
-  \<head>"
-  ++
-  tagged "title" (mainLabel labels)
-  ++
-  "<script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js'></script>"
-  ++
-  cssPath
-  ++
-  "</head>\
-  \<body>"
-  ++
-  addCanvas barChartLabel
-  ++
-  addCanvas lineChartLabel
-  ++
-  mkChartsWith labels rounds groups colors
-  ++
-  " <div id = 'copyright'>Powered by <a href='https://www.chartjs.org'>Chart.js</a></div>\
-  \ <div id ='allQuizzes'>"
-  ++ mkButtonTo "../index.html" (viewPrevious labels)
-  ++ "</div> \
-  \</body></html>"
+  taggedH "html"
+          (unlines [
+             taggedH "head"
+                     (unlines [
+                        tagged "title" (mainLabel labels),
+                        taggedWith "src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js'"
+                                   "script"
+                                   "",
+                        cssPath
+                      ]
+                     ),
+             taggedH "body"
+                     (unlines [
+                        addCanvas barChartLabel,
+                        addCanvas lineChartLabel,
+                        mkChartsWith labels rounds groups colors,
+                        taggedWith "id = 'copyright'"
+                                   "div"
+                                   (unwords [
+                                      "Powered by",
+                                      taggedWith "href='https://www.chartjs.org'" "a" "Chart.js" 
+                                      ]
+                                    ),
+                        taggedWith "id = 'allQuizzes'"
+                                   "div"
+                                   (mkButtonTo "../index.html" (viewPrevious labels))
+                      ]
+                     ) 
+            ]
+          )
   ]
 
 readLabels :: String -> IO Labels
