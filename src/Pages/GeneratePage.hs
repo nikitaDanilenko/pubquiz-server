@@ -168,16 +168,18 @@ defaultColors = cycle [
   ]
 
 toDataset :: String -> String -> Group -> Color -> String
-toDataset rd group g c =
-  "{" ++ "label: '" ++ unwords [group, show (groupNumber (groupKey g))] ++ "'" ++
-  "," ++ "borderColor: " ++ show c ++
-  "," ++ "backgroundColor: " ++ show c ++
-  "," ++ "fill: " ++ "false" ++
-  "," ++ "data: [" ++ intercalate ","
-                            (zipWith (\x y -> "{ x: '" ++ x ++ "' , y: '" ++ show y ++ "'}")
-                                     (roundListInf rd)
-                                     (tail (scanl (+) 0 (simplePoints g)))) ++
-  "]}"
+toDataset rd group g c = unlines [
+    "{",
+    "  label: '" ++ unwords [group, show (groupNumber (groupKey g))] ++ "',",
+    "  borderColor: " ++ show c ++ ",",
+    "  backgroundColor: " ++ show c ++ ",",
+    "  fill: false,",
+    "  data: [" ++ intercalate ","
+                               (zipWith (\x y -> "{ x: '" ++ x ++ "' , y: '" ++ show y ++ "'}")
+                                        (roundListInf rd)
+                                        (tail (scanl (+) 0 (simplePoints g)))) ++ "]",
+    "}"
+  ]
 
 roundList :: String -> Int -> String
 roundList roundName n = intercalate "," (map enclose (take n (roundListInf roundName))) where
@@ -259,7 +261,7 @@ mkChartsWith labels rounds groups colors =
 
 graphPage :: Labels -> Int -> [Group] -> [Color] -> String
 graphPage labels rounds groups colors = unlines [
-  taggedH"<html>\
+  "<html>\
   \<head>"
   ++
   tagged "title" (mainLabel labels)
