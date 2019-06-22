@@ -192,7 +192,7 @@ roundListInf roundName =
   zipWith (\r i -> concat [r, " ", show i]) (repeat roundName) [(1 :: Int) ..]
 
 addCanvas :: String -> String
-addCanvas canvasLabel = div (taggedHWith (concat ["id='", canvasLabel, "'"]) "canvas" "")
+addCanvas canvasLabel = div (taggedWith (concat ["id='", canvasLabel, "'"]) "canvas" "")
 
 barChartLabel :: String
 barChartLabel = "barChart"
