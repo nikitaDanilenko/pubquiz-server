@@ -29,15 +29,23 @@ tag :: String -> (String, String)
 tag t = (concat ["<", t, ">"], concat ["</", t, ">"])
 
 tagged :: String -> String -> String
-tagged t text = concat [open, text, close] where
-  (open, close) = tag t
-
-taggedH :: String -> String -> String
-taggedH t text = unlines [open, text, close] where
-  (open, close) = tag t
+tagged t text = concat (tagGroup t text)
 
 taggedWith :: String -> String -> String -> String
-taggedWith attrs t text = unlines [open, text, close] where
+taggedWith attrs t text = concat (tagGroupWith attrs t text)
+
+taggedH :: String -> String -> String
+taggedH t text = unlines (tagGroup t text)
+
+taggedHWith :: String -> String -> String -> String
+taggedHWith attrs t text = unlines (tagGroupWith attrs t text)
+
+tagGroup :: String -> String -> [String]
+tagGroup t text = [open, text, close] where
+  (open, close) = tag t
+
+tagGroupWith :: String -> String -> String -> [String]
+tagGroupWith attrs t text = [open, text, close] where
     open = concat ["<", t, " ", attrs, ">"]
     close = concat ["</", t, ">"]
 
@@ -45,7 +53,7 @@ mkButton :: String -> String
 mkButton = mkButtonTo "./index.html"
 
 mkButtonTo :: String -> String -> String
-mkButtonTo path text = concat ["<a href=\"", path, "\" class=\"button\">", text, "</a>"]
+mkButtonTo path = taggedWith (concat ["href=\"", path, "\" class=\"button\""]) "a"
 
 pageHeader :: String
 pageHeader = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
