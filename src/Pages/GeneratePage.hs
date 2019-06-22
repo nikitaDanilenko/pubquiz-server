@@ -168,8 +168,8 @@ defaultColors = cycle [
   , "rgb(216, 191, 216)"
   ]
 
-toDataset :: String -> String -> Group -> Color -> String
-toDataset rd group g c = unlines [
+toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Group -> Color -> String
+toDatasetWith pointMaker rd group g c = unlines [
     "{",
     "  label: '" ++ unwords [group, show (groupNumber (groupKey g))] ++ "',",
     "  borderColor: " ++ show c ++ ",",
@@ -178,9 +178,12 @@ toDataset rd group g c = unlines [
     "  data: [" ++ intercalate ","
                                (zipWith (\x y -> "{ x: '" ++ x ++ "' , y: '" ++ show y ++ "'}")
                                         (roundListInf rd)
-                                        (tail (scanl (+) 0 (simplePoints g)))) ++ "]",
+                                        (pointMaker (simplePoints g))) ++ "]",
     "}"
   ]
+
+toCumulativeDataset :: String -> String -> Group -> Color -> String
+toCumulativeDataset = toDatasetWith (tail . scanl (+) 0)
 
 roundList :: String -> Int -> String
 roundList roundName n = intercalate "," (map enclose (take n (roundListInf roundName))) where
@@ -247,7 +250,8 @@ mkChartsWith labels rounds groups colors =
             "var lineChartData = {",
             "   labels: [" ++ roundList (roundLabel labels) rounds ++ "],",
             "   datasets: [" ++ 
-                    intercalate "," (zipWith (toDataset (roundLabel labels) (groupLabel labels))
+                    intercalate "," (zipWith (toCumulativeDataset (roundLabel labels) 
+                                                                  (groupLabel labels))
                                              groups 
                                              colors) ++
             "   ]",
