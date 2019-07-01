@@ -175,6 +175,7 @@ toDatasetWith pointMaker rd group g c = unlines [
     "  borderColor: " ++ show c ++ ",",
     "  backgroundColor: " ++ show c ++ ",",
     "  fill: false,",
+    "  lineTension: 0,",
     "  data: [" ++ intercalate ","
                                (zipWith (\x y -> "{ x: '" ++ x ++ "' , y: '" ++ show y ++ "'}")
                                         (roundListInf rd)
@@ -184,6 +185,9 @@ toDatasetWith pointMaker rd group g c = unlines [
 
 toCumulativeDataset :: String -> String -> Group -> Color -> String
 toCumulativeDataset = toDatasetWith (tail . scanl (+) 0)
+
+toIndividualDataset :: String -> String -> Group -> Color -> String
+toIndividualDataset = toDatasetWith id
 
 roundList :: String -> Int -> String
 roundList roundName n = intercalate "," (map enclose (take n (roundListInf roundName))) where
@@ -203,6 +207,9 @@ barChartLabel = "barChart"
 lineChartLabel :: String
 lineChartLabel = "lineChart"
 
+perRoundChartLabel :: String
+perRoundChartLabel = "perRoundChart"
+
 data ChartType = Bar | Line
 
 chartTypeToConstructor :: ChartType -> String
@@ -210,14 +217,15 @@ chartTypeToConstructor ct = case ct of
   Bar -> "Chart"
   Line -> "Chart.Line"
 
-mkChartEntry :: ChartType -> String -> String -> String
-mkChartEntry ct canvasLabel chartTitle = unlines [ 
+mkChartEntry :: ChartType -> String -> String -> String -> String
+mkChartEntry ct canvasLabel chartTitle chartData = unlines [ 
     "  var " ++ context ++ " = document.getElementById('" ++ canvasLabel ++ "').getContext('2d');",
     "  window.myLine = new " ++ chartTypeToConstructor ct ++ "(" ++ context ++ ", {",
     "      type: 'bar', ",
-    "      data: lineChartData,",
+    "      data: " ++ chartData ++ ",",
     "      options: {",
     "        responsive: true,",
+    "        lineTension: 0,",
     "        hoverMode: 'index',",
     "        stacked: false,", 
     "        title: {",
@@ -247,22 +255,28 @@ mkChartsWith :: Labels -> Int -> [Group] -> [Color] -> String
 mkChartsWith labels rounds groups colors = 
   taggedH "script"
           (unlines [
-            "var lineChartData = {",
-            "   labels: [" ++ roundList (roundLabel labels) rounds ++ "],",
-            "   datasets: [" ++ 
-                    intercalate "," (zipWith (toCumulativeDataset (roundLabel labels) 
-                                                                  (groupLabel labels))
-                                             groups 
-                                             colors) ++
-            "   ]",
+            "var " ++ cumulativeData ++ " = {",
+            "   labels: [" ++ lbls ++ "],",
+            "   datasets: [" ++ mkDataSet toCumulativeDataset ++ "]",
+            "};",
+            "var " ++ perRoundData ++ " = {",
+            "    labels: [" ++ lbls ++ "],",
+            "    datasets: [" ++ mkDataSet toIndividualDataset ++ "]",
             "};",
             "",
             "window.onload = function() {",
-            mkChartEntry Bar barChartLabel (unEscape (mainLabel labels)),
-            mkChartEntry Line lineChartLabel "",
+            mkChartEntry Bar barChartLabel (unEscape (mainLabel labels)) cumulativeData,
+            mkChartEntry Line lineChartLabel "" cumulativeData,
+            mkChartEntry Bar perRoundChartLabel "" perRoundData,
             "};"
             ]
           )
+  where lbls = roundList (roundLabel labels) rounds
+        mkDataSet f = intercalate "," (zipWith (f (roundLabel labels) (groupLabel labels))
+                                               groups 
+                                               colors)
+        cumulativeData = "cumulativeData"
+        perRoundData = "perRoundData"
 
 graphPage :: Labels -> Int -> [Group] -> [Color] -> String
 graphPage labels rounds groups colors = unlines [
@@ -281,6 +295,7 @@ graphPage labels rounds groups colors = unlines [
                      (unlines [
                         addCanvas barChartLabel,
                         addCanvas lineChartLabel,
+                        addCanvas perRoundChartLabel,
                         mkChartsWith labels rounds groups colors,
                         taggedWith "id = 'copyright'"
                                    "div"
