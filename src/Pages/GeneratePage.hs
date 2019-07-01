@@ -14,9 +14,10 @@ import Prelude hiding         ( lookup, div )
 
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
-                                groupLabel, defaultLabels, unEscape, viewPrevious )
+                                groupLabel, defaultLabels, unEscape, viewPrevious,
+                                cumulativeLabel, progressionLabel, individualRoundsLabel )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
-                                mkButton, mkButtonTo, pageHeader, taggedHWith, div, taggedH, 
+                                mkButton, mkButtonTo, pageHeader, div, taggedV, 
                                 taggedWith )
 
 data RoundRating = RoundRating { 
@@ -253,7 +254,7 @@ mkChartEntry ct canvasLabel chartTitle chartData = unlines [
 
 mkChartsWith :: Labels -> Int -> [Group] -> [Color] -> String
 mkChartsWith labels rounds groups colors = 
-  taggedH "script"
+  taggedV "script"
           (unlines [
             "var " ++ cumulativeData ++ " = {",
             "   labels: [" ++ lbls ++ "],",
@@ -265,9 +266,9 @@ mkChartsWith labels rounds groups colors =
             "};",
             "",
             "window.onload = function() {",
-            mkChartEntry Bar barChartLabel (unEscape (mainLabel labels)) cumulativeData,
-            mkChartEntry Line lineChartLabel "" cumulativeData,
-            mkChartEntry Bar perRoundChartLabel "" perRoundData,
+            mkChartEntry Bar barChartLabel (unEscape (cumulativeLabel labels)) cumulativeData,
+            mkChartEntry Line lineChartLabel (unEscape (progressionLabel labels)) cumulativeData,
+            mkChartEntry Bar perRoundChartLabel (unEscape (individualRoundsLabel labels)) perRoundData,
             "};"
             ]
           )
@@ -280,9 +281,9 @@ mkChartsWith labels rounds groups colors =
 
 graphPage :: Labels -> Int -> [Group] -> [Color] -> String
 graphPage labels rounds groups colors = unlines [
-  taggedH "html"
+  taggedV "html"
           (unlines [
-             taggedH "head"
+             taggedV "head"
                      (unlines [
                         tagged "title" (mainLabel labels),
                         taggedWith "src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js'"
@@ -291,8 +292,11 @@ graphPage labels rounds groups colors = unlines [
                         cssPath
                       ]
                      ),
-             taggedH "body"
+             taggedV "body"
                      (unlines [
+                        taggedWith "id = 'mainTitle'"
+                                   "div"
+                                   (mainLabel labels),
                         addCanvas barChartLabel,
                         addCanvas lineChartLabel,
                         addCanvas perRoundChartLabel,
