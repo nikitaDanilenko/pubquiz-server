@@ -12,17 +12,11 @@ data Labels = Labels {
   backToChartView :: String,
   mainLabel :: String,
   ownPageLabel :: String,
-  viewPrevious :: String
+  viewPrevious :: String,
+  cumulativeLabel :: String,
+  individualRoundsLabel :: String,
+  progressionLabel :: String
 } deriving (Show, Read)
-
-cumulativeLabel :: Labels -> String
-cumulativeLabel _ = "Gesamtpunkte"
-
-individualRoundsLabel :: Labels -> String
-individualRoundsLabel _ = "Punkte pro Runde"
-
-progressionLabel :: Labels -> String
-progressionLabel _ = "Verlauf"
 
 mkLabels :: String
          -> String
@@ -33,8 +27,12 @@ mkLabels :: String
          -> String
          -> String
          -> String
+         -> String
+         -> String
+         -> String
          -> Labels
-mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl viewPreviousLbl =
+mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl 
+         viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl =
     Labels {
         roundLabel = htmlSafeString roundLbl,
         groupLabel = htmlSafeString groupLbl,
@@ -44,7 +42,10 @@ mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl ma
         backToChartView = htmlSafeString backLbl,
         mainLabel = htmlSafeString mainLbl,
         ownPageLabel = htmlSafeString ownPageLbl,
-        viewPrevious = htmlSafeString viewPreviousLbl
+        viewPrevious = htmlSafeString viewPreviousLbl,
+        cumulativeLabel = htmlSafeString cumulativeLbl,
+        individualRoundsLabel = htmlSafeString individualRoundsLbl,
+        progressionLabel = htmlSafeString progressionLbl
     } 
 
 htmlSafeChar :: Char -> String
@@ -102,3 +103,6 @@ defaultLabels = mkLabels
    "Pubquiz"
    "Eigene Punkte"
    "Alle Quizzes"
+   "Gesamtpunkte"
+   "Punkte pro Runde"
+   "Verlauf"

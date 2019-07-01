@@ -111,6 +111,15 @@ ownPageParam = "ownPageLabel"
 viewQuizzesParam :: B.ByteString
 viewQuizzesParam = "viewQuizzesLabel"
 
+cumulativeParam :: B.ByteString
+cumulativeParam = "cumulativeLabel"
+
+individualParam :: B.ByteString
+individualParam = "individualLabel"
+
+progressionParam :: B.ByteString
+progressionParam = "progressionLabel"
+
 userParam :: B.ByteString
 userParam = "user"
 

@@ -25,7 +25,8 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               serverQuizPathIO, quizPath, signatureParam, userParam,
                                               actionParam, createQuiz, lock, roundsNumberParam,
-                                              server, numberOfGroupsParam, viewQuizzesParam )
+                                              server, numberOfGroupsParam, viewQuizzesParam,
+                                              cumulativeParam, individualParam, progressionParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, mkLabels, groupLabel )
@@ -118,9 +119,9 @@ fetchLabels :: Handler b QuizService Labels
 fetchLabels = do
   params <- mapM getPostParam [roundParam, groupParam, ownPointsParam, maxReachedParam,
                                maxReachableParam, backToChartViewParam, mainParam, ownPageParam,
-                               viewQuizzesParam]
-  let r : g : opts : mred : mrable : b : m : opg : vq : _ = map (maybe "" (B.unpack)) params
-      lbls = mkLabels r g opts mred mrable b m opg vq
+                               viewQuizzesParam, cumulativeParam, individualParam, progressionParam]
+  let r : g : opts : mred : mrable : b : m : opg : vq : c : i : p : _ = map (maybe "" (B.unpack)) params
+      lbls = mkLabels r g opts mred mrable b m opg vq c i p
   return lbls
 
 writeLabels :: B.ByteString -> Labels -> IO ()
