@@ -44,7 +44,7 @@ mkHtml cls =
     )
 
 mkButton :: String -> String -> String
-mkButton text path = concat ["<a href=\"", path, "\" class=\"quizLinkButton\">", text, "</a>"]
+mkButton text path = concat ["<a href=\"", path ++ "/index.html", "\" class=\"quizLinkButton\">", text, "</a>"]
 
 indexFile :: String
 indexFile = "index.html"
