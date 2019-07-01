@@ -34,11 +34,11 @@ tagged t text = concat (tagGroup t text)
 taggedWith :: String -> String -> String -> String
 taggedWith attrs t text = concat (tagGroupWith attrs t text)
 
-taggedH :: String -> String -> String
-taggedH t text = unlines (tagGroup t text)
+taggedV :: String -> String -> String
+taggedV t text = unlines (tagGroup t text)
 
-taggedHWith :: String -> String -> String -> String
-taggedHWith attrs t text = unlines (tagGroupWith attrs t text)
+taggedVWith :: String -> String -> String -> String
+taggedVWith attrs t text = unlines (tagGroupWith attrs t text)
 
 tagGroup :: String -> String -> [String]
 tagGroup t text = [open, text, close] where
