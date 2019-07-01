@@ -298,8 +298,8 @@ graphPage labels rounds groups colors = unlines [
                                    "div"
                                    (mainLabel labels),
                         addCanvas barChartLabel,
-                        addCanvas lineChartLabel,
                         addCanvas perRoundChartLabel,
+                        addCanvas lineChartLabel,
                         mkChartsWith labels rounds groups colors,
                         taggedWith "id = 'copyright'"
                                    "div"
