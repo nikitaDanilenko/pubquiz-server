@@ -1,6 +1,7 @@
 module Labels ( Labels, defaultLabels, mkLabels, groupLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
-                htmlSafeString, mainLabel, roundLabel, unEscape, viewPrevious ) where
+                htmlSafeString, mainLabel, roundLabel, unEscape, viewPrevious,
+                cumulativeLabel, individualRoundsLabel, progressionLabel ) where
 
 data Labels = Labels { 
   roundLabel :: String,
@@ -13,6 +14,15 @@ data Labels = Labels {
   ownPageLabel :: String,
   viewPrevious :: String
 } deriving (Show, Read)
+
+cumulativeLabel :: Labels -> String
+cumulativeLabel _ = "Gesamtpunkte"
+
+individualRoundsLabel :: Labels -> String
+individualRoundsLabel _ = "Punkte pro Runde"
+
+progressionLabel :: Labels -> String
+progressionLabel _ = "Verlauf"
 
 mkLabels :: String
          -> String
