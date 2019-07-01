@@ -1,11 +1,20 @@
-body {
+body, #mainTitle {
   color: rgb(200, 200, 200);
   background: rgb(40, 40, 40);
+}
+
+body, #mainTitle, a.button {
+  font-family: arial, sans-serif;
 }
 
 div {
   padding-top: 10pt,
   padding-bottom: 10pt;
+}
+
+#mainTitle {
+  text-align: center;
+  font-size: large;
 }
 
 table {
@@ -51,7 +60,6 @@ a.button {
   background-color: rgb(70, 200, 40);
 
   text-decoration: none;
-  font-family: arial, sans-serif;
 }
 
 a.quizLinkButton {
