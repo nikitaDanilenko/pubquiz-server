@@ -4,7 +4,7 @@ import Control.Arrow          ( second, (&&&), (***), (>>>) )
 import Control.Exception      ( catch )
 import Control.Exception.Base ( IOException )
 import Data.Function          ( on )
-import Data.List              ( intercalate, maximumBy )
+import Data.List              ( intercalate, maximumBy, sortBy, groupBy )
 import Data.Map               ( Map, fromList, unionsWith, toList, lookup )
 import Data.Maybe             ( fromMaybe )
 import Data.Ord               ( comparing )
@@ -48,6 +48,9 @@ type GroupRating = (GroupKey, Double)
 
 data Group = Group { groupKey :: GroupKey, points :: Points }
   deriving Show
+
+mkGroupName :: String -> Group -> String
+mkGroupName groupLbl group = unwords [groupLbl, show (groupNumber (groupKey group))]
 
 simplePoints :: Group -> SimplePoints
 simplePoints = map ownPoints . points
@@ -172,7 +175,7 @@ defaultColors = cycle [
 toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Group -> Color -> String
 toDatasetWith pointMaker rd group g c = unlines [
     "{",
-    "  label: '" ++ unwords [group, show (groupNumber (groupKey g))] ++ "',",
+    "  label: '" ++ mkGroupName group g ++ "',",
     "  borderColor: " ++ show c ++ ",",
     "  backgroundColor: " ++ show c ++ ",",
     "  fill: false,",
@@ -297,6 +300,9 @@ graphPage labels rounds groups colors = unlines [
                         taggedWith "id = 'mainTitle'"
                                    "div"
                                    (mainLabel labels),
+                        taggedWith "id = 'top3'"
+                                   "div"
+                                   (mkTopThree (groupLabel labels) groups),
                         addCanvas barChartLabel,
                         addCanvas perRoundChartLabel,
                         addCanvas lineChartLabel,
@@ -316,6 +322,22 @@ graphPage labels rounds groups colors = unlines [
             ]
           )
   ]
+
+findTopThree :: [Group] -> [(Double, [Group])]
+findTopThree = take 3
+             . map (\gds -> (snd (head gds), map fst gds))
+             . groupBy ((==) `on` snd)
+             . reverse
+             . sortBy (comparing snd) 
+             . map (\g -> (g, sum (simplePoints g)))
+
+mkTopThree :: String -> [Group] -> String
+mkTopThree groupLbl gs = unlines (map (tagged "div") rated) where
+  rated = zipWith (\i (ps, grs) -> unwords [show i, "(" ++ prettyDouble ps ++ ")", ":", groups grs])
+                  [1 ..] 
+                  tops
+  groups =  intercalate ", " . map (\g -> mkGroupName groupLbl g)
+  tops = findTopThree gs
 
 readLabels :: String -> IO Labels
 readLabels labelsPath = fmap (read :: String -> Labels) (readFile labelsPath) `catch` handle where
