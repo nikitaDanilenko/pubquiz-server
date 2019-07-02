@@ -325,7 +325,7 @@ graphPage labels rounds groups colors = unlines [
 
 findTopThree :: [Group] -> [(Double, [Group])]
 findTopThree = take 3
-             . map (\gds -> (snd (head gds), map fst gds))
+             . map (\gds -> (snd (head gds), reverse (map fst gds)))
              . groupBy ((==) `on` snd)
              . reverse
              . sortBy (comparing snd) 
