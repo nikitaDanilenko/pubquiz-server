@@ -37,10 +37,14 @@ mkCORS = applyCORS defaultOptions
 randomStringIO :: IO String
 randomStringIO = fmap (map chr . randomRs (33, 126)) newStdGen
 
+alphaNumeric :: [Char]
+alphaNumeric = ['0' .. '9'] ++ ['a' .. 'z']
+
+alphaNumericAmount :: Int
+alphaNumericAmount = length alphaNumeric
+
 randomAlphaNumeric :: IO String
-randomAlphaNumeric = fmap (map (chars !!) . randomRs (0, charsLength - 1)) newStdGen where
-    chars = ['0' .. '9'] ++ ['a' .. 'z']
-    charsLength = length chars
+randomAlphaNumeric = fmap (map (alphaNumeric !!) . randomRs (0, alphaNumericAmount - 1)) newStdGen
 
 randomDistinctAlphaNumeric :: Int -> Int -> IO [String]
 randomDistinctAlphaNumeric numberOfStrings size = do
