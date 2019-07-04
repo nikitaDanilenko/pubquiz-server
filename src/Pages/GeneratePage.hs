@@ -17,8 +17,8 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 groupLabel, defaultLabels, unEscape, viewPrevious,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
-                                mkButton, mkButtonTo, pageHeader, div, taggedV, 
-                                taggedWith )
+                                mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith )
+import Pages.RoundsParser     ( parseCodesWithMaybeNames )
 
 data RoundRating = RoundRating { 
   roundNumber :: Int, 
@@ -50,7 +50,8 @@ data Group = Group { groupKey :: GroupKey, points :: Points }
   deriving Show
 
 mkGroupName :: String -> Group -> String
-mkGroupName groupLbl group = unwords [groupLbl, show (groupNumber (groupKey group))]
+mkGroupName groupLbl group = 
+  fromMaybe (unwords [groupLbl, show (groupNumber (groupKey group))]) (teamName (groupKey group))
 
 simplePoints :: Group -> SimplePoints
 simplePoints = map ownPoints . points
@@ -61,14 +62,17 @@ data Round = Round { name :: String, number :: Int, possible :: Double, groupRat
 zeroRound :: String -> Int -> Round
 zeroRound nm nmb = Round nm nmb 0 [] 
 
-fromIndex :: [Code] -> String -> Int -> Double -> [Double] -> Round
+fromIndex :: [(Code, Maybe String)] -> String -> Int -> Double -> [Double] -> Round
 fromIndex groupCodes nm n maxPossible ps = Round nm n maxPossible ratings where
-  ratings = zipWith3 (\i c p -> (GroupKey i c, p)) [1 .. ] groupCodes ps
+  ratings = zipWith3 (\i (c, ms) p -> (GroupKey i c ms, p)) [1 .. ] groupCodes ps
 
 type Code = String
 
-data GroupKey = GroupKey { groupNumber :: Int, code :: Code }
+data GroupKey = GroupKey { groupNumber :: Int, code :: Code, teamName :: Maybe String }
   deriving Show
+
+mkSimpleGroupKey :: Int -> Code -> GroupKey
+mkSimpleGroupKey i c = GroupKey i c Nothing
 
 instance Eq GroupKey where
   (==) = (==) `on` groupNumber
@@ -354,19 +358,19 @@ readColors colorsPath = fmap lines (readFile colorsPath) `catch` handle where
   handle :: IOException -> IO [Color]
   handle _ = putStrLn (colorsPath ++ " not found - using default colors.") >> return defaultColors
 
-parseCodesAndRounds :: String -> String -> ([String], [Round])
-parseCodesAndRounds _ [] = ([], [])
-parseCodesAndRounds roundName text = (codes, rounds) where
+parseCodesWithNamesAndRounds :: String -> String -> ([(Code, Maybe String)], [Round])
+parseCodesWithNamesAndRounds _ [] = ([], [])
+parseCodesWithNamesAndRounds roundName text = (codesAndNames, rounds) where
   (l : ls) = lines text
-  codes = words l
+  codesAndNames = parseCodesWithMaybeNames l
   pts = map readPoints ls
   indexedPoints = zip [1 ..] pts
-  rounds = map (\(i, (total, ps)) -> fromIndex codes roundName i total ps) indexedPoints
+  rounds = map (\(i, (total, ps)) -> fromIndex codesAndNames roundName i total ps) indexedPoints
 
-readCodesAndRounds :: String -> String -> IO ([String], [Round])
+readCodesAndRounds :: String -> String -> IO ([(Code, Maybe String)], [Round])
 readCodesAndRounds roundsPath rdLabel =
-  fmap (parseCodesAndRounds rdLabel) (readFile roundsPath) `catch` handle where
-    handle :: IOException -> IO ([String], [Round]) 
+  fmap (parseCodesWithNamesAndRounds rdLabel) (readFile roundsPath) `catch` handle where
+    handle :: IOException -> IO ([(Code, Maybe String)], [Round]) 
     handle e = putStrLn (show e) >> 
                putStrLn "Unexpected format or missing file. No output generated." >> 
                return ([], [])
@@ -377,17 +381,18 @@ splitOnSetter str = (key, drop 1 preValue) where
 
 -- Creates groups with proper keys, but all points set to empty.
 mkEmptyGroups :: [Code] -> [Group]
-mkEmptyGroups = map (\(i, c) -> Group (GroupKey i c) []) . zip [1 ..]
+mkEmptyGroups = map (\(i, c) -> Group (mkSimpleGroupKey i c) []) . zip [1 ..]
 
 createWith :: [(String, String)] -> IO ()
 createWith associations = do
     labels <- readLabels labelsPath
-    (codes, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
+    (codesAndNames, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
     colors <- readColors colorsPath
     let groupsCandidates = mkGroups rounds
         -- If there are no rounds, we create groups that have not played any rounds yet.
         -- This facilitates the initial creation of the point pages.
-        groups = if null groupsCandidates then mkEmptyGroups codes else groupsCandidates
+        groups = if null groupsCandidates then mkEmptyGroups (map fst codesAndNames) 
+                                          else groupsCandidates
         n = length rounds
     writePointPages prefix labels groups colors
     writeGraphPage prefix labels n groups colors
