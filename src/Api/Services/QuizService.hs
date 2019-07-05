@@ -20,12 +20,12 @@ import System.Directory                     ( doesFileExist, getDirectoryContent
 import Api.Services.HashCheck               ( failIfUnverified, authenticate )
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quizParam,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
-                                              colors, prefix, roundParam, groupParam,
+                                              colors, prefix, roundParam, teamParam,
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               serverQuizPathIO, quizPath, signatureParam, userParam,
                                               actionParam, createQuiz, lock, roundsNumberParam,
-                                              server, numberOfGroupsParam, viewQuizzesParam,
+                                              server, numberOfTeamsParam, viewQuizzesParam,
                                               cumulativeParam, individualParam, progressionParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
@@ -88,7 +88,7 @@ newQuiz = do
     mRounds <- getPostParam roundsNumberParam
     mUser <- getPostParam userParam
     mSignature <- getPostParam signatureParam
-    mNumberOfGroups <- getPostParam numberOfGroupsParam
+    mNumberOfTeams <- getPostParam numberOfTeamsParam
     verified <- authenticate mUser mSignature [(quizParam, mQuiz),
                                                (actionParam, Just createQuiz)]
     failIfUnverified verified $
@@ -96,7 +96,7 @@ newQuiz = do
           Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
           Just name -> do 
               let uName = B.unpack name
-                  gs = maybe 20 (read . B.unpack) mNumberOfGroups
+                  gs = maybe 20 (read . B.unpack) mNumberOfTeams
               endings <- liftIO (randomDistinctAlphaNumeric gs 6)
               success <- liftIO (createOrFail uName endings)
               if success 
@@ -119,11 +119,11 @@ newQuiz = do
 -- todo: better with JSON directly.
 fetchLabels :: Handler b QuizService Labels
 fetchLabels = do
-  params <- mapM getPostParam [roundParam, groupParam, ownPointsParam, maxReachedParam,
+  params <- mapM getPostParam [roundParam, teamParam, ownPointsParam, maxReachedParam,
                                maxReachableParam, backToChartViewParam, mainParam, ownPageParam,
                                viewQuizzesParam, cumulativeParam, individualParam, progressionParam]
-  let r : g : opts : mred : mrable : b : m : opg : vq : c : i : p : _ = map (maybe "" (B.unpack)) params
-      lbls = mkLabels r g opts mred mrable b m opg vq c i p
+  let r : t : opts : mred : mrable : b : m : opg : vq : c : i : p : _ = map (maybe "" (B.unpack)) params
+      lbls = mkLabels r t opts mred mrable b m opg vq c i p
   return lbls
 
 writeLabels :: B.ByteString -> Labels -> IO ()

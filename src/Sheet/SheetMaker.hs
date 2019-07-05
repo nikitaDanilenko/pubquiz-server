@@ -14,12 +14,12 @@ type Server = String
 type Ending = String
 
 createSheetWith :: String -> Int -> Prefix -> Server -> [Ending] -> IO ()
-createSheetWith groupLabel rounds prefix server endings = do
+createSheetWith teamLabel rounds prefix server endings = do
     quizzesFolder <- quizzesFolderIO
     currentDir <- getCurrentDirectory
     let fullPath = addSeparator [quizzesFolder, prefix]
         fullServerPath = addSeparator [server, prefix, ""]
-        sht = mkSheet (safeTeX groupLabel) rounds
+        sht = mkSheet (safeTeX teamLabel) rounds
         sheetFile = mkSheetFile prefix
         texFile = concat [sheetFile, ".tex"]
 

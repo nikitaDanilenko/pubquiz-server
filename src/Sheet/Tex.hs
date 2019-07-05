@@ -1,18 +1,18 @@
 module Sheet.Tex ( mkSheet ) where
 
-import Data.List       ( intersperse, intercalate )
+import Data.List       ( intercalate )
 import Data.List.Split ( chunksOf )
 
 mkSheet :: String -> Int -> String
-mkSheet groupLabel n = concat [ 
+mkSheet teamLabel n = concat [ 
     header,
     grp,
     centre,
     perGroup n,
-    footer groupLabel
+    footer teamLabel
     ]
     where grp = unwords ["    {\\Huge", 
-                         groupLabel, 
+                         teamLabel, 
                          "#1:} & \\includegraphics[align=c, scale = 0.35]{./#2.png}"]
 
 header :: String
@@ -60,9 +60,9 @@ centre = unlines [
     ]
     
 simpleHeader :: String -> String
-simpleHeader groupLabel = unlines [
+simpleHeader teamLabel = unlines [
         "\\newcommand{\\simpleHeader}[1]{%",
-        unwords ["    {\\Huge", groupLabel, "#1:}"],
+        unwords ["    {\\Huge", teamLabel, "#1:}"],
         "}"
     ]
 
@@ -71,10 +71,10 @@ perGroup n = unlines ((intercalate ["\\newpage", "\\simpleHeader{#1}"]
                                    (chunksOf 2 (replicate n "\\mkTable"))) ++ ["\\newpage"])
 
 footer :: String -> String
-footer groupLabel = unlines [
+footer teamLabel = unlines [
     "}",
     "",
-    simpleHeader groupLabel,
+    simpleHeader teamLabel,
     "",
     "\\begin{document}",
     "",

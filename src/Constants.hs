@@ -87,8 +87,8 @@ colorsFile = "colors.txt"
 roundParam :: B.ByteString
 roundParam = "roundLabel"
 
-groupParam :: B.ByteString
-groupParam = "groupLabel"
+teamParam :: B.ByteString
+teamParam = "teamLabel"
 
 ownPointsParam :: B.ByteString
 ownPointsParam = "ownPointsLabel"
@@ -132,8 +132,8 @@ passwordParam = "pass"
 signatureParam :: B.ByteString
 signatureParam = "signature"
 
-numberOfGroupsParam :: B.ByteString
-numberOfGroupsParam = "numberOfGroups"
+numberOfTeamsParam :: B.ByteString
+numberOfTeamsParam = "numberOfTeams"
 
 server :: String
 server = "https://www.danilenko.io"
