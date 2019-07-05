@@ -6,7 +6,7 @@ import System.Directory        ( setCurrentDirectory, getCurrentDirectory )
 import System.Process          ( callProcess )
      
 import Constants               ( quizzesFolderIO, addSeparator )
-import Labels                  ( unEscape )
+import Pages.HtmlUtil          ( unEscape )
 import Sheet.Tex               ( mkSheet )
 
 type Prefix = String

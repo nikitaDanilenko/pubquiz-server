@@ -15,11 +15,11 @@ import Prelude hiding         ( lookup, div )
 
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
-                                groupLabel, defaultLabels, unEscape, viewPrevious,
-                                cumulativeLabel, progressionLabel, individualRoundsLabel,
-                                htmlSafeString )
+                                groupLabel, defaultLabels, viewPrevious,
+                                cumulativeLabel, progressionLabel, individualRoundsLabel )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
-                                mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith )
+                                mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
+                                htmlSafeString, unEscape )
 import Pages.RoundsParser     ( parseCodesWithMaybeNames )
 
 data RoundRating = RoundRating { 
