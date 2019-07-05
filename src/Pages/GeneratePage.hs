@@ -16,7 +16,7 @@ import Prelude hiding         ( lookup, div )
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 groupLabel, defaultLabels, viewPrevious,
-                                cumulativeLabel, progressionLabel, individualRoundsLabel )
+                                cumulativeLabel, progressionLabel, individualRoundsLabelt )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, unEscape )
