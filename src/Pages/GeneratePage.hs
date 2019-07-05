@@ -15,8 +15,8 @@ import Prelude hiding         ( lookup, div )
 
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
-                                groupLabel, defaultLabels, viewPrevious,
-                                cumulativeLabel, progressionLabel, individualRoundsLabelt )
+                                teamLabel, defaultLabels, viewPrevious,
+                                cumulativeLabel, progressionLabel, individualRoundsLabel )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, unEscape )
@@ -46,71 +46,71 @@ prettyDouble d = short where
 
 type SimplePoints = [Double]
 
-type GroupRating = (GroupKey, Double)
+type TeamRating = (TeamKey, Double)
 
-data Group = Group { groupKey :: GroupKey, points :: Points }
+data Team = Team { teamKey :: TeamKey, points :: Points }
   deriving Show
 
-mkGroupName :: String -> Group -> String
-mkGroupName groupLbl group = name where
-  fallback = (unwords [htmlSafeString groupLbl, show (groupNumber (groupKey group))]) 
-  name = fromMaybe fallback (mfilter (not . null) (teamName (groupKey group)))
+mkTeamName :: String -> Team -> String
+mkTeamName teamLbl team = name where
+  fallback = (unwords [htmlSafeString teamLbl, show (teamNumber (teamKey team))]) 
+  name = fromMaybe fallback (mfilter (not . null) (teamName (teamKey team)))
 
-simplePoints :: Group -> SimplePoints
+simplePoints :: Team -> SimplePoints
 simplePoints = map ownPoints . points
 
 data Round = Round { roundName :: String, 
                      number :: Int, 
                      possible :: Double, 
-                     groupRatings :: [GroupRating] 
+                     teamRatings :: [TeamRating] 
                    }
   deriving Show
 
 fromIndex :: [(Code, Maybe String)] -> String -> Int -> Double -> [Double] -> Round
-fromIndex groupCodes nm n maxPossible ps = Round nm n maxPossible ratings where
-  ratings = zipWith3 (\i (c, ms) p -> (mkGroupKey i c ms, p)) [1 .. ] groupCodes ps
+fromIndex teamCodes nm n maxPossible ps = Round nm n maxPossible ratings where
+  ratings = zipWith3 (\i (c, ms) p -> (mkTeamKey i c ms, p)) [1 .. ] teamCodes ps
 
 type Code = String
 
-data GroupKey = GroupKey { groupNumber :: Int, code :: Code, teamName :: Maybe String }
+data TeamKey = TeamKey { teamNumber :: Int, code :: Code, teamName :: Maybe String }
   deriving Show
 
-mkGroupKey :: Int -> Code -> Maybe String -> GroupKey
-mkGroupKey i c = GroupKey i c . fmap htmlSafeString
+mkTeamKey :: Int -> Code -> Maybe String -> TeamKey
+mkTeamKey i c = TeamKey i c . fmap htmlSafeString
 
-mkSimpleGroupKey :: Int -> Code -> GroupKey
-mkSimpleGroupKey i c = mkGroupKey i c Nothing
+mkSimpleTeamKey :: Int -> Code -> TeamKey
+mkSimpleTeamKey i c = mkTeamKey i c Nothing
 
-instance Eq GroupKey where
-  (==) = (==) `on` groupNumber
+instance Eq TeamKey where
+  (==) = (==) `on` teamNumber
 
-instance Ord GroupKey where
-  compare = compare `on` groupNumber
+instance Ord TeamKey where
+  compare = compare `on` teamNumber
 
 -- Computes the maximum number reached in a given round.
 maxInRound :: Round -> Double
-maxInRound = snd . maximumBy (comparing snd) . groupRatings
+maxInRound = snd . maximumBy (comparing snd) . teamRatings
 
-roundRating :: Round -> Map GroupKey Points
+roundRating :: Round -> Map TeamKey Points
 roundRating rd = fromList ratings where
   n = number rd
   reachable = possible rd
   maxAny = maxInRound rd
-  gs = groupRatings rd
+  gs = teamRatings rd
   ratings = map (second (pure . RoundRating n maxAny reachable)) gs
  
-mkGroups :: [Round] -> [Group]
-mkGroups = map (uncurry Group) . toList . unionsWith (++) . map roundRating
+mkTeams :: [Round] -> [Team]
+mkTeams = map (uncurry Team) . toList . unionsWith (++) . map roundRating
 
-writePointPages :: String -> Labels -> [Group] -> [Color] -> IO ()
-writePointPages prefix labels groups colors =
-  mapM_ (\(group, color) -> writeFile (prefix ++ code (groupKey group) ++ ".html")
-        (pointPage labels color (points group))) (zip groups colors)
+writePointPages :: String -> Labels -> [Team] -> [Color] -> IO ()
+writePointPages prefix labels teams colors =
+  mapM_ (\(team, color) -> writeFile (prefix ++ code (teamKey team) ++ ".html")
+        (pointPage labels color (points team))) (zip teams colors)
 
-writeGraphPage :: String -> Labels -> Int -> [Group] -> [String] -> IO ()
-writeGraphPage prefix labels rounds groups colors =
+writeGraphPage :: String -> Labels -> Int -> [Team] -> [String] -> IO ()
+writeGraphPage prefix labels rounds teams colors =
   writeFile (prefix ++ "index.html")
-            (graphPage labels rounds groups colors)
+            (graphPage labels rounds teams colors)
 
 cssPath :: String
 cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
@@ -183,10 +183,10 @@ defaultColors = cycle [
   , "rgb(216, 191, 216)"
   ]
 
-toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Group -> Color -> String
-toDatasetWith pointMaker rd group g c = unlines [
+toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Team -> Color -> String
+toDatasetWith pointMaker rd team g c = unlines [
     "{",
-    "  label: '" ++ mkGroupName group g ++ "',",
+    "  label: '" ++ mkTeamName team g ++ "',",
     "  borderColor: " ++ show c ++ ",",
     "  backgroundColor: " ++ show c ++ ",",
     "  fill: false,",
@@ -198,10 +198,10 @@ toDatasetWith pointMaker rd group g c = unlines [
     "}"
   ]
 
-toCumulativeDataset :: String -> String -> Group -> Color -> String
+toCumulativeDataset :: String -> String -> Team -> Color -> String
 toCumulativeDataset = toDatasetWith (tail . scanl (+) 0)
 
-toIndividualDataset :: String -> String -> Group -> Color -> String
+toIndividualDataset :: String -> String -> Team -> Color -> String
 toIndividualDataset = toDatasetWith id
 
 roundList :: String -> Int -> String
@@ -266,8 +266,8 @@ mkChartEntry ct canvasLabel chartTitle chartData = unlines [
   ]
   where context = canvasLabel ++ "Context"
 
-mkChartsWith :: Labels -> Int -> [Group] -> [Color] -> String
-mkChartsWith labels rounds groups colors = 
+mkChartsWith :: Labels -> Int -> [Team] -> [Color] -> String
+mkChartsWith labels rounds teams colors = 
   taggedV "script"
           (unlines [
             "var " ++ cumulativeData ++ " = {",
@@ -287,14 +287,14 @@ mkChartsWith labels rounds groups colors =
             ]
           )
   where lbls = roundList (roundLabel labels) rounds
-        mkDataSet f = intercalate "," (zipWith (f (roundLabel labels) (groupLabel labels))
-                                               groups 
+        mkDataSet f = intercalate "," (zipWith (f (roundLabel labels) (teamLabel labels))
+                                               teams 
                                                colors)
         cumulativeData = "cumulativeData"
         perRoundData = "perRoundData"
 
-graphPage :: Labels -> Int -> [Group] -> [Color] -> String
-graphPage labels rounds groups colors = unlines [
+graphPage :: Labels -> Int -> [Team] -> [Color] -> String
+graphPage labels rounds teams colors = unlines [
   taggedV "html"
           (unlines [
              taggedV "head"
@@ -313,11 +313,11 @@ graphPage labels rounds groups colors = unlines [
                                    (mainLabel labels),
                         taggedWith "id = 'top3'"
                                    "div"
-                                   (mkTopThree (groupLabel labels) groups),
+                                   (mkTopThree (teamLabel labels) teams),
                         addCanvas barChartLabel,
                         addCanvas perRoundChartLabel,
                         addCanvas lineChartLabel,
-                        mkChartsWith labels rounds groups colors,
+                        mkChartsWith labels rounds teams colors,
                         taggedWith "id = 'copyright'"
                                    "div"
                                    (unwords [
@@ -334,7 +334,7 @@ graphPage labels rounds groups colors = unlines [
           )
   ]
 
-findTopThree :: [Group] -> [(Double, [Group])]
+findTopThree :: [Team] -> [(Double, [Team])]
 findTopThree = take 3
              . map (\gds -> (snd (head gds), reverse (map fst gds)))
              . groupBy ((==) `on` snd)
@@ -342,12 +342,12 @@ findTopThree = take 3
              . sortBy (comparing snd) 
              . map (\g -> (g, sum (simplePoints g)))
 
-mkTopThree :: String -> [Group] -> String
-mkTopThree groupLbl gs = unlines (map (tagged "div") rated) where
-  rated = zipWith (\i (ps, grs) -> unwords [show i, "(" ++ prettyDouble ps ++ ")", ":", groups grs])
+mkTopThree :: String -> [Team] -> String
+mkTopThree teamLbl gs = unlines (map (tagged "div") rated) where
+  rated = zipWith (\i (ps, grs) -> unwords [show i, "(" ++ prettyDouble ps ++ ")", ":", teams grs])
                   [1 ..] 
                   tops
-  groups =  intercalate ", " . map (\g -> mkGroupName groupLbl g)
+  teams =  intercalate ", " . map (\g -> mkTeamName teamLbl g)
   tops = findTopThree gs
 
 readLabels :: String -> IO Labels
@@ -386,23 +386,23 @@ splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
   (key, preValue) = span ((/=) '=') str
 
--- Creates groups with proper keys, but all points set to empty.
-mkEmptyGroups :: [Code] -> [Group]
-mkEmptyGroups = map (\(i, c) -> Group (mkSimpleGroupKey i c) []) . zip [1 ..]
+-- Creates teams with proper keys, but all points set to empty.
+mkEmptyTeams :: [Code] -> [Team]
+mkEmptyTeams = map (\(i, c) -> Team (mkSimpleTeamKey i c) []) . zip [1 ..]
 
 createWith :: [(String, String)] -> IO ()
 createWith associations = do
     labels <- readLabels labelsPath
     (codesAndNames, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
     colors <- readColors colorsPath
-    let groupsCandidates = mkGroups rounds
-        -- If there are no rounds, we create groups that have not played any rounds yet.
+    let teamsCandidates = mkTeams rounds
+        -- If there are no rounds, we create teams that have not played any rounds yet.
         -- This facilitates the initial creation of the point pages.
-        groups = if null groupsCandidates then mkEmptyGroups (map fst codesAndNames) 
-                                          else groupsCandidates
+        teams = if null teamsCandidates then mkEmptyTeams (map fst codesAndNames) 
+                                          else teamsCandidates
         n = length rounds
-    writePointPages prefix labels groups colors
-    writeGraphPage prefix labels n groups colors
+    writePointPages prefix labels teams colors
+    writeGraphPage prefix labels n teams colors
   where kvs = fromList associations
         labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
         colorsPath = fromMaybe "colors.txt" (lookup "colors" kvs)

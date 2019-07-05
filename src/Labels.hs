@@ -1,4 +1,4 @@
-module Labels ( Labels, defaultLabels, mkLabels, groupLabel, ownPointsLabel,
+module Labels ( Labels, defaultLabels, mkLabels, teamLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
                 progressionLabel ) where
@@ -7,7 +7,7 @@ import Pages.HtmlUtil ( htmlSafeString )
 
 data Labels = Labels { 
   roundLabel :: String,
-  groupLabel :: String,
+  teamLabel :: String,
   ownPointsLabel :: String, 
   maxReachedLabel :: String,
   maxReachableLabel :: String,
@@ -33,11 +33,11 @@ mkLabels :: String
          -> String
          -> String
          -> Labels
-mkLabels roundLbl groupLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl 
+mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl 
          viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl =
     Labels {
         roundLabel = htmlSafeString roundLbl,
-        groupLabel = htmlSafeString groupLbl,
+        teamLabel = htmlSafeString teamLbl,
         ownPointsLabel = htmlSafeString ownPointsLbl,
         maxReachedLabel = htmlSafeString maxReachedLbl,
         maxReachableLabel = htmlSafeString maxReachableLbl,

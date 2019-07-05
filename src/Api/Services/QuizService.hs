@@ -29,7 +29,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               cumulativeParam, individualParam, progressionParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
-import Labels                               ( Labels, mkLabels, groupLabel )
+import Labels                               ( Labels, mkLabels, teamLabel )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
 import Utils                                ( (+>), randomDistinctAlphaNumeric )
 
@@ -105,7 +105,7 @@ newQuiz = do
                 liftIO (do writeLabels name lbls 
                            serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
-                           createSheetWith (groupLabel lbls) rs uName fullServerPath endings
+                           createSheetWith (teamLabel lbls) rs uName fullServerPath endings
                            updateFile (B.unpack name) (unwords endings)
                            createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
@@ -210,9 +210,6 @@ createOrFail path endings = do
 
 validInternalQuizNameChars :: [Char]
 validInternalQuizNameChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ "-_"
-
-validRoundsChars :: [Char]
-validRoundsChars = validInternalQuizNameChars ++ " .,\n:"
 
 isValidStringWith :: [Char] -> String -> Bool
 isValidStringWith vcs = all (\c -> c `elem` vcs)
