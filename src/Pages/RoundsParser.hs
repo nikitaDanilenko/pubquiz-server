@@ -2,7 +2,7 @@ module Pages.RoundsParser ( parseCodesWithMaybeNames ) where
 
 import Control.Applicative           ( (<|>) )
 import Text.Parsec.Prim              ( parse )
-import Text.ParserCombinators.Parsec ( Parser, many1, oneOf, spaces, char, anyChar, sepBy, noneOf )
+import Text.ParserCombinators.Parsec ( Parser, many1, oneOf, spaces, char, sepBy, noneOf )
 import Utils                         ( alphaNumeric )
 
 codeParser :: Parser String
