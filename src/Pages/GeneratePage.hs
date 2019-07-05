@@ -1,4 +1,4 @@
-module Pages.GeneratePage ( createWith ) where
+module Pages.GeneratePage ( createWith, main ) where
 
 import Control.Arrow          ( second, (&&&), (***), (>>>) )
 import Control.Exception      ( catch )
@@ -59,7 +59,11 @@ mkGroupName groupLbl group = name where
 simplePoints :: Group -> SimplePoints
 simplePoints = map ownPoints . points
 
-data Round = Round { name :: String, number :: Int, possible :: Double, groupRatings :: [GroupRating] }
+data Round = Round { roundName :: String, 
+                     number :: Int, 
+                     possible :: Double, 
+                     groupRatings :: [GroupRating] 
+                   }
   deriving Show
 
 fromIndex :: [(Code, Maybe String)] -> String -> Int -> Double -> [Double] -> Round
