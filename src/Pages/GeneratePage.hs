@@ -3,6 +3,7 @@ module Pages.GeneratePage where
 import Control.Arrow          ( second, (&&&), (***), (>>>) )
 import Control.Exception      ( catch )
 import Control.Exception.Base ( IOException )
+import Control.Monad          ( mfilter )
 import Data.Function          ( on )
 import Data.List              ( intercalate, maximumBy, sortBy, groupBy )
 import Data.Map               ( Map, fromList, unionsWith, toList, lookup )
@@ -50,8 +51,9 @@ data Group = Group { groupKey :: GroupKey, points :: Points }
   deriving Show
 
 mkGroupName :: String -> Group -> String
-mkGroupName groupLbl group = 
-  fromMaybe (unwords [groupLbl, show (groupNumber (groupKey group))]) (teamName (groupKey group))
+mkGroupName groupLbl group = name where
+  fallback = (unwords [groupLbl, show (groupNumber (groupKey group))]) 
+  name = fromMaybe fallback (mfilter (not . null) (teamName (groupKey group)))
 
 simplePoints :: Group -> SimplePoints
 simplePoints = map ownPoints . points
