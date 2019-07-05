@@ -1,4 +1,4 @@
-module Pages.GeneratePage where
+module Pages.GeneratePage ( createWith ) where
 
 import Control.Arrow          ( second, (&&&), (***), (>>>) )
 import Control.Exception      ( catch )
@@ -16,7 +16,8 @@ import Prelude hiding         ( lookup, div )
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 groupLabel, defaultLabels, unEscape, viewPrevious,
-                                cumulativeLabel, progressionLabel, individualRoundsLabel )
+                                cumulativeLabel, progressionLabel, individualRoundsLabel,
+                                htmlSafeString )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith )
 import Pages.RoundsParser     ( parseCodesWithMaybeNames )
@@ -52,7 +53,7 @@ data Group = Group { groupKey :: GroupKey, points :: Points }
 
 mkGroupName :: String -> Group -> String
 mkGroupName groupLbl group = name where
-  fallback = (unwords [groupLbl, show (groupNumber (groupKey group))]) 
+  fallback = (unwords [htmlSafeString groupLbl, show (groupNumber (groupKey group))]) 
   name = fromMaybe fallback (mfilter (not . null) (teamName (groupKey group)))
 
 simplePoints :: Group -> SimplePoints
@@ -61,20 +62,20 @@ simplePoints = map ownPoints . points
 data Round = Round { name :: String, number :: Int, possible :: Double, groupRatings :: [GroupRating] }
   deriving Show
 
-zeroRound :: String -> Int -> Round
-zeroRound nm nmb = Round nm nmb 0 [] 
-
 fromIndex :: [(Code, Maybe String)] -> String -> Int -> Double -> [Double] -> Round
 fromIndex groupCodes nm n maxPossible ps = Round nm n maxPossible ratings where
-  ratings = zipWith3 (\i (c, ms) p -> (GroupKey i c ms, p)) [1 .. ] groupCodes ps
+  ratings = zipWith3 (\i (c, ms) p -> (mkGroupKey i c ms, p)) [1 .. ] groupCodes ps
 
 type Code = String
 
 data GroupKey = GroupKey { groupNumber :: Int, code :: Code, teamName :: Maybe String }
   deriving Show
 
+mkGroupKey :: Int -> Code -> Maybe String -> GroupKey
+mkGroupKey i c = GroupKey i c . fmap htmlSafeString
+
 mkSimpleGroupKey :: Int -> Code -> GroupKey
-mkSimpleGroupKey i c = GroupKey i c Nothing
+mkSimpleGroupKey i c = mkGroupKey i c Nothing
 
 instance Eq GroupKey where
   (==) = (==) `on` groupNumber
@@ -389,6 +390,7 @@ createWith :: [(String, String)] -> IO ()
 createWith associations = do
     labels <- readLabels labelsPath
     (codesAndNames, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
+    writeFile "debug.txt" (show codesAndNames)
     colors <- readColors colorsPath
     let groupsCandidates = mkGroups rounds
         -- If there are no rounds, we create groups that have not played any rounds yet.
