@@ -390,7 +390,6 @@ createWith :: [(String, String)] -> IO ()
 createWith associations = do
     labels <- readLabels labelsPath
     (codesAndNames, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
-    writeFile "debug.txt" (show codesAndNames)
     colors <- readColors colorsPath
     let groupsCandidates = mkGroups rounds
         -- If there are no rounds, we create groups that have not played any rounds yet.

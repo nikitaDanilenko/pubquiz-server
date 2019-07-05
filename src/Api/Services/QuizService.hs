@@ -78,7 +78,6 @@ updateQuiz = do
                       if isOpen then
                         modifyResponse (setResponseCode 200)
                       else 
-                        liftIO (writeFile "debugger.txt" (show mNewContent)) >>
                         modifyResponse (setResponseCode 406) >>
                         writeBS "Requested quiz is locked or the update contains invalid symbols."
     
