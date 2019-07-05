@@ -77,7 +77,10 @@ updateQuiz = do
         Just io -> do isOpen <- liftIO io 
                       if isOpen then
                         modifyResponse (setResponseCode 200)
-                      else writeBS "Requested quiz is locked or the update contains invalid symbols."
+                      else 
+                        liftIO (writeFile "debugger.txt" (show mNewContent)) >>
+                        modifyResponse (setResponseCode 406) >>
+                        writeBS "Requested quiz is locked or the update contains invalid symbols."
     
 newQuiz :: Handler b QuizService ()
 newQuiz = do
@@ -133,8 +136,7 @@ updateFile :: String -> String -> IO Bool
 updateFile quizLocation content = do
     isOpen <- isQuizOpen quizLocation
     if isOpen && 
-       isValidStringWith validInternalQuizNameChars quizLocation && 
-       isValidStringWith validRoundsChars content then do
+       isValidStringWith validInternalQuizNameChars quizLocation then do
         quizzesFolder <- quizzesFolderIO
         let mkFull :: String -> String
             mkFull relative = addSeparator [quizzesFolder, quizLocation, relative]
