@@ -51,10 +51,17 @@ type TeamRating = (TeamKey, Double)
 data Team = Team { teamKey :: TeamKey, points :: Points }
   deriving Show
 
-mkTeamName :: String -> Team -> String
-mkTeamName teamLbl team = name where
-  fallback = (unwords [htmlSafeString teamLbl, show (teamNumber (teamKey team))]) 
-  name = fromMaybe fallback (mfilter (not . null) (teamName (teamKey team)))
+data HtmlSafety = Safe | Unsafe
+
+isHtmlSafe :: HtmlSafety -> Bool
+isHtmlSafe Safe = True
+isHtmlSafe _    = False
+
+mkTeamName :: HtmlSafety -> String -> Team -> String
+mkTeamName safe teamLbl team = name where
+  fallback = (unwords [teamLbl, show (teamNumber (teamKey team))])
+  candidate = fromMaybe fallback (mfilter (not . null) (teamName (teamKey team)))
+  name = (if isHtmlSafe safe then htmlSafeString else unEscape) candidate
 
 simplePoints :: Team -> SimplePoints
 simplePoints = map ownPoints . points
@@ -186,7 +193,7 @@ defaultColors = cycle [
 toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Team -> Color -> String
 toDatasetWith pointMaker rd team g c = unlines [
     "{",
-    "  label: '" ++ mkTeamName team g ++ "',",
+    "  label: '" ++ mkTeamName Unsafe team g ++ "',",
     "  borderColor: " ++ show c ++ ",",
     "  backgroundColor: " ++ show c ++ ",",
     "  fill: false,",
@@ -347,7 +354,7 @@ mkTopThree teamLbl gs = unlines (map (tagged "div") rated) where
   rated = zipWith (\i (ps, grs) -> unwords [show i, "(" ++ prettyDouble ps ++ ")", ":", teams grs])
                   [1 ..] 
                   tops
-  teams =  intercalate ", " . map (\g -> mkTeamName teamLbl g)
+  teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl g)
   tops = findTopThree gs
 
 readLabels :: String -> IO Labels
