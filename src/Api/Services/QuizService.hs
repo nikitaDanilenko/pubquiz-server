@@ -9,7 +9,7 @@ import Control.Monad                        ( filterM )
 import Control.Monad.IO.Class               ( liftIO )
 import qualified Data.ByteString.Char8 as B 
 import Data.Function                        ( on )
-import Data.Maybe                           ( maybe )
+import Data.Maybe                           ( maybe, fromMaybe )
 import Snap.Core                            ( method, Method ( GET, POST ), writeBS, modifyResponse,
                                               setResponseCode, getPostParam, getQueryParam )
 import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
@@ -68,7 +68,7 @@ updateQuiz = do
     mSignature <- getPostParam signatureParam
     verified <- authenticate mUser mSignature [(quizParam, mQuiz), (rounds, mNewContent)]
     failIfUnverified verified $
-      let act = liftA2 (updateFile `on` B.unpack) mQuiz mNewContent
+      let act = liftA2 updateFile mQuiz mNewContent
       in case act of
         Nothing -> do writeBS (B.concat ["Malfolmed request:\n", 
                                          quizParam, "=", B.pack (show mQuiz), "\n", 
@@ -98,15 +98,15 @@ newQuiz = do
               let uName = B.unpack name
                   gs = maybe 20 (read . B.unpack) mNumberOfTeams
               endings <- liftIO (randomDistinctAlphaNumeric gs 6)
-              success <- liftIO (createOrFail uName endings)
+              success <- liftIO (createOrFail name endings)
               if success 
                then do
-                let rs = maybe 4 (read . B.unpack) mRounds
+                let rs = fromMaybe 4 (mRounds >>= fmap fst . B.readInt)
                 liftIO (do writeLabels name lbls 
                            serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
                            createSheetWith (teamLabel lbls) rs uName fullServerPath endings
-                           updateFile (B.unpack name) (unwords endings)
+                           updateFile name (B.pack (unwords endings))
                            createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
@@ -131,20 +131,21 @@ writeLabels quizLocation lbls = do
   fullPath <- mkFullPathIO quizLocation labelsFile
   writeFile fullPath (show lbls)
 
-updateFile :: String -> String -> IO Bool
+updateFile :: B.ByteString -> B.ByteString -> IO Bool
 updateFile quizLocation content = do
-    isOpen <- isQuizOpen quizLocation
+    isOpen <- isQuizOpen (B.unpack quizLocation)
     if isOpen && 
-       isValidStringWith validInternalQuizNameChars quizLocation then do
+       isValidTextWith validInternalQuizNameChars quizLocation then do
         quizzesFolder <- quizzesFolderIO
         let mkFull :: String -> String
-            mkFull relative = addSeparator [quizzesFolder, quizLocation, relative]
+            mkFull relative = addSeparator [quizzesFolder, (B.unpack quizLocation), relative]
 
             fullQuizDir = mkFull ""
             fullQuizPath = mkFull roundsFile
             fullLabelPath = mkFull labelsFile
             fullColorsPath = mkFull colorsFile
-        writeFile fullQuizPath content
+        -- putStrLn ("Debug: " ++ content)
+        B.writeFile fullQuizPath content
         createWith (map (\(k, v) -> (B.unpack k, v)) [(prefix, fullQuizDir), 
                                                       (rounds, fullQuizPath),
                                                       (labels, fullLabelPath),
@@ -183,8 +184,8 @@ isQuizOpen folder = fmap not (doesFileExist (addSeparator [folder, locked]))
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
 readQuizFile quizLocation = (do 
     filePath <- filePathIO
-    file <- B.readFile filePath
-    return (Just file)) `catch` handle where
+    file <- readFile filePath
+    return (Just (B.pack file))) `catch` handle where
     
     handle :: IOException -> IO (Maybe B.ByteString)
     handle _ = filePathIO >>= \filePath -> putStrLn (filePath ++ " does not exist.") 
@@ -198,21 +199,21 @@ mkFullPathIO quizLocation filePath = do
   quizzesFolder <- quizzesFolderIO
   return (addSeparator [quizzesFolder, B.unpack quizLocation, filePath])
 
-createOrFail :: FilePath -> [Ending] -> IO Bool
+createOrFail :: B.ByteString -> [Ending] -> IO Bool
 createOrFail path endings = do
     quizzesFolder <- quizzesFolderIO
-    let fullPath = addSeparator [quizzesFolder, path]
+    let fullPath = addSeparator [quizzesFolder, B.unpack path]
     b <- doesDirectoryExist fullPath
-    if b || not (isValidStringWith validInternalQuizNameChars path) then return False else do
+    if b || not (isValidTextWith validInternalQuizNameChars path) then return False else do
         createDirectory fullPath
-        writeFile (addSeparator [fullPath, roundsFile]) (unwords endings)
+        B.writeFile (addSeparator [fullPath, roundsFile]) (B.pack (unwords endings))
         return True
 
 validInternalQuizNameChars :: [Char]
 validInternalQuizNameChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ "-_"
 
-isValidStringWith :: [Char] -> String -> Bool
-isValidStringWith vcs = all (\c -> c `elem` vcs)
+isValidTextWith :: [Char] -> B.ByteString -> Bool
+isValidTextWith vcs = B.all (\c -> c `elem` vcs)
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit = do
