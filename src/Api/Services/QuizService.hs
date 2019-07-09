@@ -184,8 +184,8 @@ isQuizOpen folder = fmap not (doesFileExist (addSeparator [folder, locked]))
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
 readQuizFile quizLocation = (do 
     filePath <- filePathIO
-    file <- readFile filePath
-    return (Just (B.pack file))) `catch` handle where
+    file <- B.readFile filePath
+    return (Just file)) `catch` handle where
     
     handle :: IOException -> IO (Maybe B.ByteString)
     handle _ = filePathIO >>= \filePath -> putStrLn (filePath ++ " does not exist.") 
