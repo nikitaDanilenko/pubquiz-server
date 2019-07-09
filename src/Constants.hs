@@ -45,6 +45,9 @@ splitOnSetter str = (key, drop 1 preValue) where
 addSeparator :: [String] -> String
 addSeparator = intercalate [pathSeparator]
 
+addSeparatorBS :: [B.ByteString] -> B.ByteString
+addSeparatorBS = B.intercalate (B.pack [pathSeparator])
+
 locked :: String
 locked = ".locked"
 
