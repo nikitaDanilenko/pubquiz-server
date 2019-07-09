@@ -320,7 +320,7 @@ graphPage labels rounds teams colors = unlines [
                                    (mainLabel labels),
                         taggedWith "id = 'top3'"
                                    "div"
-                                   (mkTopThree (teamLabel labels) teams),
+                                   (mkTopDownList (teamLabel labels) teams),
                         addCanvas barChartLabel,
                         addCanvas perRoundChartLabel,
                         addCanvas lineChartLabel,
@@ -341,21 +341,20 @@ graphPage labels rounds teams colors = unlines [
           )
   ]
 
-findTopThree :: [Team] -> [(Double, [Team])]
-findTopThree = take 3
-             . map (\gds -> (snd (head gds), reverse (map fst gds)))
+findTopDownOrder :: [Team] -> [(Double, [Team])]
+findTopDownOrder = map (\gds -> (snd (head gds), reverse (map fst gds)))
              . groupBy ((==) `on` snd)
              . reverse
              . sortBy (comparing snd) 
              . map (\g -> (g, sum (simplePoints g)))
 
-mkTopThree :: String -> [Team] -> String
-mkTopThree teamLbl gs = unlines (map (tagged "div") rated) where
+mkTopDownList :: String -> [Team] -> String
+mkTopDownList teamLbl gs = unlines (map (tagged "div") rated) where
   rated = zipWith (\i (ps, grs) -> unwords [show i, "(" ++ prettyDouble ps ++ ")", ":", teams grs])
                   [1 ..] 
                   tops
   teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl g)
-  tops = findTopThree gs
+  tops = findTopDownOrder gs
 
 readLabels :: String -> IO Labels
 readLabels labelsPath = fmap (read :: String -> Labels) (readFile labelsPath) `catch` handle where
