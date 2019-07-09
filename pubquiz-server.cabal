@@ -7,7 +7,7 @@ name:                pubquiz-server
 version:             0.1.1.0
 synopsis:            Host server for pub quiz application.
 description:         A server that can process restful commands and manage the files necessary
-                     to run the pubquiz-score project locally.
+                     to generate point pages.
 -- bug-reports:
 license:             BSD3
 license-file:        LICENSE
