@@ -94,7 +94,7 @@ unEscape str = prefix ++ unEscape rest where
     '&' : 'U' : 'u' : 'm' : 'l' : ';' : cs       -> ("Ü", cs)
     '&' : 's' : 'z' : 'l' : 'i' : 'g' : ';' : cs -> ("ß", cs)
     '&' : 'l' : 't' : ';' : cs                   -> ("<", cs)
-    '&' : 'g' : 't' : ';' : cs                   -> ("g", cs)
+    '&' : 'g' : 't' : ';' : cs                   -> (">", cs)
     '&' : 'n' : 'b' : 's' : 'p' : ';' : cs       -> ("\n", cs)
     c : cs                                       -> ([c], cs)
     []                                           -> ([], [])
