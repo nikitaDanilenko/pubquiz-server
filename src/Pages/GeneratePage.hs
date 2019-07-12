@@ -16,7 +16,8 @@ import Prelude hiding         ( lookup, div )
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
-                                cumulativeLabel, progressionLabel, individualRoundsLabel )
+                                cumulativeLabel, progressionLabel, individualRoundsLabel,
+                                placementLabel )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, unEscape )
@@ -323,10 +324,14 @@ graphPage labels rounds teams colors = unlines [
                                    (mainLabel labels),
                         taggedWith "id = 'top3'"
                                    "div"
-                                   (mkTopDownList (teamLabel labels)
-                                                  (placeLabel labels)
-                                                  (pointsLabel labels)
-                                                  teams),
+                                   (unlines[
+                                             tagged "label" (placementLabel labels),
+                                             mkTopDownList (teamLabel labels)
+                                                           (placeLabel labels)
+                                                           (pointsLabel labels)
+                                                           teams
+                                            ]
+                                   ),
                         addCanvas barChartLabel,
                         addCanvas perRoundChartLabel,
                         addCanvas lineChartLabel,
