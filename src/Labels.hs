@@ -3,12 +3,11 @@ module Labels ( Labels, defaultLabels, mkLabels, teamLabel, ownPointsLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
                 progressionLabel ) where
 
-import Control.Applicative           ( (<|>), (*>) )
+import Control.Applicative           ( (*>) )
 import Text.Parsec.Language          ( haskellDef )
 import Text.Parsec.Prim              ( parse )
 import Text.Parsec.Token             ( makeTokenParser, stringLiteral )
-import Text.ParserCombinators.Parsec ( Parser, many1, oneOf, spaces, char, sepBy, noneOf,
-                                       choice, string, try )
+import Text.ParserCombinators.Parsec ( Parser, spaces, char, choice, string, try )
 
 import Pages.HtmlUtil                ( htmlSafeString )
 
