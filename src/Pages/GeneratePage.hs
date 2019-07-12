@@ -215,13 +215,13 @@ toIndividualDataset :: String -> String -> Team -> Color -> String
 toIndividualDataset = toDatasetWith id
 
 roundList :: HtmlSafety -> String -> Int -> String
-roundList safe roundName n = intercalate "," (map enclose (take n (roundListInf safe roundName)))
-  where enclose :: String -> String
-        enclose t = concat ["'", t, "'"]
+roundList safe rn n = intercalate "," (map enclose (take n (roundListInf safe rn))) where
+  enclose :: String -> String
+  enclose t = concat ["'", t, "'"]
 
 roundListInf :: HtmlSafety -> String -> [String]
-roundListInf safe roundName = 
-  zipWith (\r i -> concat [r, " ", show i]) (repeat (mkSafeString safe roundName)) [(1 :: Int) ..]
+roundListInf safe rn = 
+  zipWith (\r i -> concat [r, " ", show i]) (repeat (mkSafeString safe rn)) [(1 :: Int) ..]
 
 addCanvas :: String -> String
 addCanvas canvasLabel = div (taggedWith (concat ["id='", canvasLabel, "'"]) "canvas" "")
@@ -354,7 +354,7 @@ findTopDownOrder = map (\gds -> (snd (head gds), reverse (map fst gds)))
 mkTopDownList :: String -> [Team] -> String
 mkTopDownList teamLbl gs = unlines (map (tagged "div") rated) where
   rated = zipWith (\i (ps, grs) -> unwords [show i, "(" ++ prettyDouble ps ++ ")", ":", teams grs])
-                  [1 ..] 
+                  [(1 :: Int) ..] 
                   tops
   teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl g)
   tops = findTopDownOrder gs
@@ -376,12 +376,12 @@ readColors colorsPath = fmap lines (readFile colorsPath) `catch` handle where
 
 parseCodesWithNamesAndRounds :: String -> String -> ([(Code, Maybe String)], [Round])
 parseCodesWithNamesAndRounds _ [] = ([], [])
-parseCodesWithNamesAndRounds roundName text = (codesAndNames, rounds) where
+parseCodesWithNamesAndRounds rn text = (codesAndNames, rounds) where
   (l : ls) = lines text
   codesAndNames = parseCodesWithMaybeNames l
   pts = map readPoints ls
   indexedPoints = zip [1 ..] pts
-  rounds = map (\(i, (total, ps)) -> fromIndex codesAndNames roundName i total ps) indexedPoints
+  rounds = map (\(i, (total, ps)) -> fromIndex codesAndNames rn i total ps) indexedPoints
 
 readCodesAndRounds :: String -> String -> IO ([(Code, Maybe String)], [Round])
 readCodesAndRounds roundsPath rdLabel =
