@@ -61,7 +61,10 @@ mkTeamName :: HtmlSafety -> String -> Team -> String
 mkTeamName safe teamLbl team = name where
   fallback = (unwords [teamLbl, show (teamNumber (teamKey team))])
   candidate = fromMaybe fallback (mfilter (not . null) (teamName (teamKey team)))
-  name = (if isHtmlSafe safe then htmlSafeString else unEscape) candidate
+  name = mkSafeString safe candidate
+
+mkSafeString :: HtmlSafety -> String -> String
+mkSafeString safe text = if isHtmlSafe safe then htmlSafeString text else unEscape text
 
 simplePoints :: Team -> SimplePoints
 simplePoints = map ownPoints . points
@@ -200,7 +203,7 @@ toDatasetWith pointMaker rd team g c = unlines [
     "  lineTension: 0,",
     "  data: [" ++ intercalate ","
                                (zipWith (\x y -> "{ x: '" ++ x ++ "' , y: '" ++ show y ++ "'}")
-                                        (roundListInf rd)
+                                        (roundListInf Unsafe rd)
                                         (pointMaker (simplePoints g))) ++ "]",
     "}"
   ]
@@ -211,14 +214,14 @@ toCumulativeDataset = toDatasetWith (tail . scanl (+) 0)
 toIndividualDataset :: String -> String -> Team -> Color -> String
 toIndividualDataset = toDatasetWith id
 
-roundList :: String -> Int -> String
-roundList roundName n = intercalate "," (map enclose (take n (roundListInf roundName))) where
-  enclose :: String -> String
-  enclose t = concat ["'", t, "'"]
+roundList :: HtmlSafety -> String -> Int -> String
+roundList safe roundName n = intercalate "," (map enclose (take n (roundListInf safe roundName)))
+  where enclose :: String -> String
+        enclose t = concat ["'", t, "'"]
 
-roundListInf :: String -> [String]
-roundListInf roundName = 
-  zipWith (\r i -> concat [r, " ", show i]) (repeat roundName) [(1 :: Int) ..]
+roundListInf :: HtmlSafety -> String -> [String]
+roundListInf safe roundName = 
+  zipWith (\r i -> concat [r, " ", show i]) (repeat (mkSafeString safe roundName)) [(1 :: Int) ..]
 
 addCanvas :: String -> String
 addCanvas canvasLabel = div (taggedWith (concat ["id='", canvasLabel, "'"]) "canvas" "")
@@ -293,7 +296,7 @@ mkChartsWith labels rounds teams colors =
             "};"
             ]
           )
-  where lbls = roundList (roundLabel labels) rounds
+  where lbls = roundList Unsafe (roundLabel labels) rounds
         mkDataSet f = intercalate "," (zipWith (f (roundLabel labels) (teamLabel labels))
                                                teams 
                                                colors)
