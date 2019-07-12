@@ -15,7 +15,7 @@ import Prelude hiding         ( lookup, div )
 
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
-                                teamLabel, defaultLabels, viewPrevious,
+                                teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
@@ -323,7 +323,10 @@ graphPage labels rounds teams colors = unlines [
                                    (mainLabel labels),
                         taggedWith "id = 'top3'"
                                    "div"
-                                   (mkTopDownList (teamLabel labels) teams),
+                                   (mkTopDownList (teamLabel labels)
+                                                  (placeLabel labels)
+                                                  (pointsLabel labels)
+                                                  teams),
                         addCanvas barChartLabel,
                         addCanvas perRoundChartLabel,
                         addCanvas lineChartLabel,
@@ -351,13 +354,18 @@ findTopDownOrder = map (\gds -> (snd (head gds), reverse (map fst gds)))
              . sortBy (comparing snd) 
              . map (\g -> (g, sum (simplePoints g)))
 
-mkTopDownList :: String -> [Team] -> String
-mkTopDownList teamLbl gs = unlines (map (tagged "div") rated) where
-  rated = zipWith (\i (ps, grs) -> unwords [show i, "(" ++ prettyDouble ps ++ ")", ":", teams grs])
+mkTopDownList :: String -> String -> String -> [Team] -> String
+mkTopDownList teamLbl placeLbl pointsLbl gs = unlines (map (tagged "div") rated) where
+  rated = zipWith (\i (ps, grs) -> unwords [unwords [placeLbl, show i], 
+                                                     "(" ++ unwords [prettyDouble ps, pointsLbl] ++ ")", 
+                                                     ":", 
+                                                     teams grs])
                   [(1 :: Int) ..] 
                   tops
   teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl g)
   tops = findTopDownOrder gs
+
+-- mkRoundWinnerList :: [Team] -> String
 
 readLabels :: String -> IO Labels
 readLabels labelsPath = fmap (read :: String -> Labels) (readFile labelsPath) `catch` handle where
