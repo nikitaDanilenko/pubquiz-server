@@ -1,4 +1,5 @@
-module Labels ( Labels, defaultLabels, mkLabels, teamLabel, ownPointsLabel,
+module Labels ( Labels, defaultLabels, mkLabels, labelsFromParameterList,
+                teamLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
                 progressionLabel ) where
@@ -120,19 +121,23 @@ additionalChartsKeys = originalKeys ++ [cumulativeKey, individualRoundsKey, prog
 placementsKeys :: [String]
 placementsKeys = additionalChartsKeys ++ [placementKey, placeKey, pointsKey, roundWinnerKey]
 
-labelsParser :: Parser Labels
-labelsParser = 
-  fmap matcher (choice (map try [withOriginal, withAdditionalCharts, withPlacements])) where
-    matcher :: [String] -> Labels
-    matcher (r : t : op : mred : mr : btc : m : o : vp : []) = 
-      Labels r t op mred mr btc m o vp
+labelsFromParameterList :: [String] -> Labels
+labelsFromParameterList ws = case ws of
+  r : t : op : mred : mr : btc : m : o : vp : [] -> 
+      mkLabels r t op mred mr btc m o vp
              cumulativeFallback individualRoundsFallback progressionFallback
              placementFallback placeFallback pointsFallback roundWinnerFallback
-    matcher (r : t : op : mred : mr : btc : m : o : vp : c : i : p : []) =
-      Labels r t op mred mr btc m o vp c i p 
+  r : t : op : mred : mr : btc : m : o : vp : c : i : p : [] ->
+      mkLabels r t op mred mr btc m o vp c i p 
              placementFallback placeFallback pointsFallback roundWinnerFallback
-    matcher (r : t : op : mred : mr : btc : m : o : vp : c : i : p : plcm : plc : ps : rw : _) =
-      Labels r t op mred mr btc m o vp c i p plcm plc ps rw
+  r : t : op : mred : mr : btc : m : o : vp : c : i : p : plcm : plc : ps : rw : _ ->
+      mkLabels r t op mred mr btc m o vp c i p plcm plc ps rw
+  _ -> defaultLabels
+
+labelsParser :: Parser Labels
+labelsParser = 
+  fmap labelsFromParameterList 
+       (choice (map try [withOriginal, withAdditionalCharts, withPlacements]))
 
 constructor :: String
 constructor = "Labels"
