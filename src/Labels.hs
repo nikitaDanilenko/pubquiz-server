@@ -2,7 +2,7 @@ module Labels ( Labels, defaultLabels, mkLabels, labelsFromParameterList,
                 teamLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
-                progressionLabel ) where
+                progressionLabel, placementLabel, placeLabel, pointsLabel, roundWinnerLabel ) where
 
 import Control.Applicative           ( (*>) )
 import Text.Parsec.Language          ( haskellDef )
