@@ -17,7 +17,7 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel,
-                                placementLabel )
+                                placementLabel, roundWinnerLabel )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, unEscape )
@@ -58,10 +58,10 @@ isHtmlSafe :: HtmlSafety -> Bool
 isHtmlSafe Safe = True
 isHtmlSafe _    = False
 
-mkTeamName :: HtmlSafety -> String -> Team -> String
-mkTeamName safe teamLbl team = name where
-  fallback = (unwords [teamLbl, show (teamNumber (teamKey team))])
-  candidate = fromMaybe fallback (mfilter (not . null) (teamName (teamKey team)))
+mkTeamName :: HtmlSafety -> String -> TeamKey -> String
+mkTeamName safe teamLbl key = name where
+  fallback = (unwords [teamLbl, show (teamNumber key)])
+  candidate = fromMaybe fallback (mfilter (not . null) (teamName key))
   name = mkSafeString safe candidate
 
 mkSafeString :: HtmlSafety -> String -> String
@@ -102,26 +102,30 @@ instance Ord TeamKey where
 maxInRound :: Round -> Double
 maxInRound = snd . maximumBy (comparing snd) . teamRatings
 
-roundRating :: Round -> Map TeamKey Points
-roundRating rd = fromList ratings where
+roundRating :: Round -> (Map TeamKey Points, [TeamKey])
+roundRating rd = (fromList ratings, winners) where
   n = number rd
   reachable = possible rd
   maxAny = maxInRound rd
   gs = teamRatings rd
+  winners = map fst (filter ((maxAny ==) . snd) gs)
   ratings = map (second (pure . RoundRating n maxAny reachable)) gs
  
-mkTeams :: [Round] -> [Team]
-mkTeams = map (uncurry Team) . toList . unionsWith (++) . map roundRating
+mkTeams :: [Round] -> ([Team], [[TeamKey]])
+mkTeams rs = (ts, tks) where 
+  ratings = map roundRating rs
+  ts = map (uncurry Team) . toList . unionsWith (++) . map fst $ ratings
+  tks = map snd ratings
 
 writePointPages :: String -> Labels -> [Team] -> [Color] -> IO ()
 writePointPages prefix labels teams colors =
   mapM_ (\(team, color) -> writeFile (prefix ++ code (teamKey team) ++ ".html")
         (pointPage labels color (points team))) (zip teams colors)
 
-writeGraphPage :: String -> Labels -> Int -> [Team] -> [String] -> IO ()
-writeGraphPage prefix labels rounds teams colors =
+writeGraphPage :: String -> Labels -> Int -> [Team] -> [[TeamKey]] -> [String] -> IO ()
+writeGraphPage prefix labels rounds teams winners colors =
   writeFile (prefix ++ "index.html")
-            (graphPage labels rounds teams colors)
+            (graphPage labels rounds teams winners colors)
 
 cssPath :: String
 cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
@@ -197,7 +201,7 @@ defaultColors = cycle [
 toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Team -> Color -> String
 toDatasetWith pointMaker rd team g c = unlines [
     "{",
-    "  label: '" ++ mkTeamName Unsafe team g ++ "',",
+    "  label: '" ++ mkTeamName Unsafe team (teamKey g) ++ "',",
     "  borderColor: " ++ show c ++ ",",
     "  backgroundColor: " ++ show c ++ ",",
     "  fill: false,",
@@ -304,8 +308,8 @@ mkChartsWith labels rounds teams colors =
         cumulativeData = "cumulativeData"
         perRoundData = "perRoundData"
 
-graphPage :: Labels -> Int -> [Team] -> [Color] -> String
-graphPage labels rounds teams colors = unlines [
+graphPage :: Labels -> Int -> [Team] -> [[TeamKey]] -> [Color] -> String
+graphPage labels rounds teams winners colors = unlines [
   taggedV "html"
           (unlines [
              taggedV "head"
@@ -332,6 +336,13 @@ graphPage labels rounds teams colors = unlines [
                                                            teams
                                             ]
                                    ),
+                        taggedWith "id = 'winners'"
+                                   "div"
+                                   (unlines [
+                                      tagged "label" (roundWinnerLabel labels),
+                                      mkWinnerList (roundLabel labels) (teamLabel labels) winners
+                                      ]
+                                    ),
                         addCanvas barChartLabel,
                         addCanvas perRoundChartLabel,
                         addCanvas lineChartLabel,
@@ -367,10 +378,16 @@ mkTopDownList teamLbl placeLbl pointsLbl gs = unlines (map (tagged "div") rated)
                                                      teams grs])
                   [(1 :: Int) ..] 
                   tops
-  teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl g)
+  teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl (teamKey g))
   tops = findTopDownOrder gs
 
--- mkRoundWinnerList :: [Team] -> String
+mkWinnerList :: String -> String -> [[TeamKey]] -> String
+mkWinnerList roundLbl teamLbl =
+  unlines . map (\(i, ws) -> tagged "div" 
+                     (concat [unwords [roundLbl, show i], 
+                              ": ", 
+                              intercalate ", " (map (mkTeamName Safe teamLbl) ws)]))
+          . zip [(1 :: Int) ..]
 
 readLabels :: String -> IO Labels
 readLabels labelsPath = fmap (read :: String -> Labels) (readFile labelsPath) `catch` handle where
@@ -417,14 +434,14 @@ createWith associations = do
     labels <- readLabels labelsPath
     (codesAndNames, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
     colors <- readColors colorsPath
-    let teamsCandidates = mkTeams rounds
+    let (teamsCandidates, winners) = mkTeams rounds
         -- If there are no rounds, we create teams that have not played any rounds yet.
         -- This facilitates the initial creation of the point pages.
         teams = if null teamsCandidates then mkEmptyTeams (map fst codesAndNames) 
-                                          else teamsCandidates
+                                        else teamsCandidates
         n = length rounds
     writePointPages prefix labels teams colors
-    writeGraphPage prefix labels n teams colors
+    writeGraphPage prefix labels n teams winners colors
   where kvs = fromList associations
         labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
         colorsPath = fromMaybe "colors.txt" (lookup "colors" kvs)
