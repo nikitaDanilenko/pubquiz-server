@@ -8,7 +8,6 @@ import Control.Exception.Base               ( IOException )
 import Control.Monad                        ( filterM )
 import Control.Monad.IO.Class               ( liftIO )
 import qualified Data.ByteString.Char8 as B 
-import Data.Function                        ( on )
 import Data.Maybe                           ( maybe, fromMaybe )
 import Snap.Core                            ( method, Method ( GET, POST ), writeBS, modifyResponse,
                                               setResponseCode, getPostParam, getQueryParam )
@@ -29,7 +28,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               cumulativeParam, individualParam, progressionParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
-import Labels                               ( Labels, mkLabels, teamLabel )
+import Labels                               ( Labels, labelsFromParameterList, teamLabel )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
 import Utils                                ( (+>), randomDistinctAlphaNumeric )
 
@@ -122,8 +121,8 @@ fetchLabels = do
   params <- mapM getPostParam [roundParam, teamParam, ownPointsParam, maxReachedParam,
                                maxReachableParam, backToChartViewParam, mainParam, ownPageParam,
                                viewQuizzesParam, cumulativeParam, individualParam, progressionParam]
-  let r : t : opts : mred : mrable : b : m : opg : vq : c : i : p : _ = map (maybe "" (B.unpack)) params
-      lbls = mkLabels r t opts mred mrable b m opg vq c i p
+  let ps = map (maybe "" (B.unpack)) params
+      lbls = labelsFromParameterList ps
   return lbls
 
 writeLabels :: B.ByteString -> Labels -> IO ()
