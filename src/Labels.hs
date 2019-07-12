@@ -3,7 +3,14 @@ module Labels ( Labels, defaultLabels, mkLabels, teamLabel, ownPointsLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
                 progressionLabel ) where
 
-import Pages.HtmlUtil ( htmlSafeString )
+import Control.Applicative           ( (<|>), (*>) )
+import Text.Parsec.Language          ( haskellDef )
+import Text.Parsec.Prim              ( parse )
+import Text.Parsec.Token             ( makeTokenParser, stringLiteral )
+import Text.ParserCombinators.Parsec ( Parser, many1, oneOf, spaces, char, sepBy, noneOf,
+                                       choice, string, try )
+
+import Pages.HtmlUtil                ( htmlSafeString )
 
 data Labels = Labels { 
   roundLabel :: String,
@@ -15,10 +22,166 @@ data Labels = Labels {
   mainLabel :: String,
   ownPageLabel :: String,
   viewPrevious :: String,
+
   cumulativeLabel :: String,
   individualRoundsLabel :: String,
-  progressionLabel :: String
-} deriving (Show, Read)
+  progressionLabel :: String,
+  
+  placementLabel :: String,
+  placeLabel :: String,
+  pointsLabel :: String,
+  roundWinnerLabel :: String
+
+} deriving Show
+
+instance Read Labels where
+  readsPrec _ text = case parse labelsParser "" text of
+    Right labels -> [(labels, "")]
+    Left  _ -> []
+
+cumulativeFallback :: String
+cumulativeFallback = "Gesamtwertung"
+
+individualRoundsFallback :: String
+individualRoundsFallback = "Punkte pro Runde"
+
+progressionFallback :: String
+progressionFallback = "Verlauf"
+
+placementFallback :: String
+placementFallback = "Platzierung"
+
+placeFallback :: String
+placeFallback = "Platz"
+
+pointsFallback :: String
+pointsFallback = "Punkte"
+
+roundWinnerFallback :: String
+roundWinnerFallback = "Rundensieger"
+
+roundKey :: String
+roundKey = "roundLabel"
+
+teamKey :: String
+teamKey = "teamLabel"
+
+ownPointsKey :: String
+ownPointsKey = "ownPointsLabel"
+
+maxReachedKey :: String
+maxReachedKey = "maxReachedLabel"
+
+maxReachableKey :: String
+maxReachableKey = "maxReachableLabel"
+
+backToChartKey :: String
+backToChartKey = "backToChartView"
+
+mainKey :: String
+mainKey = "mainLabel"
+
+ownPageKey :: String
+ownPageKey = "ownPageLabel"
+
+viewPreviousKey :: String
+viewPreviousKey = "viewPrevious"
+
+cumulativeKey :: String
+cumulativeKey = "cumulativeLabel"
+
+individualRoundsKey :: String
+individualRoundsKey = "individualRoundsLabel"
+
+progressionKey :: String
+progressionKey = "progressionLabel"
+
+placementKey :: String
+placementKey = "placementLabel"
+
+placeKey :: String
+placeKey = "placeLabel"
+
+pointsKey :: String
+pointsKey = "pointsLabel"
+
+roundWinnerKey :: String
+roundWinnerKey = "roundWinnerLabel"
+
+originalKeys :: [String]
+originalKeys = [ 
+    roundKey, teamKey, ownPointsKey, 
+    maxReachedKey, maxReachableKey, backToChartKey, 
+    mainKey, ownPageKey, viewPreviousKey
+  ]
+
+additionalChartsKeys :: [String]
+additionalChartsKeys = originalKeys ++ [cumulativeKey, individualRoundsKey, progressionKey]
+
+placementsKeys :: [String]
+placementsKeys = additionalChartsKeys ++ [placementKey, placeKey, pointsKey, roundWinnerKey]
+
+labelsParser :: Parser Labels
+labelsParser = 
+  fmap matcher (choice (map try [withOriginal, withAdditionalCharts, withPlacements])) where
+    matcher :: [String] -> Labels
+    matcher (r : t : op : mred : mr : btc : m : o : vp : []) = 
+      Labels r t op mred mr btc m o vp
+             cumulativeFallback individualRoundsFallback progressionFallback
+             placementFallback placeFallback pointsFallback roundWinnerFallback
+    matcher (r : t : op : mred : mr : btc : m : o : vp : c : i : p : []) =
+      Labels r t op mred mr btc m o vp c i p 
+             placementFallback placeFallback pointsFallback roundWinnerFallback
+    matcher (r : t : op : mred : mr : btc : m : o : vp : c : i : p : plcm : plc : ps : rw : _) =
+      Labels r t op mred mr btc m o vp c i p plcm plc ps rw
+
+constructor :: String
+constructor = "Labels"
+
+argumentSeparator :: Char
+argumentSeparator = ','
+
+intersperse :: String -> [Parser a] -> Parser [a]
+intersperse _         []       = pure []
+intersperse _         [p]      = fmap pure (spaces *> p)
+intersperse separator (p : ps) = do
+  spaces
+  r <- p
+  spaces
+  string separator
+  rs <- intersperse separator ps
+  return (r : rs)
+
+stringParser :: Parser String
+stringParser = stringLiteral (makeTokenParser haskellDef)
+
+keyValueParser :: String -> Parser String
+keyValueParser key = 
+  string key *>
+  spaces *>
+  char '=' *>
+  spaces *>
+  stringParser
+
+withKeyList :: [String] -> Parser [String]
+withKeyList keys = do
+  string constructor
+  spaces
+  char '{'
+  spaces
+  args <- intersperse [argumentSeparator] (map keyValueParser keys)
+  spaces
+  char '}'
+  return args
+
+withOriginal :: Parser [String]
+withOriginal = withKeyList originalKeys
+
+withAdditionalCharts :: Parser [String]
+withAdditionalCharts = withKeyList additionalChartsKeys
+
+withPlacements :: Parser [String]
+withPlacements = withKeyList placementsKeys
 
 mkLabels :: String
          -> String
@@ -32,9 +195,14 @@ mkLabels :: String
          -> String
          -> String
          -> String
+         -> String
+         -> String
+         -> String
+         -> String
          -> Labels
 mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl 
-         viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl =
+         viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl
+         placementLbl placeLbl pointsLbl roundWinnerLbl =
     Labels {
         roundLabel = htmlSafeString roundLbl,
         teamLabel = htmlSafeString teamLbl,
@@ -47,7 +215,11 @@ mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mai
         viewPrevious = htmlSafeString viewPreviousLbl,
         cumulativeLabel = htmlSafeString cumulativeLbl,
         individualRoundsLabel = htmlSafeString individualRoundsLbl,
-        progressionLabel = htmlSafeString progressionLbl
+        progressionLabel = htmlSafeString progressionLbl,
+        placementLabel = htmlSafeString placementLbl,
+        placeLabel = htmlSafeString placeLbl,
+        pointsLabel = pointsLbl,
+        roundWinnerLabel = roundWinnerLbl
     } 
 
 defaultLabels :: Labels
@@ -64,3 +236,7 @@ defaultLabels = mkLabels
    "Gesamtpunkte"
    "Punkte pro Runde"
    "Verlauf"
+   "Platzierungen"
+   "Platz"
+   "Punkte"
+   "Rundensiegen"
