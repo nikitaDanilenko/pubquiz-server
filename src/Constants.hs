@@ -123,6 +123,18 @@ individualParam = "individualLabel"
 progressionParam :: B.ByteString
 progressionParam = "progressionLabel"
 
+placementParam :: B.ByteString
+placementParam = "placementLabel"
+
+placeParam :: B.ByteString
+placeParam = "placeLabel"
+
+pointsParam :: B.ByteString
+pointsParam = "pointsLabel"
+
+roundWinnerParam :: B.ByteString
+roundWinnerParam = "roundWinnerLabel"
+
 userParam :: B.ByteString
 userParam = "user"
 
