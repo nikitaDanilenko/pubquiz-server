@@ -25,7 +25,9 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               serverQuizPathIO, quizPath, signatureParam, userParam,
                                               actionParam, createQuiz, lock, roundsNumberParam,
                                               server, numberOfTeamsParam, viewQuizzesParam,
-                                              cumulativeParam, individualParam, progressionParam )
+                                              cumulativeParam, individualParam, progressionParam ,
+                                              placementParam, placeParam, pointsParam,
+                                              roundWinnerParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, labelsFromParameterList, teamLabel )
@@ -120,7 +122,9 @@ fetchLabels :: Handler b QuizService Labels
 fetchLabels = do
   params <- mapM getPostParam [roundParam, teamParam, ownPointsParam, maxReachedParam,
                                maxReachableParam, backToChartViewParam, mainParam, ownPageParam,
-                               viewQuizzesParam, cumulativeParam, individualParam, progressionParam]
+                               viewQuizzesParam, cumulativeParam, individualParam, progressionParam,
+                               placementParam, placeParam, pointsParam, roundWinnerParam
+                               ]
   let ps = map (maybe "" (B.unpack)) params
       lbls = labelsFromParameterList ps
   return lbls
