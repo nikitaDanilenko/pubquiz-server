@@ -111,8 +111,7 @@ newQuiz = do
                            let fullServerPath = addSeparator [server, serverPath]
                            createSheetWith (teamLabel lbls) rs uName fullServerPath endings
                            updateFile name (B.pack (unwords endings))
-                           createFrontPage
-                           removeFile fullWAPath)
+                           createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
                else do
