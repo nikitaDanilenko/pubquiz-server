@@ -176,6 +176,7 @@ withKeyList keys = do
   args <- intersperse [argumentSeparator] (map keyValueParser keys)
   spaces
   char '}'
+  spaces
   return args
 
 withOriginal :: Parser [String]
