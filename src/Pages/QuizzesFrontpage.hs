@@ -6,7 +6,7 @@ import Data.Ord         ( comparing )
 import System.Directory ( getDirectoryContents, doesFileExist )
 
 import Constants        ( quizzesFolderIO, addSeparator, labelsFile )
-import Labels           ( Labels, mainLabel )
+import Labels           ( Labels, mainLabel, defaultLabels )
 import Pages.HtmlUtil   ( tagged, div )
 
 import Prelude hiding   ( div )
@@ -22,10 +22,14 @@ createFrontPage = do
     candidates <- getAllCandidates
     quizzesFolder <- quizzesFolderIO
     preLabels <- mapM (\c -> readFile (addSeparator [quizzesFolder, c, labelsFile])) candidates
-    let lbls = map (read :: String -> Labels) preLabels
+    let lbls = map saferRead preLabels
         zipped = zip candidates lbls
         content = mkHtml (sortBy (comparing fst) zipped)
     writeFile (addSeparator [quizzesFolder, indexFile]) content
+
+saferRead :: String -> Labels
+saferRead [] = defaultLabels
+saferRead text = read (head (lines text))
 
 maybeQuiz :: FilePath -> FilePath -> IO Bool
 maybeQuiz parent relative = 
