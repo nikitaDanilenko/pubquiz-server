@@ -125,7 +125,15 @@ fetchLabels = do
                                viewQuizzesParam, cumulativeParam, individualParam, progressionParam,
                                placementParam, placeParam, pointsParam, roundWinnerParam
                                ]
-  let ps = map (maybe "" (B.unpack)) params
+  {- This is a workaround: B.unpack garbles special characters, but we need Strings
+     to pass to labels and page generation (for now).
+     Writing byte strings respects special characters, and reading them as strings
+     does so again.
+     Hence, we use an additional write for conversion.
+  -}
+  liftIO (B.writeFile labelsFile (B.unlines (map (fromMaybe B.empty) params)))
+  safe <- liftIO (readFile labelsFile)
+  let ps = lines safe
       lbls = labelsFromParameterList ps
   return lbls
 
@@ -147,7 +155,6 @@ updateFile quizLocation content = do
             fullQuizPath = mkFull roundsFile
             fullLabelPath = mkFull labelsFile
             fullColorsPath = mkFull colorsFile
-        -- putStrLn ("Debug: " ++ content)
         B.writeFile fullQuizPath content
         createWith (map (\(k, v) -> (B.unpack k, v)) [(prefix, fullQuizDir), 
                                                       (rounds, fullQuizPath),
