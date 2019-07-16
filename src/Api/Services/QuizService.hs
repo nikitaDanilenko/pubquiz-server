@@ -32,6 +32,7 @@ import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, labelsFromParameterList, teamLabel )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
+import System.Directory                     ( removeFile )
 import Utils                                ( (+>), randomDistinctAlphaNumeric )
 
 data QuizService = QuizService
@@ -85,7 +86,6 @@ updateQuiz = do
 newQuiz :: Handler b QuizService ()
 newQuiz = do
     mQuiz <- getPostParam quizParam
-    lbls <- fetchLabels
     mRounds <- getPostParam roundsNumberParam
     mUser <- getPostParam userParam
     mSignature <- getPostParam signatureParam
@@ -103,12 +103,16 @@ newQuiz = do
               if success 
                then do
                 let rs = fromMaybe 4 (mRounds >>= fmap fst . B.readInt)
-                liftIO (do writeLabels name lbls 
+                fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
+                fullWAPath <- liftIO (mkFullPathIO name workaround)
+                lbls <- fetchLabels fullWAPath
+                liftIO (do writeLabels fullLabelsPath lbls
                            serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
                            createSheetWith (teamLabel lbls) rs uName fullServerPath endings
                            updateFile name (B.pack (unwords endings))
-                           createFrontPage)
+                           createFrontPage
+                           removeFile fullWAPath)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
                else do
@@ -117,9 +121,12 @@ newQuiz = do
                                     "already exists or its labels contain invalid symbols"])
                 modifyResponse (setResponseCode 406)
 
+workaround :: String
+workaround = "workaround.txt"
+
 -- todo: better with JSON directly.
-fetchLabels :: Handler b QuizService Labels
-fetchLabels = do
+fetchLabels :: String -> Handler b QuizService Labels
+fetchLabels fullPath = do
   params <- mapM getPostParam [roundParam, teamParam, ownPointsParam, maxReachedParam,
                                maxReachableParam, backToChartViewParam, mainParam, ownPageParam,
                                viewQuizzesParam, cumulativeParam, individualParam, progressionParam,
@@ -131,16 +138,14 @@ fetchLabels = do
      does so again.
      Hence, we use an additional write for conversion.
   -}
-  liftIO (B.writeFile labelsFile (B.unlines (map (fromMaybe B.empty) params)))
-  safe <- liftIO (readFile labelsFile)
+  liftIO (B.writeFile fullPath (B.unlines (map (fromMaybe B.empty) params)))
+  safe <- liftIO (readFile fullPath)
   let ps = lines safe
       lbls = labelsFromParameterList ps
   return lbls
 
-writeLabels :: B.ByteString -> Labels -> IO ()
-writeLabels quizLocation lbls = do
-  fullPath <- mkFullPathIO quizLocation labelsFile
-  writeFile fullPath (show lbls)
+writeLabels :: String -> Labels -> IO ()
+writeLabels fullQuizPath = writeFile fullQuizPath . show
 
 updateFile :: B.ByteString -> B.ByteString -> IO Bool
 updateFile quizLocation content = do
