@@ -17,6 +17,17 @@ div {
   font-size: large;
 }
 
+#top3 > label, #winners > label {
+  font-size: large;
+  font-style: italic;
+  margin: 20pt 5pt 20pt 0pt;
+}
+
+#top3 > div, #winners > div {
+  padding-top: 7pt;
+  padding-bottom: 7pt;
+}
+
 table {
   font-family: arial, sans-serif;
   border-collapse: collapse;
