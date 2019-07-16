@@ -339,7 +339,7 @@ graphPage labels rounds teams winners colors = unlines [
                         taggedWith "id = 'winners'"
                                    "div"
                                    (unlines [
-                                      tagged "label" (roundWinnerLabel labels),
+                                      tagged "label" (htmlSafeString (roundWinnerLabel labels)),
                                       mkWinnerList (roundLabel labels) (teamLabel labels) winners
                                       ]
                                     ),
@@ -373,7 +373,7 @@ findTopDownOrder = map (\gds -> (snd (head gds), reverse (map fst gds)))
 mkTopDownList :: String -> String -> String -> [Team] -> String
 mkTopDownList teamLbl placeLbl pointsLbl gs = unlines (map (tagged "div") rated) where
   rated = zipWith (\i (ps, grs) -> unwords [unwords [placeLbl, show i], 
-                                                     "(" ++ unwords [prettyDouble ps, pointsLbl] ++ ")", 
+                                                     "(" ++ unwords [prettyDouble ps, htmlSafeString pointsLbl] ++ ")", 
                                                      ":", 
                                                      teams grs])
                   [(1 :: Int) ..] 
