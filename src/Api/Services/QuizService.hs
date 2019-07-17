@@ -98,6 +98,12 @@ newQuiz = do
           Just name -> do 
               let uName = B.unpack name
                   gs = maybe 20 (read . B.unpack) mNumberOfTeams
+              {- todo: Each ending (code) is at least six symbols long, but this may change.
+                 If the number drops to five, one needs to account for the possibility
+                 of the string "index" occurring, which would break either the group with
+                 that label or the main page.
+                 A similar warning holds true, should there be more additional pages,
+                 whose names might overlap with randomly generated strings. -}
               endings <- liftIO (randomDistinctAlphaNumeric gs 6)
               success <- liftIO (createOrFail name endings)
               if success 
