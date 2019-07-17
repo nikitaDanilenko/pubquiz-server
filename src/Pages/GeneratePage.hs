@@ -120,7 +120,7 @@ mkTeams rs = (ts, tks) where
 writePointPages :: String -> Labels -> [Team] -> [Color] -> IO ()
 writePointPages prefix labels teams colors =
   mapM_ (\(team, color) -> writeFile (prefix ++ code (teamKey team) ++ ".html")
-        (pointPage labels color (points team))) (zip teams colors)
+        (pointPage labels color team)) (zip teams colors)
 
 writeGraphPage :: String -> Labels -> Int -> [Team] -> [[TeamKey]] -> [String] -> IO ()
 writeGraphPage prefix labels rounds teams winners colors =
@@ -130,19 +130,20 @@ writeGraphPage prefix labels rounds teams winners colors =
 cssPath :: String
 cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
 
-pointPage :: Labels -> Color -> Points -> String
-pointPage labels color ps =
+pointPage :: Labels -> Color -> Team -> String
+pointPage labels color team =
   pageHeader ++
     tagged "html" ( 
       tagged "head" 
              (tagged "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath) ++
       tagged "body" (
-        centerDiv (h1With coloured (mkSum ps)) ++
+        centerDiv (h1With coloured (concat [mkTeamName Safe (teamLabel labels) (teamKey team), ": ", mkSum ps])) ++
         centerDiv (mkTable labels ps) ++
         centerDiv (mkButton (backToChartView labels))
       )
     )
   where coloured = "style=\"color:" ++ color ++ "\""
+        ps = points team
 
 mkTableLine :: RoundRating -> String
 mkTableLine rating =   
