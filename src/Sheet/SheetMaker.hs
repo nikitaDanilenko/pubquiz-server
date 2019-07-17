@@ -8,6 +8,7 @@ import System.Process          ( callProcess )
 import Constants               ( quizzesFolderIO, addSeparator )
 import Pages.HtmlUtil          ( unEscape )
 import Sheet.Tex               ( mkSheet )
+import System.Directory        ( removeFile )
 
 type Prefix = String
 type Server = String
@@ -31,21 +32,14 @@ createSheetWith teamLabel rounds prefix server endings = do
             if b then createPDF texFile endings `catch` noPDFLatex else return ()
 
     trySheet
-    cleanImages endings `catch` noRm
-    cleanLatex sheetFile `catch` noRm
+    cleanImages endings
+    cleanLatex sheetFile
     setCurrentDirectory currentDir
   where noQREncode :: IOException -> IO Bool
         noQREncode _ = putStrLn "qrencode not found. No sheet created." >> return False
 
         noPDFLatex :: IOException -> IO ()
         noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
-
-        noRm :: IOException -> IO ()
-        noRm _ = putStrLn (concat ["rm not found.",
-                                   "Files have not been cleaned up.",
-                                   "You may want to clean up the folder for the quiz",
-                                   prefix,
-                                   "manually."])
 
 defaultEndings :: [Ending]
 defaultEndings = [
@@ -81,14 +75,16 @@ createPDF texFile es = do
     callProcess "pdflatex" ["-interaction=nonstopmode", texFile]
 
 cleanLatex :: String -> IO ()
-cleanLatex sheetFile = callProcess "rm" [concat [sheetFile, ".log"], 
-                                         concat [sheetFile, ".aux"],
-                                         concat [sheetFile, ".tex"],
-                                         variableFile
-                                        ]
+cleanLatex sheetFile = 
+    mapM_  safeRemoveFile (variableFile : map (sheetFile ++) [".log", ".aux", ".tex"])
+
+safeRemoveFile :: String -> IO ()
+safeRemoveFile path = removeFile path `catch` noFile where
+    noFile :: IOException -> IO ()
+    noFile _ = putStrLn "No file to remove" >> return ()
 
 cleanImages :: [Ending] -> IO ()
-cleanImages es = callProcess "rm" (map (++ ".png") es)
+cleanImages = mapM_ safeRemoveFile . map (++ ".png")
 
 safeTeX :: String -> String
 safeTeX = concatMap safeTeXChar . unEscape
