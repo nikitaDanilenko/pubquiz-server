@@ -10,8 +10,6 @@ import Text.Parsec.Prim              ( parse )
 import Text.Parsec.Token             ( makeTokenParser, stringLiteral )
 import Text.ParserCombinators.Parsec ( Parser, spaces, char, choice, string, try )
 
-import Pages.HtmlUtil                ( htmlSafeString )
-
 data Labels = Labels { 
   roundLabel :: String,
   teamLabel :: String,
@@ -209,20 +207,20 @@ mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mai
          viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl
          placementLbl placeLbl pointsLbl roundWinnerLbl =
     Labels {
-        roundLabel = htmlSafeString roundLbl,
-        teamLabel = htmlSafeString teamLbl,
-        ownPointsLabel = htmlSafeString ownPointsLbl,
-        maxReachedLabel = htmlSafeString maxReachedLbl,
-        maxReachableLabel = htmlSafeString maxReachableLbl,
-        backToChartView = htmlSafeString backLbl,
-        mainLabel = htmlSafeString mainLbl,
-        ownPageLabel = htmlSafeString ownPageLbl,
-        viewPrevious = htmlSafeString viewPreviousLbl,
-        cumulativeLabel = htmlSafeString cumulativeLbl,
-        individualRoundsLabel = htmlSafeString individualRoundsLbl,
-        progressionLabel = htmlSafeString progressionLbl,
-        placementLabel = htmlSafeString placementLbl,
-        placeLabel = htmlSafeString placeLbl,
+        roundLabel = roundLbl,
+        teamLabel = teamLbl,
+        ownPointsLabel = ownPointsLbl,
+        maxReachedLabel = maxReachedLbl,
+        maxReachableLabel = maxReachableLbl,
+        backToChartView = backLbl,
+        mainLabel = mainLbl,
+        ownPageLabel = ownPageLbl,
+        viewPrevious = viewPreviousLbl,
+        cumulativeLabel = cumulativeLbl,
+        individualRoundsLabel = individualRoundsLbl,
+        progressionLabel = progressionLbl,
+        placementLabel = placementLbl,
+        placeLabel = placeLbl,
         pointsLabel = pointsLbl,
         roundWinnerLabel = roundWinnerLbl
     } 
