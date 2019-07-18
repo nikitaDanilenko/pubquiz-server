@@ -52,20 +52,10 @@ type TeamRating = (TeamKey, Double)
 data Team = Team { teamKey :: TeamKey, points :: Points }
   deriving Show
 
-data HtmlSafety = Safe | Unsafe
-
-isHtmlSafe :: HtmlSafety -> Bool
-isHtmlSafe Safe = True
-isHtmlSafe _    = False
-
 mkTeamName :: String -> TeamKey -> String
 mkTeamName teamLbl key = name where
   fallback = (unwords [teamLbl, show (teamNumber key)])
-  candidate = fromMaybe fallback (mfilter (not . null) (teamName key))
-  name = mkSafeString Safe candidate
-
-mkSafeString :: HtmlSafety -> String -> String
-mkSafeString safe text = if isHtmlSafe safe then htmlSafeString text else unEscape text
+  name = fromMaybe fallback (mfilter (not . null) (teamName key))
 
 simplePoints :: Team -> SimplePoints
 simplePoints = map ownPoints . points
@@ -227,7 +217,7 @@ roundList rn n = intercalate "," (map enclose (take n (roundListInf rn))) where
 
 roundListInf :: String -> [String]
 roundListInf rn = 
-  zipWith (\r i -> concat [r, " ", show i]) (repeat (mkSafeString Safe rn)) [(1 :: Int) ..]
+  zipWith (\r i -> concat [r, " ", show i]) (repeat rn) [(1 :: Int) ..]
 
 addCanvas :: String -> String
 addCanvas canvasLabel = div (taggedWith (concat ["id='", canvasLabel, "'"]) "canvas" "")
@@ -340,7 +330,7 @@ graphPage labels rounds teams winners colors = unlines [
                         taggedWith "id = 'winners'"
                                    "div"
                                    (unlines [
-                                      tagged "label" (htmlSafeString (roundWinnerLabel labels)),
+                                      tagged "label" (roundWinnerLabel labels),
                                       mkWinnerList (roundLabel labels) (teamLabel labels) winners
                                       ]
                                     ),
@@ -374,7 +364,7 @@ findTopDownOrder = map (\gds -> (snd (head gds), reverse (map fst gds)))
 mkTopDownList :: String -> String -> String -> [Team] -> String
 mkTopDownList teamLbl placeLbl pointsLbl gs = unlines (map (tagged "div") rated) where
   rated = zipWith (\i (ps, grs) -> unwords [unwords [placeLbl, show i], 
-                                                     "(" ++ unwords [prettyDouble ps, htmlSafeString pointsLbl] ++ ")", 
+                                                     "(" ++ unwords [prettyDouble ps, pointsLbl] ++ ")", 
                                                      ":", 
                                                      teams grs])
                   [(1 :: Int) ..] 
