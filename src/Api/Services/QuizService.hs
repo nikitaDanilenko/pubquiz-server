@@ -28,6 +28,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               cumulativeParam, individualParam, progressionParam ,
                                               placementParam, placeParam, pointsParam,
                                               roundWinnerParam )
+import Pages.HtmlUtil                       ( htmlSafeString )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, labelsFromParameterList, teamLabel )
@@ -146,7 +147,7 @@ fetchLabels fullPath = do
   liftIO (B.writeFile fullPath (B.unlines (map (fromMaybe B.empty) params)))
   safe <- liftIO (readFile fullPath)
   let ps = lines safe
-      lbls = labelsFromParameterList ps
+      lbls = labelsFromParameterList (map htmlSafeString ps)
   return lbls
 
 writeLabels :: String -> Labels -> IO ()
