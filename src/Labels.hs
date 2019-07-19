@@ -2,13 +2,17 @@ module Labels ( Labels, defaultLabels, mkLabels, labelsFromParameterList,
                 teamLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
-                progressionLabel, placementLabel, placeLabel, pointsLabel, roundWinnerLabel ) where
+                progressionLabel, placementLabel, placeLabel, pointsLabel, roundWinnerLabel,
+                mkHTMLSafe, showAsBS ) where
 
-import Control.Applicative           ( (*>) )
-import Text.Parsec.Language          ( haskellDef )
-import Text.Parsec.Prim              ( parse )
-import Text.Parsec.Token             ( makeTokenParser, stringLiteral )
-import Text.ParserCombinators.Parsec ( Parser, spaces, char, choice, string, try )
+import Control.Applicative                  ( (*>) )
+import qualified Data.ByteString.Char8 as B 
+import Text.Parsec.Language                 ( haskellDef )
+import Text.Parsec.Prim                     ( parse )
+import Text.Parsec.Token                    ( makeTokenParser, stringLiteral )
+import Text.ParserCombinators.Parsec        ( Parser, spaces, char, choice, string, try )
+
+import Pages.HtmlUtil                       ( htmlSafeString )
 
 data Labels = Labels { 
   roundLabel :: String,
@@ -223,7 +227,42 @@ mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mai
         placeLabel = placeLbl,
         pointsLabel = pointsLbl,
         roundWinnerLabel = roundWinnerLbl
-    } 
+    }
+
+mkHTMLSafe :: Labels -> Labels
+mkHTMLSafe lbls = Labels {
+        roundLabel = htmlSafeString (roundLabel lbls),
+        teamLabel = htmlSafeString (teamLabel lbls),
+        ownPointsLabel = htmlSafeString (ownPointsLabel lbls),
+        maxReachedLabel = htmlSafeString (maxReachedLabel lbls),
+        maxReachableLabel = htmlSafeString (maxReachableLabel lbls),
+        backToChartView = htmlSafeString (backToChartView lbls),
+        mainLabel = htmlSafeString (mainLabel lbls),
+        ownPageLabel = htmlSafeString (ownPageLabel lbls),
+        viewPrevious = htmlSafeString (viewPrevious lbls),
+        cumulativeLabel = htmlSafeString (cumulativeLabel lbls),
+        individualRoundsLabel = htmlSafeString (individualRoundsLabel lbls),
+        progressionLabel = htmlSafeString (progressionLabel lbls),
+        placementLabel = htmlSafeString (placementLabel lbls),
+        placeLabel = htmlSafeString (placeLabel lbls),
+        pointsLabel = htmlSafeString (pointsLabel lbls),
+        roundWinnerLabel = htmlSafeString (roundWinnerLabel lbls)
+    }
+
+{- Returns the same result as show, but uses ByteStrings for the actual values. -}
+showAsBS :: [B.ByteString] -> B.ByteString
+showAsBS bss = B.concat [
+  B.pack constructor,
+  B.pack " {",
+  B.intercalate (B.pack ", ") 
+                (zipWith (\k v -> B.unwords [B.pack k, 
+                                             B.pack "=",
+                                             B.concat [B.pack "\"", secure v, B.pack "\""]]) 
+                         placementsKeys 
+                         bss),
+  B.pack "}"
+  ] where
+    secure = B.concatMap (\c -> if c == '\"' then B.pack "\\\"" else B.singleton c)
 
 defaultLabels :: Labels
 defaultLabels = mkLabels
