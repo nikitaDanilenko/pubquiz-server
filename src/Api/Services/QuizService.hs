@@ -31,7 +31,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
 import Pages.HtmlUtil                       ( htmlSafeString )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
-import Labels                               ( Labels, labelsFromParameterList, teamLabel )
+import Labels                               ( Labels, labelsFromParameterList, teamLabel, showAsBS )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
 import System.Directory                     ( removeFile )
 import Utils                                ( (+>), randomDistinctAlphaNumeric )
@@ -112,9 +112,8 @@ newQuiz = do
                 let rs = fromMaybe 4 (mRounds >>= fmap fst . B.readInt)
                 fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
                 fullWAPath <- liftIO (mkFullPathIO name workaround)
-                lbls <- fetchLabels fullWAPath
-                liftIO (do writeLabels fullLabelsPath lbls
-                           serverPath <- serverQuizPathIO
+                lbls <- fetchLabels fullLabelsPath
+                liftIO (do serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
                            createSheetWith (teamLabel lbls) rs uName fullServerPath endings
                            updateFile name (B.pack (unwords endings))
@@ -138,20 +137,17 @@ fetchLabels fullPath = do
                                viewQuizzesParam, cumulativeParam, individualParam, progressionParam,
                                placementParam, placeParam, pointsParam, roundWinnerParam
                                ]
-  {- This is a workaround: B.unpack garbles special characters, but we need Strings
-     to pass to labels and page generation (for now).
-     Writing byte strings respects special characters, and reading them as strings
-     does so again.
-     Hence, we use an additional write for conversion.
+  {- This is a workaround: The labels are first written as text to provide proper encoding of
+     special characters (which bytestrings do properly).
+     Afterwards, we read the file regularly and use the common string representation
+     of the individual characters.
+     This may lead to numeric representation like '\195',
+     but since these labels will be made HTML-safe elsewhere,
+     such a representation will still be properly translated to the corresponding HTML code.
   -}
-  liftIO (B.writeFile fullPath (B.unlines (map (fromMaybe B.empty) params)))
-  safe <- liftIO (readFile fullPath)
-  let ps = lines safe
-      lbls = labelsFromParameterList (map htmlSafeString ps)
-  return lbls
-
-writeLabels :: String -> Labels -> IO ()
-writeLabels fullQuizPath = writeFile fullQuizPath . show
+  liftIO (B.writeFile fullPath (showAsBS (map (fromMaybe B.empty) params)))
+  text <- liftIO (readFile fullPath)
+  return (read text)
 
 updateFile :: B.ByteString -> B.ByteString -> IO Bool
 updateFile quizLocation content = do
