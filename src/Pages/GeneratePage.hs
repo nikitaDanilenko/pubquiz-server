@@ -17,7 +17,7 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel,
-                                placementLabel, roundWinnerLabel )
+                                placementLabel, roundWinnerLabel, mkHTMLSafe )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, unEscape )
@@ -381,7 +381,7 @@ mkWinnerList roundLbl teamLbl =
           . zip [(1 :: Int) ..]
 
 readLabels :: String -> IO Labels
-readLabels labelsPath = fmap (read :: String -> Labels) (readFile labelsPath) `catch` handle where
+readLabels labelsPath = fmap (mkHTMLSafe . read) (readFile labelsPath) `catch` handle where
   handle :: IOException -> IO Labels
   handle _ = putStrLn (labelsPath ++ " not found - using default labels.") >> return defaultLabels
 
