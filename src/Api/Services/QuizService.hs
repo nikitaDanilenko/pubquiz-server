@@ -28,12 +28,10 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               cumulativeParam, individualParam, progressionParam ,
                                               placementParam, placeParam, pointsParam,
                                               roundWinnerParam )
-import Pages.HtmlUtil                       ( htmlSafeString )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
-import Labels                               ( Labels, labelsFromParameterList, teamLabel, showAsBS )
+import Labels                               ( Labels, teamLabel, showAsBS )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
-import System.Directory                     ( removeFile )
 import Utils                                ( (+>), randomDistinctAlphaNumeric )
 
 data QuizService = QuizService
