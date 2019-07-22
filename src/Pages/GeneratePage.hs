@@ -17,10 +17,10 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel,
-                                placementLabel, roundWinnerLabel, mkHTMLSafe )
+                                placementLabel, roundWinnerLabel, mkHTMLSafe, SafeLabels, labels )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
-                                htmlSafeString, unEscape )
+                                htmlSafeString, encoding )
 import Pages.RoundsParser     ( parseCodesWithMaybeNames )
 
 data RoundRating = RoundRating { 
@@ -60,15 +60,14 @@ mkTeamName teamLbl key = name where
 simplePoints :: Team -> SimplePoints
 simplePoints = map ownPoints . points
 
-data Round = Round { roundName :: String, 
-                     number :: Int, 
+data Round = Round { number :: Int, 
                      possible :: Double, 
                      teamRatings :: [TeamRating] 
                    }
   deriving Show
 
-fromIndex :: [(Code, Maybe String)] -> String -> Int -> Double -> [Double] -> Round
-fromIndex teamCodes nm n maxPossible ps = Round nm n maxPossible ratings where
+fromIndex :: [(Code, Maybe String)] -> Int -> Double -> [Double] -> Round
+fromIndex teamCodes n maxPossible ps = Round n maxPossible ratings where
   ratings = zipWith3 (\i (c, ms) p -> (mkTeamKey i c ms, p)) [1 .. ] teamCodes ps
 
 type Code = String
@@ -123,7 +122,8 @@ cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
 pointPage :: Labels -> Color -> Team -> String
 pointPage labels color team =
   pageHeader ++
-    tagged "html" ( 
+    tagged "html" (
+      encoding ++
       tagged "head" 
              (tagged "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath) ++
       tagged "body" (
@@ -251,7 +251,7 @@ mkChartEntry ct canvasLabel chartTitle chartData = unlines [
     "        stacked: false,", 
     "        title: {",
     "          display: true,",
-    "          text: '" ++ unEscape chartTitle ++ "'",
+    "          text: '" ++ chartTitle ++ "'",
     "        },",
     "        scales: {",
     "          yAxes: [",
@@ -286,9 +286,9 @@ mkChartsWith labels rounds teams colors =
             "};",
             "",
             "window.onload = function() {",
-            mkChartEntry Bar barChartLabel (unEscape (cumulativeLabel labels)) cumulativeData,
-            mkChartEntry Line lineChartLabel (unEscape (progressionLabel labels)) cumulativeData,
-            mkChartEntry Bar perRoundChartLabel (unEscape (individualRoundsLabel labels)) perRoundData,
+            mkChartEntry Bar barChartLabel (cumulativeLabel labels) cumulativeData,
+            mkChartEntry Line lineChartLabel (progressionLabel labels) cumulativeData,
+            mkChartEntry Bar perRoundChartLabel (individualRoundsLabel labels) perRoundData,
             "};"
             ]
           )
@@ -303,6 +303,7 @@ graphPage :: Labels -> Int -> [Team] -> [[TeamKey]] -> [Color] -> String
 graphPage labels rounds teams winners colors = unlines [
   taggedV "html"
           (unlines [
+             encoding,
              taggedV "head"
                      (unlines [
                         tagged "title" (mainLabel labels),
@@ -381,7 +382,7 @@ mkWinnerList roundLbl teamLbl =
           . zip [(1 :: Int) ..]
 
 readLabels :: String -> IO Labels
-readLabels labelsPath = fmap (mkHTMLSafe . read) (readFile labelsPath) `catch` handle where
+readLabels labelsPath = fmap read (readFile labelsPath) `catch` handle where
   handle :: IOException -> IO Labels
   handle _ = putStrLn (labelsPath ++ " not found - using default labels.") >> return defaultLabels
 
@@ -395,18 +396,18 @@ readColors colorsPath = fmap lines (readFile colorsPath) `catch` handle where
   handle :: IOException -> IO [Color]
   handle _ = putStrLn (colorsPath ++ " not found - using default colors.") >> return defaultColors
 
-parseCodesWithNamesAndRounds :: String -> String -> ([(Code, Maybe String)], [Round])
-parseCodesWithNamesAndRounds _ [] = ([], [])
-parseCodesWithNamesAndRounds rn text = (codesAndNames, rounds) where
+parseCodesWithNamesAndRounds :: String -> ([(Code, Maybe String)], [Round])
+parseCodesWithNamesAndRounds [] = ([], [])
+parseCodesWithNamesAndRounds text = (codesAndNames, rounds) where
   (l : ls) = lines text
   codesAndNames = parseCodesWithMaybeNames l
   pts = map readPoints ls
   indexedPoints = zip [1 ..] pts
-  rounds = map (\(i, (total, ps)) -> fromIndex codesAndNames rn i total ps) indexedPoints
+  rounds = map (\(i, (total, ps)) -> fromIndex codesAndNames i total ps) indexedPoints
 
-readCodesAndRounds :: String -> String -> IO ([(Code, Maybe String)], [Round])
-readCodesAndRounds roundsPath rdLabel =
-  fmap (parseCodesWithNamesAndRounds rdLabel) (readFile roundsPath) `catch` handle where
+readCodesAndRounds :: String -> IO ([(Code, Maybe String)], [Round])
+readCodesAndRounds roundsPath =
+  fmap parseCodesWithNamesAndRounds (readFile roundsPath) `catch` handle where
     handle :: IOException -> IO ([(Code, Maybe String)], [Round]) 
     handle e = putStrLn (show e) >> 
                putStrLn "Unexpected format or missing file. No output generated." >> 
@@ -422,17 +423,18 @@ mkEmptyTeams = map (\(i, c) -> Team (mkSimpleTeamKey i c) []) . zip [1 ..]
 
 createWith :: [(String, String)] -> IO ()
 createWith associations = do
-    labels <- readLabels labelsPath
-    (codesAndNames, rounds) <- readCodesAndRounds roundsPath (roundLabel labels)
+    unsafeLabels <- readLabels labelsPath
+    (codesAndNames, rounds) <- readCodesAndRounds roundsPath
     colors <- readColors colorsPath
     let (teamsCandidates, winners) = mkTeams rounds
+        safeLabels = mkHTMLSafe unsafeLabels
         -- If there are no rounds, we create teams that have not played any rounds yet.
         -- This facilitates the initial creation of the point pages.
         teams = if null teamsCandidates then mkEmptyTeams (map fst codesAndNames) 
                                         else teamsCandidates
         n = length rounds
-    writePointPages prefix labels teams colors
-    writeGraphPage prefix labels n teams winners colors
+    writePointPages prefix (labels safeLabels) teams colors
+    writeGraphPage prefix unsafeLabels n teams winners colors
   where kvs = fromList associations
         labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
         colorsPath = fromMaybe "colors.txt" (lookup "colors" kvs)
