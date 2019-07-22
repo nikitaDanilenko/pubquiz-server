@@ -1,4 +1,4 @@
-module Labels ( Labels, defaultLabels, mkLabels, labelsFromParameterList,
+module Labels ( Labels, SafeLabels, labels, defaultLabels, mkLabels, labelsFromParameterList,
                 teamLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
@@ -13,6 +13,8 @@ import Text.Parsec.Token                    ( makeTokenParser, stringLiteral )
 import Text.ParserCombinators.Parsec        ( Parser, spaces, char, choice, string, try )
 
 import Pages.HtmlUtil                       ( htmlSafeString )
+
+newtype SafeLabels = SafeLabels { labels :: Labels }
 
 data Labels = Labels { 
   roundLabel :: String,
@@ -38,7 +40,7 @@ data Labels = Labels {
 
 instance Read Labels where
   readsPrec _ text = case parse labelsParser "" text of
-    Right labels -> [(labels, "")]
+    Right lbls -> [(lbls, "")]
     Left  _ -> []
 
 cumulativeFallback :: String
@@ -229,8 +231,9 @@ mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mai
         roundWinnerLabel = roundWinnerLbl
     }
 
-mkHTMLSafe :: Labels -> Labels
-mkHTMLSafe lbls = Labels {
+mkHTMLSafe :: Labels -> SafeLabels
+mkHTMLSafe lbls = SafeLabels sfLbls where
+  sfLbls = Labels {
         roundLabel = htmlSafeString (roundLabel lbls),
         teamLabel = htmlSafeString (teamLabel lbls),
         ownPointsLabel = htmlSafeString (ownPointsLabel lbls),
