@@ -109,7 +109,6 @@ newQuiz = do
                then do
                 let rs = fromMaybe 4 (mRounds >>= fmap fst . B.readInt)
                 fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
-                fullWAPath <- liftIO (mkFullPathIO name workaround)
                 lbls <- fetchLabels fullLabelsPath
                 liftIO (do serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
@@ -123,9 +122,6 @@ newQuiz = do
                                     name, 
                                     "already exists or its labels contain invalid symbols"])
                 modifyResponse (setResponseCode 406)
-
-workaround :: String
-workaround = "workaround.txt"
 
 -- todo: better with JSON directly.
 fetchLabels :: String -> Handler b QuizService Labels
