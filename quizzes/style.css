@@ -8,7 +8,7 @@ body, #mainTitle, a.button {
 }
 
 div {
-  padding-top: 10pt,
+  padding-top: 10pt;
   padding-bottom: 10pt;
 }
 
@@ -91,7 +91,6 @@ a.quizLinkButton {
   background-color: rgb(66, 100, 160);
 
   display: block;
-  float: center;
   text-align: center;
   width: 35%;
 
