@@ -1,4 +1,4 @@
-module Labels ( Labels, SafeLabels, labels, defaultLabels, mkLabels, labelsFromParameterList,
+module Labels ( Labels, SafeLabels, unwrapped, defaultLabels, mkLabels, labelsFromParameterList,
                 teamLabel, ownPointsLabel,
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
@@ -14,7 +14,7 @@ import Text.ParserCombinators.Parsec        ( Parser, spaces, char, choice, stri
 
 import Pages.HtmlUtil                       ( htmlSafeString )
 
-newtype SafeLabels = SafeLabels { labels :: Labels }
+newtype SafeLabels = SafeLabels { unwrapped :: Labels }
 
 data Labels = Labels { 
   roundLabel :: String,
