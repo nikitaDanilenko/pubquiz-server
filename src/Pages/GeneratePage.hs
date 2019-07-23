@@ -16,8 +16,8 @@ import Prelude hiding         ( lookup, div )
 import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
-                                cumulativeLabel, progressionLabel, individualRoundsLabel,
-                                placementLabel, roundWinnerLabel, mkHTMLSafe, SafeLabels, labels )
+                                cumulativeLabel, progressionLabel, individualRoundsLabel, unwrapped,
+                                placementLabel, roundWinnerLabel, mkHTMLSafe, SafeLabels )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, encoding )
@@ -106,21 +106,28 @@ mkTeams rs = (ts, tks) where
   ts = map (uncurry Team) . toList . unionsWith (++) . map fst $ ratings
   tks = map snd ratings
 
-writePointPages :: String -> Labels -> [Team] -> [Color] -> IO ()
+writePointPages :: String -> SafeLabels -> [Team] -> [Color] -> IO ()
 writePointPages prefix labels teams colors =
   mapM_ (\(team, color) -> writeFile (prefix ++ code (teamKey team) ++ ".html")
         (pointPage labels color team)) (zip teams colors)
 
-writeGraphPage :: String -> Labels -> Int -> [Team] -> [[TeamKey]] -> [String] -> IO ()
-writeGraphPage prefix labels rounds teams winners colors =
+writeGraphPage :: String 
+               -> SafeLabels 
+               -> Labels 
+               -> Int 
+               -> [Team] 
+               -> [[TeamKey]] 
+               -> [String] 
+               -> IO ()
+writeGraphPage prefix safeLabels labels rounds teams winners colors =
   writeFile (prefix ++ "index.html")
-            (graphPage labels rounds teams winners colors)
+            (graphPage safeLabels labels rounds teams winners colors)
 
 cssPath :: String
 cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
 
-pointPage :: Labels -> Color -> Team -> String
-pointPage labels color team =
+pointPage :: SafeLabels -> Color -> Team -> String
+pointPage safeLabels color team =
   pageHeader ++
     tagged "html" (
       encoding ++
@@ -134,6 +141,7 @@ pointPage labels color team =
     )
   where coloured = "style=\"color:" ++ color ++ "\""
         ps = points team
+        labels = unwrapped safeLabels
 
 mkTableLine :: RoundRating -> String
 mkTableLine rating =   
@@ -299,14 +307,14 @@ mkChartsWith labels rounds teams colors =
         cumulativeData = "cumulativeData"
         perRoundData = "perRoundData"
 
-graphPage :: Labels -> Int -> [Team] -> [[TeamKey]] -> [Color] -> String
-graphPage labels rounds teams winners colors = unlines [
+graphPage :: SafeLabels -> Labels -> Int -> [Team] -> [[TeamKey]] -> [Color] -> String
+graphPage safeLbls labels rounds teams winners colors = unlines [
   taggedV "html"
           (unlines [
              encoding,
              taggedV "head"
                      (unlines [
-                        tagged "title" (mainLabel labels),
+                        tagged "title" (mainLabel safeLabels),
                         taggedWith "src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js'"
                                    "script"
                                    "",
@@ -317,22 +325,24 @@ graphPage labels rounds teams winners colors = unlines [
                      (unlines [
                         taggedWith "id = 'mainTitle'"
                                    "div"
-                                   (mainLabel labels),
+                                   (mainLabel safeLabels),
                         taggedWith "id = 'top3'"
                                    "div"
                                    (unlines[
-                                             tagged "label" (placementLabel labels),
-                                             mkTopDownList (teamLabel labels)
-                                                           (placeLabel labels)
-                                                           (pointsLabel labels)
+                                             tagged "label" (placementLabel safeLabels),
+                                             mkTopDownList (teamLabel safeLabels)
+                                                           (placeLabel safeLabels)
+                                                           (pointsLabel safeLabels)
                                                            teams
                                             ]
                                    ),
                         taggedWith "id = 'winners'"
                                    "div"
                                    (unlines [
-                                      tagged "label" (roundWinnerLabel labels),
-                                      mkWinnerList (roundLabel labels) (teamLabel labels) winners
+                                      tagged "label" (roundWinnerLabel safeLabels),
+                                      mkWinnerList (roundLabel safeLabels) 
+                                                   (teamLabel safeLabels) 
+                                                   winners
                                       ]
                                     ),
                         addCanvas barChartLabel,
@@ -348,12 +358,12 @@ graphPage labels rounds teams winners colors = unlines [
                                     ),
                         taggedWith "id = 'allQuizzes'"
                                    "div"
-                                   (mkButtonTo "../index.html" (viewPrevious labels))
+                                   (mkButtonTo "../index.html" (viewPrevious safeLabels))
                       ]
                      ) 
             ]
           )
-  ]
+  ] where safeLabels = unwrapped safeLbls
 
 findTopDownOrder :: [Team] -> [(Double, [Team])]
 findTopDownOrder = map (\gds -> (snd (head gds), reverse (map fst gds)))
@@ -433,8 +443,8 @@ createWith associations = do
         teams = if null teamsCandidates then mkEmptyTeams (map fst codesAndNames) 
                                         else teamsCandidates
         n = length rounds
-    writePointPages prefix (labels safeLabels) teams colors
-    writeGraphPage prefix unsafeLabels n teams winners colors
+    writePointPages prefix safeLabels teams colors
+    writeGraphPage prefix safeLabels unsafeLabels n teams winners colors
   where kvs = fromList associations
         labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
         colorsPath = fromMaybe "colors.txt" (lookup "colors" kvs)
