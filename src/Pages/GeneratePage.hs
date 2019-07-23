@@ -52,10 +52,18 @@ type TeamRating = (TeamKey, Double)
 data Team = Team { teamKey :: TeamKey, points :: Points }
   deriving Show
 
-mkTeamName :: String -> TeamKey -> String
-mkTeamName teamLbl key = name where
+data HTMLSafety = Safe | Unsafe
+
+isHTMLSafe :: HTMLSafety -> Bool
+isHTMLSafe Safe = True
+isHTMLSafe _    = False
+
+mkTeamName :: HTMLSafety -> String -> TeamKey -> String
+mkTeamName sf teamLbl key = name where
   fallback = (unwords [teamLbl, show (teamNumber key)])
-  name = fromMaybe fallback (mfilter (not . null) (teamName key))
+  name = fromMaybe fallback 
+                  (mfilter (not . null) 
+                           ((if isHTMLSafe sf then htmlSafeTeamName else teamName) key))
 
 simplePoints :: Team -> SimplePoints
 simplePoints = map ownPoints . points
@@ -75,8 +83,11 @@ type Code = String
 data TeamKey = TeamKey { teamNumber :: Int, code :: Code, teamName :: Maybe String }
   deriving Show
 
+htmlSafeTeamName :: TeamKey -> Maybe String
+htmlSafeTeamName = fmap htmlSafeString . teamName
+
 mkTeamKey :: Int -> Code -> Maybe String -> TeamKey
-mkTeamKey i c = TeamKey i c . fmap htmlSafeString
+mkTeamKey i c = TeamKey i c
 
 mkSimpleTeamKey :: Int -> Code -> TeamKey
 mkSimpleTeamKey i c = mkTeamKey i c Nothing
@@ -134,7 +145,7 @@ pointPage safeLabels color team =
       tagged "head" 
              (tagged "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath) ++
       tagged "body" (
-        centerDiv (h1With coloured (concat [mkTeamName (teamLabel labels) (teamKey team), ": ", mkSum ps])) ++
+        centerDiv (h1With coloured (concat [mkTeamName Safe (teamLabel labels) (teamKey team), ": ", mkSum ps])) ++
         centerDiv (mkTable labels ps) ++
         centerDiv (mkButton (backToChartView labels))
       )
@@ -200,7 +211,7 @@ defaultColors = cycle [
 toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Team -> Color -> String
 toDatasetWith pointMaker rd team g c = unlines [
     "{",
-    "  label: '" ++ mkTeamName team (teamKey g) ++ "',",
+    "  label: '" ++ mkTeamName Unsafe team (teamKey g) ++ "',",
     "  borderColor: " ++ show c ++ ",",
     "  backgroundColor: " ++ show c ++ ",",
     "  fill: false,",
@@ -380,7 +391,7 @@ mkTopDownList teamLbl placeLbl pointsLbl gs = unlines (map (tagged "div") rated)
                                                      teams grs])
                   [(1 :: Int) ..] 
                   tops
-  teams =  intercalate ", " . map (\g -> mkTeamName teamLbl (teamKey g))
+  teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl (teamKey g))
   tops = findTopDownOrder gs
 
 mkWinnerList :: String -> String -> [[TeamKey]] -> String
@@ -388,7 +399,7 @@ mkWinnerList roundLbl teamLbl =
   unlines . map (\(i, ws) -> tagged "div" 
                      (concat [unwords [roundLbl, show i], 
                               ": ", 
-                              intercalate ", " (map (mkTeamName teamLbl) ws)]))
+                              intercalate ", " (map (mkTeamName Safe teamLbl) ws)]))
           . zip [(1 :: Int) ..]
 
 readLabels :: String -> IO Labels
