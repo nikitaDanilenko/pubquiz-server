@@ -30,7 +30,8 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               roundWinnerParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
-import Labels                               ( Labels, teamLabel, showAsBS )
+import Labels                               ( Labels, teamLabel, showAsBS, parameters, 
+                                              defaultLabels )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
 import Utils                                ( (+>), randomDistinctAlphaNumeric )
 
@@ -40,6 +41,7 @@ quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes = [
     "all" +> method GET sendAvailable,
     "getQuizData" +> method GET getSingleQuizData,
+    "getQuizLabels" +> method GET getSingleQuizLabels,
     "update" +> method POST updateQuiz,
     "lock" +> method POST lockQuiz,
     "new" +> method POST newQuiz
@@ -52,15 +54,28 @@ sendAvailable = do
     writeBS (B.pack (unlines nonLockedQuizzes))
     modifyResponse (setResponseCode 200)
 
+getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
+getSingleWithData fetchAction =
+  getQueryParam quizParam >>= maybe (modifyResponse (setResponseCode 400)) fetchAction
+
 getSingleQuizData :: Handler b QuizService ()
-getSingleQuizData = 
-    getQueryParam quizParam >>= maybe (modifyResponse (setResponseCode 400)) perQuiz where
+getSingleQuizData = getSingleWithData perQuiz where
     
-    perQuiz :: B.ByteString -> Handler b QuizService ()
-    perQuiz q = liftIO (readQuizFile q) 
-                    >>= maybe (modifyResponse (setResponseCode 404)) 
-                              (\c -> writeBS c >> modifyResponse (setResponseCode 200))
+  perQuiz :: B.ByteString -> Handler b QuizService ()
+  perQuiz q = liftIO (readQuizFile q) 
+                  >>= maybe (modifyResponse (setResponseCode 404)) 
+                            (\c -> writeBS c >> modifyResponse (setResponseCode 200))
         
+getSingleQuizLabels :: Handler b QuizService ()
+getSingleQuizLabels = getSingleWithData perQuiz where
+
+  perQuiz :: B.ByteString -> Handler b QuizService ()
+  perQuiz q = do
+    labels <- liftIO (readLabelsFile q)
+    let response = B.intercalate "\n" (map B.pack (parameters labels))
+    writeBS response
+    modifyResponse (setResponseCode 200)
+
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
     mQuiz <- getPostParam quizParam
@@ -204,6 +219,31 @@ readQuizFile quizLocation = (do
 
     filePathIO :: IO String
     filePathIO = mkFullPathIO quizLocation roundsFile
+
+readLabelsFile :: B.ByteString -> IO Labels
+readLabelsFile quizLocation = do
+  filePath <- filePathIO
+  exists <- doesFileExist filePath
+  if exists 
+    then do
+      file <- B.readFile filePath
+      let labels = read (B.unpack file)
+      return labels `catch` handle
+    else
+      return defaultLabels
+
+  where
+
+  handle :: IOException -> IO Labels
+  handle _ = do
+    path <- filePathIO
+    putStrLn (unwords [path, "does not exist or its contents cannot be parsed as labels.",
+                       "Returning default labels."])
+    return defaultLabels
+
+  filePathIO :: IO String
+  filePathIO = mkFullPathIO quizLocation labelsFile
+
 
 mkFullPathIO :: B.ByteString -> FilePath -> IO String
 mkFullPathIO quizLocation filePath = do
