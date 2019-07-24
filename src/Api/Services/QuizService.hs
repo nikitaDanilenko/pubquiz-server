@@ -27,7 +27,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               server, numberOfTeamsParam, viewQuizzesParam,
                                               cumulativeParam, individualParam, progressionParam ,
                                               placementParam, placeParam, pointsParam,
-                                              roundWinnerParam )
+                                              roundWinnerParam, labelUpdate )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, teamLabel, showAsBS, parameters, 
@@ -42,6 +42,7 @@ quizRoutes = [
     "all" +> method GET sendAvailable,
     "getQuizData" +> method GET getSingleQuizData,
     "getQuizLabels" +> method GET getSingleQuizLabels,
+    "updateLabels" +> method POST updateLabels,
     "update" +> method POST updateQuiz,
     "lock" +> method POST lockQuiz,
     "new" +> method POST newQuiz
@@ -71,8 +72,8 @@ getSingleQuizLabels = getSingleWithData perQuiz where
 
   perQuiz :: B.ByteString -> Handler b QuizService ()
   perQuiz q = do
-    labels <- liftIO (readLabelsFile q)
-    let response = B.intercalate "\n" (map B.pack (parameters labels))
+    lbls <- liftIO (readLabelsFile q)
+    let response = B.intercalate "\n" (map B.pack (parameters lbls))
     writeBS response
     modifyResponse (setResponseCode 200)
 
@@ -83,20 +84,42 @@ updateQuiz = do
     mUser <- getPostParam userParam
     mSignature <- getPostParam signatureParam
     verified <- authenticate mUser mSignature [(quizParam, mQuiz), (rounds, mNewContent)]
-    failIfUnverified verified $
-      let act = liftA2 updateFile mQuiz mNewContent
-      in case act of
-        Nothing -> do writeBS (B.concat ["Malfolmed request:\n", 
-                                         quizParam, "=", B.pack (show mQuiz), "\n", 
-                                         rounds, "=", B.pack (show mNewContent)])
-                      modifyResponse (setResponseCode 406)
-        Just io -> do isOpen <- liftIO io 
-                      if isOpen then
-                        modifyResponse (setResponseCode 200)
-                      else 
-                        modifyResponse (setResponseCode 406) >>
-                        writeBS "Requested quiz is locked or the update contains invalid symbols."
-    
+    failIfUnverified verified (updateQuizData mQuiz mNewContent)
+
+updateQuizData :: Maybe B.ByteString -> Maybe B.ByteString -> Handler b QuizService ()
+updateQuizData mQuiz mNewContent = case liftA2 updateWholeQuiz mQuiz (fmap Left mNewContent) of
+  Nothing -> do writeBS (B.concat ["Malfolmed request:\n", 
+                                   quizParam, "=", B.pack (show mQuiz), "\n", 
+                                   rounds, "=", B.pack (show mNewContent)])
+                modifyResponse (setResponseCode 406)
+  Just io -> respondToUpdate io
+
+updateLabels :: Handler b QuizService ()
+updateLabels = do
+  mQuiz <- getPostParam quizParam
+  mUser <- getPostParam userParam
+  mSignature <- getPostParam signatureParam
+  verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just labelUpdate)]
+  failIfUnverified verified $
+    case mQuiz of
+      Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
+      Just name -> do
+        fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
+        fetchLabels fullLabelsPath
+        liftIO createFrontPage
+        case liftA2 updateWholeQuiz mQuiz (Just (Right ())) of
+          Nothing -> do writeBS ("Unknown error during label update.")
+          Just io -> respondToUpdate io
+
+respondToUpdate :: IO Bool -> Handler b QuizService ()
+respondToUpdate io = do 
+  isOpen <- liftIO io 
+  if isOpen then
+    modifyResponse (setResponseCode 200)
+  else 
+    modifyResponse (setResponseCode 406) >>
+    writeBS "Requested quiz is locked or the update contains invalid symbols."
+
 newQuiz :: Handler b QuizService ()
 newQuiz = do
     mQuiz <- getPostParam quizParam
@@ -128,7 +151,7 @@ newQuiz = do
                 liftIO (do serverPath <- serverQuizPathIO
                            let fullServerPath = addSeparator [server, serverPath]
                            createSheetWith (teamLabel lbls) rs uName fullServerPath endings
-                           updateFile name (B.pack (unwords endings))
+                           updateWholeQuiz name (Left (B.pack (unwords endings)))
                            createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCode 201)
@@ -158,8 +181,8 @@ fetchLabels fullPath = do
   text <- liftIO (readFile fullPath)
   return (read text)
 
-updateFile :: B.ByteString -> B.ByteString -> IO Bool
-updateFile quizLocation content = do
+updateWholeQuiz :: B.ByteString -> Either B.ByteString () -> IO Bool
+updateWholeQuiz quizLocation content = do
     isOpen <- isQuizOpen (B.unpack quizLocation)
     if isOpen && 
        isValidTextWith validInternalQuizNameChars quizLocation then do
@@ -171,7 +194,9 @@ updateFile quizLocation content = do
             fullQuizPath = mkFull roundsFile
             fullLabelPath = mkFull labelsFile
             fullColorsPath = mkFull colorsFile
-        B.writeFile fullQuizPath content
+        case content of
+          Left c -> B.writeFile fullQuizPath c
+          Right _ -> return ()
         createWith (map (\(k, v) -> (B.unpack k, v)) [(prefix, fullQuizDir), 
                                                       (rounds, fullQuizPath),
                                                       (labels, fullLabelPath),
@@ -227,8 +252,8 @@ readLabelsFile quizLocation = do
   if exists 
     then do
       file <- B.readFile filePath
-      let labels = read (B.unpack file)
-      return labels `catch` handle
+      let lbls = read (B.unpack file)
+      return lbls `catch` handle
     else
       return defaultLabels
 
