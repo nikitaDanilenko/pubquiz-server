@@ -3,7 +3,7 @@ module Labels ( Labels, SafeLabels, unwrapped, defaultLabels, mkLabels, labelsFr
                 maxReachedLabel, maxReachableLabel, backToChartView, ownPageLabel,
                 mainLabel, roundLabel, viewPrevious, cumulativeLabel, individualRoundsLabel,
                 progressionLabel, placementLabel, placeLabel, pointsLabel, roundWinnerLabel,
-                mkHTMLSafe, showAsBS ) where
+                mkHTMLSafe, showAsBS, parameters ) where
 
 import Control.Applicative                  ( (*>) )
 import qualified Data.ByteString.Char8 as B 
@@ -42,6 +42,26 @@ instance Read Labels where
   readsPrec _ text = case parse labelsParser "" text of
     Right lbls -> [(lbls, "")]
     Left  _ -> []
+
+parameters :: Labels -> [String]
+parameters lbls = map ($ lbls) [
+    roundLabel,
+    teamLabel,
+    ownPointsLabel,
+    maxReachedLabel,
+    maxReachableLabel,
+    backToChartView,
+    mainLabel,
+    ownPageLabel,
+    viewPrevious,
+    cumulativeLabel,
+    individualRoundsLabel,
+    progressionLabel,
+    placementLabel,
+    placeLabel,
+    pointsLabel,
+    roundWinnerLabel
+  ]
 
 cumulativeFallback :: String
 cumulativeFallback = "Gesamtwertung"
