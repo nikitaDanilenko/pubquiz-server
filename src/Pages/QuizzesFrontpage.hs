@@ -7,7 +7,7 @@ import System.Directory ( getDirectoryContents, doesFileExist )
 
 import Constants        ( quizzesFolderIO, addSeparator, labelsFile )
 import Labels           ( Labels, mainLabel, defaultLabels )
-import Pages.HtmlUtil   ( tagged, div )
+import Pages.HtmlUtil   ( taggedV, div, encoding )
 
 import Prelude hiding   ( div )
 
@@ -42,13 +42,14 @@ cssPath = "<link rel='stylesheet' type='text/css' href='./style.css'/>"
 
 mkHtml :: [(String, Labels)] -> String
 mkHtml cls = 
-    tagged "html" (
-           tagged "head" (tagged "title" "Quizzes" ++ cssPath) ++
+    taggedV "html" (
+           encoding ++
+           taggedV "head" (taggedV "title" "Quizzes" ++ cssPath) ++
            concatMap (\(c, l) -> div (mkButton (mainLabel l) c)) cls
     )
 
 mkButton :: String -> String -> String
-mkButton text path = concat ["<a href=\"", path ++ "/index.html", "\" class=\"quizLinkButton\">", text, "</a>"]
+mkButton text path = unlines ["<a href=\"", path ++ "/index.html", "\" class=\"quizLinkButton\">", text, "</a>"]
 
 indexFile :: String
 indexFile = "index.html"
