@@ -72,6 +72,9 @@ actionParam = "action"
 createQuiz :: B.ByteString
 createQuiz = "createQuiz"
 
+labelUpdate :: B.ByteString
+labelUpdate = "labelUpdate"
+
 roundsNumberParam :: B.ByteString
 roundsNumberParam = "roundsNumber"
 
