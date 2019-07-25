@@ -43,7 +43,8 @@ executable pubquiz-server
     process >= 1 && < 2,
     random >= 1 && < 2,
     split >= 0.2 && < 1,
-    parsec >= 3.1 && < 4
+    parsec >= 3.1 && < 4,
+    extra >= 1 && < 2
   hs-source-dirs:      src
   default-language:    Haskell2010
 
