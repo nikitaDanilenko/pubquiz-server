@@ -1,2 +1,3 @@
 quizzesFolder=./quizzes
 serverRelativeQuizPath=./quizzes
+database=./db
