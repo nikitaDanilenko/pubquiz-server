@@ -9,15 +9,22 @@ import Data.Maybe                           ( fromMaybe )
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T             ( Text )
 import System.FilePath                      ( pathSeparator )
+import System.Directory                     ( doesDirectoryExist, createDirectoryIfMissing )
 
-dbFolder :: String
-dbFolder = "db"
+dbFolderIO :: IO String
+dbFolderIO = readFromConfigFile "database" (addSeparator [".", "db"])
 
-sessionKeysFile :: String
-sessionKeysFile = addSeparator [".", dbFolder, "sessionKeys.txt"]
+sessionKeysFile :: IO String
+sessionKeysFile = fmap (\dbFolder -> addSeparator [dbFolder, "sessionKeys.txt"]) dbFolderIO
 
-userFile :: String
-userFile = addSeparator [".", dbFolder, "users.txt"]
+userFile :: IO String
+userFile = fmap (\dbFolder -> addSeparator [dbFolder, "users.txt"]) dbFolderIO
+
+doesDBExist :: IO Bool
+doesDBExist = dbFolderIO >>= doesDirectoryExist
+
+createDBFolder :: IO ()
+createDBFolder = dbFolderIO >>= createDirectoryIfMissing True
 
 configFile :: String
 configFile = "./config.txt"
