@@ -17,8 +17,8 @@ dbFolderIO = readFromConfigFile "database" (addSeparator [".", "db"])
 sessionKeysFile :: IO String
 sessionKeysFile = fmap (\dbFolder -> addSeparator [dbFolder, "sessionKeys.txt"]) dbFolderIO
 
-userFile :: IO String
-userFile = fmap (\dbFolder -> addSeparator [dbFolder, "users.txt"]) dbFolderIO
+userFileIO :: IO String
+userFileIO = fmap (\dbFolder -> addSeparator [dbFolder, "users.txt"]) dbFolderIO
 
 doesDBExist :: IO Bool
 doesDBExist = dbFolderIO >>= doesDirectoryExist
