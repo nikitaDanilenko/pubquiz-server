@@ -8,17 +8,26 @@ import "cryptonite" Crypto.Hash.Algorithms  ( SHA512 )
 import Data.Char                            ( chr )
 import qualified Data.ByteString.Char8 as B 
 import Data.Function                        ( on )
-import Data.List                            ( sortBy, groupBy )
+import Data.List                            ( sortBy, groupBy, intercalate )
+import Data.List.Extra                      ( linesBy )
 import Data.Ord                             ( comparing )
 import Snap.Snaplet                         ( Handler )
 import Snap.Util.CORS                       ( applyCORS, defaultOptions )
-import System.Directory                     ( doesFileExist )
+import System.Directory                     ( doesFileExist, createDirectoryIfMissing )
+import System.FilePath                      ( pathSeparator )
 import System.Random                        ( newStdGen, randomRs )
 
 readOrEmpty :: FilePath -> IO String
 readOrEmpty filePath = do
     exists <- doesFileExist filePath
-    if exists then readFile filePath else return ""
+    if exists 
+        then readFile filePath 
+        else do if null dir then createDirectoryIfMissing True dir else return ()
+                writeFile filePath ""
+                readFile filePath
+
+  where parts = linesBy (pathSeparator ==) filePath
+        dir   = intercalate [pathSeparator] (init parts)
 
 readOrCreateBS :: FilePath -> IO B.ByteString
 readOrCreateBS filePath = do
@@ -65,7 +74,7 @@ disambiguate =
         concatMap (uncurry zip . second disambiguateList . unzip) . 
         groupBy ((==) `on` snd) . 
         sortBy (comparing snd) . 
-        zip [0 ..]
+        zip [(0 :: Int) ..]
 
 disambiguateSingle :: Int -> String -> String
 disambiguateSingle = (++) . show
