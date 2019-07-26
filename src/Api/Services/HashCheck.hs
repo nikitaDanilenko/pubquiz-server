@@ -9,8 +9,8 @@ import Data.Maybe                           ( maybe, fromMaybe )
 import Snap.Core                            ( writeBS, modifyResponse, setResponseCode )
 import Snap.Snaplet                         ( Handler )
 
-import Constants                            ( sessionKeysFile, userParam )
-import Utils                                ( mkHashed, readOrCreateBS )
+import Constants                            ( sessionKeysFileIO, userParam )
+import Utils                                ( mkHashed, readOrCreateEmptyBS )
 
 data Attempt = Attempt {
         user :: B.ByteString,
@@ -44,7 +44,8 @@ toKV _                 = ("", "")
 
 verifyHashFromFile :: Attempt -> IO Bool
 verifyHashFromFile attempt = do
-    ls <- fmap B.lines (readOrCreateBS sessionKeysFile)
+    sessionKeysFile <- sessionKeysFileIO
+    ls <- fmap B.lines (readOrCreateEmptyBS sessionKeysFile)
     let kvs = map (toKV . B.words) ls
         mSessionKey = lookup (user attempt) kvs
         verified = maybe False (verifyHash attempt) mSessionKey
