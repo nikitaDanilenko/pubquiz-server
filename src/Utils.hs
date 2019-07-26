@@ -17,22 +17,23 @@ import System.Directory                     ( doesFileExist, createDirectoryIfMi
 import System.FilePath                      ( pathSeparator )
 import System.Random                        ( newStdGen, randomRs )
 
-readOrEmpty :: FilePath -> IO String
-readOrEmpty filePath = do
+readOrCreateEmpty :: FilePath -> IO String
+readOrCreateEmpty = readOrCreateEmptyWith "" writeFile readFile
+
+readOrCreateEmptyBS :: FilePath -> IO B.ByteString
+readOrCreateEmptyBS = readOrCreateEmptyWith B.empty B.writeFile B.readFile
+
+readOrCreateEmptyWith :: a -> (FilePath -> a -> IO ()) -> (FilePath -> IO a) -> FilePath -> IO a
+readOrCreateEmptyWith empty writer reader filePath = do
     exists <- doesFileExist filePath
     if exists 
-        then readFile filePath 
+        then reader filePath 
         else do if null dir then createDirectoryIfMissing True dir else return ()
-                writeFile filePath ""
-                readFile filePath
+                writer filePath empty
+                reader filePath
 
   where parts = linesBy (pathSeparator ==) filePath
         dir   = intercalate [pathSeparator] (init parts)
-
-readOrCreateBS :: FilePath -> IO B.ByteString
-readOrCreateBS filePath = do
-    exists <- doesFileExist filePath
-    if exists then B.readFile filePath else return (B.pack "")
 
 (+>) :: B.ByteString -> Handler b service () -> (B.ByteString, Handler b service ())
 (+>) = mkRoute
