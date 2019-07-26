@@ -10,9 +10,9 @@ import Snap.Core hiding                      ( pass )
 import Snap.Snaplet
 
 import Api.Services.SavedUser                ( SavedUser (..), UserName, Password, mkHash )
-import Constants                             ( sessionKeysFile, userFile, publicExponent, keySize,
-                                               oneWayHashSize, userParam, passwordParam )
-import Utils                                 ( readOrCreateBS, (+>), randomStringIO )
+import Constants                             ( sessionKeysFileIO, userFileIO, publicExponent, 
+                                               keySize, oneWayHashSize, userParam, passwordParam )
+import Utils                                 ( readOrCreateEmptyBS, (+>), randomStringIO )
 
 data SecretService = SecretService
 
@@ -34,26 +34,15 @@ createSecret = do
         writeBS authentificationError
         modifyResponse (setResponseCode 401)
 
-{- For future reference. 
-createSecret :: Handler b SecretService ()
-createSecret = do
-    req <- getRequest
-    mUser <- getPostParam "user"
-    mPass <- getPostParam "pass"
-    let mAuth = getHeader "Authorization" req
-    liftIO (writeFile "./processingSecret.txt" (show [mUser, mPass, mAuth]))
-    modifyResponse $ setResponseCode 201
--}
-
 authentificationError :: B.ByteString
 authentificationError = B.pack "Failed to authenticate: user name or password is wrong."
 
 -- | Verifies that the user is known and that the supplied password is correct.
 --   Both values are fetched from a local data storage.
 verifyUser :: UserName -> Password -> IO Bool
-verifyUser username password = 
-    fmap (verifyUserWithUsers username password . map (read :: String -> SavedUser) . lines) 
-         (readFile userFile)
+verifyUser username password = do
+    userFile <- userFileIO
+    fmap (verifyUserWithUsers username password . map read . lines) (readFile userFile)
 
 verifyUserWithUsers :: UserName -> Password -> [SavedUser] -> Bool
 verifyUserWithUsers username password users = fromMaybe False maybeVerified where
@@ -66,7 +55,8 @@ verifyPassword username password savedUser = hash == userHash savedUser where
 
 createHash :: UserName -> IO String
 createHash user = do
-    ls <- fmap B.lines (readOrCreateBS sessionKeysFile)
+    sessionKeysFile <- sessionKeysFileIO
+    ls <- fmap B.lines (readOrCreateEmptyBS sessionKeysFile)
     oneWayHash <- fmap (take oneWayHashSize) randomStringIO
     let clearedLines = removeInit user ls
         newLines = B.unwords [user, B.pack oneWayHash] : clearedLines
@@ -75,7 +65,8 @@ createHash user = do
 
 createKeyPair :: UserName -> IO PublicKey
 createKeyPair user = do
-    ls <- fmap B.lines (readOrCreateBS sessionKeysFile)
+    sessionKeysFile <- sessionKeysFileIO
+    ls <- fmap B.lines (readOrCreateEmptyBS sessionKeysFile)
     let clearedLines = removeInit user ls
     (public, private) <- generate keySize publicExponent
     let newLines = B.unwords [user, B.pack (show private)] : clearedLines
