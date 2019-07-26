@@ -10,13 +10,14 @@ import Control.Monad.IO.Class               ( liftIO )
 import qualified Data.ByteString.Char8 as B 
 import Data.Maybe                           ( maybe, fromMaybe )
 import Snap.Core                            ( method, Method ( GET, POST ), writeBS, modifyResponse,
-                                              setResponseCode, getPostParam, getQueryParam )
+                                              getPostParam, getQueryParam)
 import Snap.Snaplet                         ( Handler, SnapletInit, addRoutes, makeSnaplet )
 
 import System.Directory                     ( doesFileExist, getDirectoryContents, 
                                               doesDirectoryExist, createDirectory )
 
 import Api.Services.HashCheck               ( failIfUnverified, authenticate )
+import Api.Services.SnapUtil                ( setResponseCodePlain )
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quizParam,
                                               roundsFile, labelsFile, colorsFile, rounds, labels,
                                               colors, prefix, roundParam, teamParam,
@@ -53,19 +54,19 @@ sendAvailable :: Handler b QuizService ()
 sendAvailable = do
     nonLockedQuizzes <- liftIO getNonLockedQuizzes
     writeBS (B.pack (unlines nonLockedQuizzes))
-    modifyResponse (setResponseCode 200)
+    modifyResponse (setResponseCodePlain 200)
 
 getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
 getSingleWithData fetchAction =
-  getQueryParam quizParam >>= maybe (modifyResponse (setResponseCode 400)) fetchAction
+  getQueryParam quizParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
 
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = getSingleWithData perQuiz where
     
   perQuiz :: B.ByteString -> Handler b QuizService ()
   perQuiz q = liftIO (readQuizFile q) 
-                  >>= maybe (modifyResponse (setResponseCode 404)) 
-                            (\c -> writeBS c >> modifyResponse (setResponseCode 200))
+                  >>= maybe (modifyResponse (setResponseCodePlain 404)) 
+                            (\c -> writeBS c >> modifyResponse (setResponseCodePlain 200))
         
 getSingleQuizLabels :: Handler b QuizService ()
 getSingleQuizLabels = getSingleWithData perQuiz where
@@ -75,7 +76,7 @@ getSingleQuizLabels = getSingleWithData perQuiz where
     lbls <- liftIO (readLabelsFile q)
     let response = B.intercalate "\n" (map B.pack (parameters lbls))
     writeBS response
-    modifyResponse (setResponseCode 200)
+    modifyResponse (setResponseCodePlain 200)
 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
@@ -91,7 +92,7 @@ updateQuizData mQuiz mNewContent = case liftA2 updateWholeQuiz mQuiz (fmap Left 
   Nothing -> do writeBS (B.concat ["Malfolmed request:\n", 
                                    quizParam, "=", B.pack (show mQuiz), "\n", 
                                    rounds, "=", B.pack (show mNewContent)])
-                modifyResponse (setResponseCode 406)
+                modifyResponse (setResponseCodePlain 406)
   Just io -> respondToUpdate io
 
 updateLabels :: Handler b QuizService ()
@@ -102,7 +103,7 @@ updateLabels = do
   verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just labelUpdate)]
   failIfUnverified verified $
     case mQuiz of
-      Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
+      Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
       Just name -> do
         fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
         fetchLabels fullLabelsPath
@@ -115,9 +116,9 @@ respondToUpdate :: IO Bool -> Handler b QuizService ()
 respondToUpdate io = do 
   isOpen <- liftIO io 
   if isOpen then
-    modifyResponse (setResponseCode 200)
+    modifyResponse (setResponseCodePlain 200)
   else 
-    modifyResponse (setResponseCode 406) >>
+    modifyResponse (setResponseCodePlain 406) >>
     writeBS "Requested quiz is locked or the update contains invalid symbols."
 
 newQuiz :: Handler b QuizService ()
@@ -131,7 +132,7 @@ newQuiz = do
                                                (actionParam, Just createQuiz)]
     failIfUnverified verified $
       case mQuiz of
-          Nothing -> writeBS "No name given." >> modifyResponse (setResponseCode 406)
+          Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
           Just name -> do 
               let uName = B.unpack name
                   gs = maybe 20 (read . B.unpack) mNumberOfTeams
@@ -154,12 +155,12 @@ newQuiz = do
                            updateWholeQuiz name (Left (B.pack (unwords endings)))
                            createFrontPage)
                 writeBS (B.unwords ["Created quiz", name]) 
-                modifyResponse (setResponseCode 201)
+                modifyResponse (setResponseCodePlain 201)
                else do
                 writeBS (B.unwords ["Quiz", 
                                     name, 
                                     "already exists or its labels contain invalid symbols"])
-                modifyResponse (setResponseCode 406)
+                modifyResponse (setResponseCodePlain 406)
 
 -- todo: better with JSON directly.
 fetchLabels :: String -> Handler b QuizService Labels
@@ -216,7 +217,7 @@ lockQuiz = do
                                 writeFile (addSeparator [quizzesFolder, B.unpack q, locked]) "") 
                                           mQuiz
     failIfUnverified verified (liftIO act)
-    modifyResponse (setResponseCode 201)
+    modifyResponse (setResponseCodePlain 201)
 
 getNonLockedQuizzes :: IO [String]
 getNonLockedQuizzes = do
