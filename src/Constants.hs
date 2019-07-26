@@ -14,8 +14,8 @@ import System.Directory                     ( doesDirectoryExist, createDirector
 dbFolderIO :: IO String
 dbFolderIO = readFromConfigFile "database" (addSeparator [".", "db"])
 
-sessionKeysFile :: IO String
-sessionKeysFile = fmap (\dbFolder -> addSeparator [dbFolder, "sessionKeys.txt"]) dbFolderIO
+sessionKeysFileIO :: IO String
+sessionKeysFileIO = fmap (\dbFolder -> addSeparator [dbFolder, "sessionKeys.txt"]) dbFolderIO
 
 userFileIO :: IO String
 userFileIO = fmap (\dbFolder -> addSeparator [dbFolder, "users.txt"]) dbFolderIO
