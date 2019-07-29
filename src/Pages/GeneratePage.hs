@@ -185,9 +185,6 @@ mkTable labels ps =
 
 type Color = String
 
-defaultColors :: [Color]
-defaultColors = cycle (mkHTMLColours 20)
-
 toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Team -> Color -> String
 toDatasetWith pointMaker rd team g c = unlines [
     "{",
