@@ -19,8 +19,7 @@ import System.Directory                     ( doesFileExist, getDirectoryContent
 import Api.Services.HashCheck               ( failIfUnverified, authenticate )
 import Api.Services.SnapUtil                ( setResponseCodePlain )
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quizParam,
-                                              roundsFile, labelsFile, colorsFile, rounds, labels,
-                                              colors, prefix, roundParam, teamParam,
+                                              roundsFile, labelsFile, rounds, labels, prefix
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               serverQuizPathIO, quizPath, signatureParam, userParam,
@@ -28,7 +27,7 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               server, numberOfTeamsParam, viewQuizzesParam,
                                               cumulativeParam, individualParam, progressionParam ,
                                               placementParam, placeParam, pointsParam,
-                                              roundWinnerParam, labelUpdate )
+                                              roundWinnerParam, labelUpdate, roundParam, teamParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, teamLabel, showAsBS, parameters, 
@@ -194,14 +193,12 @@ updateWholeQuiz quizLocation content = do
             fullQuizDir = mkFull ""
             fullQuizPath = mkFull roundsFile
             fullLabelPath = mkFull labelsFile
-            fullColorsPath = mkFull colorsFile
         case content of
           Left c -> B.writeFile fullQuizPath c
           Right _ -> return ()
         createWith (map (\(k, v) -> (B.unpack k, v)) [(prefix, fullQuizDir), 
                                                       (rounds, fullQuizPath),
-                                                      (labels, fullLabelPath),
-                                                      (colors, fullColorsPath)])
+                                                      (labels, fullLabelPath)])
         return True
     else return False
 

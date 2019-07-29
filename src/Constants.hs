@@ -70,9 +70,6 @@ rounds = "rounds"
 labels :: B.ByteString
 labels = "labels"
 
-colors :: B.ByteString
-colors = "colors"
-
 actionParam :: B.ByteString
 actionParam = "action"
 
@@ -93,9 +90,6 @@ roundsFile = "rounds.txt"
 
 labelsFile :: String
 labelsFile = "labels.txt"
-
-colorsFile :: String
-colorsFile = "colors.txt"
 
 roundParam :: B.ByteString
 roundParam = "roundLabel"
