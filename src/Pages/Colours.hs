@@ -1,4 +1,4 @@
-module Pages.Colours where
+module Pages.Colours ( mkColours, mkHTMKColours ) where
 
 import Data.Colour      ( blend, Colour )
 import Data.Colour.SRGB ( sRGB, toSRGB, RGB ( .. ) )
