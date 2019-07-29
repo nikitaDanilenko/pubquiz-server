@@ -18,6 +18,7 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel, unwrapped,
                                 placementLabel, roundWinnerLabel, mkHTMLSafe, SafeLabels )
+import Pages.Colours          ( mkHTMLColours )
 import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, encoding )
@@ -185,28 +186,7 @@ mkTable labels ps =
 type Color = String
 
 defaultColors :: [Color]
-defaultColors = cycle [ 
-  "rgb(255, 99, 132)"
-  , "rgb(255, 159, 64)"
-  , "rgb(255, 205, 86)"
-  , "rgb(75, 192, 192)"
-  , "rgb(54, 162, 235)"
-  , "rgb(153, 102, 255)"
-  , "rgb(201, 203, 207)"
-  , "rgb(88, 68, 146)"
-  , "rgb(142, 64, 255)"
-  , "rgb(128, 0, 128)"
-  , "rgb(0, 255, 255)"
-  , "rgb(120, 0, 200)"
-  , "rgb(255, 20, 147)"
-  , "rgb(119, 136, 153)"
-  , "rgb(128, 0, 0)"
-  , "rgb(135, 206, 250)"
-  , "rgb(0, 255, 127)"
-  , "rgb(189, 183, 107)"
-  , "rgb(220, 20, 60)"
-  , "rgb(216, 191, 216)"
-  ]
+defaultColors = cycle (mkHTMLColours 20)
 
 toDatasetWith :: (SimplePoints -> SimplePoints) -> String -> String -> Team -> Color -> String
 toDatasetWith pointMaker rd team g c = unlines [
@@ -412,11 +392,6 @@ readPoints [] = (0, [])
 readPoints text = (total, ps) where
   (total : _ : ps) = map read (words text)
 
-readColors :: String -> IO [Color]
-readColors colorsPath = fmap lines (readFile colorsPath) `catch` handle where
-  handle :: IOException -> IO [Color]
-  handle _ = putStrLn (colorsPath ++ " not found - using default colors.") >> return defaultColors
-
 parseCodesWithNamesAndRounds :: String -> ([(Code, Maybe String)], [Round])
 parseCodesWithNamesAndRounds [] = ([], [])
 parseCodesWithNamesAndRounds text = (codesAndNames, rounds) where
@@ -446,19 +421,18 @@ createWith :: [(String, String)] -> IO ()
 createWith associations = do
     unsafeLabels <- readLabels labelsPath
     (codesAndNames, rounds) <- readCodesAndRounds roundsPath
-    colors <- readColors colorsPath
     let (teamsCandidates, winners) = mkTeams rounds
+        colours = mkHTMLColours (length teamsCandidates)
         safeLabels = mkHTMLSafe unsafeLabels
         -- If there are no rounds, we create teams that have not played any rounds yet.
         -- This facilitates the initial creation of the point pages.
         teams = if null teamsCandidates then mkEmptyTeams (map fst codesAndNames) 
                                         else teamsCandidates
         n = length rounds
-    writePointPages prefix safeLabels teams colors
-    writeGraphPage prefix safeLabels unsafeLabels n teams winners colors
+    writePointPages prefix safeLabels teams colours
+    writeGraphPage prefix safeLabels unsafeLabels n teams winners colours
   where kvs = fromList associations
         labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
-        colorsPath = fromMaybe "colors.txt" (lookup "colors" kvs)
         roundsPath = fromMaybe "rounds.txt" (lookup "rounds" kvs)
         prefix     = fromMaybe "./"         (lookup "prefix" kvs)
 
