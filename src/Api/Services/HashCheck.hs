@@ -19,7 +19,7 @@ data Attempt = Attempt {
     }
 
 mkAttempt :: B.ByteString -> B.ByteString -> [(B.ByteString, B.ByteString)] -> Attempt
-mkAttempt u claim kvs = Attempt u kvs claim
+mkAttempt u cl kvs = Attempt u kvs cl
 
 mkAttemptWithMaybe :: Maybe B.ByteString 
                    -> Maybe B.ByteString 
