@@ -83,7 +83,7 @@ safeRemoveFile path = removeFile path `catch` noFile where
     noFile _ = void (putStrLn "No file to remove")
 
 cleanImages :: [Ending] -> IO ()
-cleanImages = mapM_ (safeRemoveFile . (+++ ".png"))
+cleanImages = mapM_ (safeRemoveFile . (++ ".png"))
 
 safeTeX :: String -> String
 safeTeX = concatMap safeTeXChar . unEscape
