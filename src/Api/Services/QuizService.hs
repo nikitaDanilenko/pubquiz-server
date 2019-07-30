@@ -19,7 +19,7 @@ import System.Directory                     ( doesFileExist, getDirectoryContent
 import Api.Services.HashCheck               ( failIfUnverified, authenticate )
 import Api.Services.SnapUtil                ( setResponseCodePlain )
 import Constants                            ( quizzesFolderIO, locked, addSeparator, quizParam,
-                                              roundsFile, labelsFile, rounds, labels, prefix
+                                              roundsFile, labelsFile, rounds, labels, prefix,
                                               ownPointsParam, maxReachedParam, maxReachableParam, 
                                               backToChartViewParam, mainParam, ownPageParam, 
                                               serverQuizPathIO, quizPath, signatureParam, userParam,
