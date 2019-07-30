@@ -2,9 +2,9 @@
 
 module Application where
 
-import Api.Core
-import Control.Lens
-import Snap.Snaplet
+import Api.Core     ( Api )
+import Control.Lens ( makeLenses )
+import Snap.Snaplet ( Snaplet, Handler )
 
 newtype App = App { _api :: Snaplet Api }
 

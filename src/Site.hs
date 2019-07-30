@@ -2,17 +2,12 @@
 
 module Site ( app ) where
 
-import Data.ByteString (ByteString)
-import Snap.Snaplet
+import Snap.Snaplet ( SnapletInit, makeSnaplet, nestSnaplet )
 
-import Api.Core ( apiInit )
-import Application
-
-routes :: [(ByteString, Handler App App ())]
-routes = []
+import Api.Core     ( apiInit )
+import Application  ( App ( .. ), api )
 
 app :: SnapletInit App App
 app = makeSnaplet "app" "Example application" Nothing $ do
     apiInstance <- nestSnaplet "api" api apiInit
-    addRoutes routes
     return $ App apiInstance
