@@ -34,8 +34,8 @@ data RoundRating = RoundRating {
 type Points = [RoundRating]
 
 score :: Points -> (Double, Double)
-score ps = 
-  foldr (\rating (o, r) -> ((ownPoints &&& reachablePoints) >>> ((+ o) *** (+ r))) rating) (0, 0) ps
+score = 
+  foldr (\rating (o, r) -> ((ownPoints &&& reachablePoints) >>> ((+ o) *** (+ r))) rating) (0, 0)
 
 mkSum :: Points -> String
 mkSum = score >>> uncurry (\own reachable -> concat [prettyDouble own, "/", prettyDouble reachable])
@@ -61,7 +61,7 @@ isHTMLSafe _    = False
 
 mkTeamName :: HTMLSafety -> String -> TeamKey -> String
 mkTeamName sf teamLbl key = name where
-  fallback = (unwords [teamLbl, show (teamNumber key)])
+  fallback = unwords [teamLbl, show (teamNumber key)]
   name = fromMaybe fallback 
                   (mfilter (not . null) 
                            ((if isHTMLSafe sf then htmlSafeTeamName else teamName) key))
@@ -88,7 +88,7 @@ htmlSafeTeamName :: TeamKey -> Maybe String
 htmlSafeTeamName = fmap htmlSafeString . teamName
 
 mkTeamKey :: Int -> Code -> Maybe String -> TeamKey
-mkTeamKey i c = TeamKey i c
+mkTeamKey = TeamKey
 
 mkSimpleTeamKey :: Int -> Code -> TeamKey
 mkSimpleTeamKey i c = mkTeamKey i c Nothing
@@ -212,8 +212,7 @@ roundList rn n = intercalate "," (map enclose (take n (roundListInf rn))) where
   enclose t = concat ["'", t, "'"]
 
 roundListInf :: String -> [String]
-roundListInf rn = 
-  zipWith (\r i -> concat [r, " ", show i]) (repeat rn) [(1 :: Int) ..]
+roundListInf rn = map (\i -> concat [rn, " ", show i]) [(1 :: Int) ..]
 
 addCanvas :: String -> String
 addCanvas canvasLabel = div (taggedWith (concat ["id='", canvasLabel, "'"]) "canvas" "")
@@ -356,8 +355,7 @@ graphPage safeLbls labels rounds teams winners colors = unlines [
 findTopDownOrder :: [Team] -> [(Double, [Team])]
 findTopDownOrder = map (\gds -> (snd (head gds), reverse (map fst gds)))
              . groupBy ((==) `on` snd)
-             . reverse
-             . sortBy (comparing snd) 
+             . sortBy (flip (comparing snd))
              . map (\g -> (g, sum (simplePoints g)))
 
 mkTopDownList :: String -> String -> String -> [Team] -> String
@@ -368,7 +366,7 @@ mkTopDownList teamLbl placeLbl pointsLbl gs = unlines (map (tagged "div") rated)
                                                      teams grs])
                   [(1 :: Int) ..] 
                   tops
-  teams =  intercalate ", " . map (\g -> mkTeamName Safe teamLbl (teamKey g))
+  teams =  intercalate ", " . map (mkTeamName Safe teamLbl . teamKey)
   tops = findTopDownOrder gs
 
 mkWinnerList :: String -> String -> [[TeamKey]] -> String
@@ -402,13 +400,13 @@ readCodesAndRounds :: String -> IO ([(Code, Maybe String)], [Round])
 readCodesAndRounds roundsPath =
   fmap parseCodesWithNamesAndRounds (readFile roundsPath) `catch` handle where
     handle :: IOException -> IO ([(Code, Maybe String)], [Round]) 
-    handle e = putStrLn (show e) >> 
+    handle e = print e >> 
                putStrLn "Unexpected format or missing file. No output generated." >> 
                return ([], [])
 
 splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
-  (key, preValue) = span ((/=) '=') str
+  (key, preValue) = span ('=' /=) str
 
 -- Creates teams with proper keys, but all points set to empty.
 mkEmptyTeams :: [Code] -> [Team]

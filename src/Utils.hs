@@ -3,6 +3,7 @@
 module Utils where
 
 import Control.Arrow                        ( second )
+import Control.Monad                        ( when )
 import "cryptonite" Crypto.Hash             ( Digest, hash )
 import "cryptonite" Crypto.Hash.Algorithms  ( SHA512 )
 import Data.Char                            ( chr )
@@ -28,7 +29,7 @@ readOrCreateEmptyWith empty writer reader filePath = do
     exists <- doesFileExist filePath
     if exists 
         then reader filePath 
-        else do if null dir then createDirectoryIfMissing True dir else return ()
+        else do when (null dir) (createDirectoryIfMissing True dir)
                 writer filePath empty
                 reader filePath
 
@@ -47,7 +48,7 @@ mkCORS = applyCORS defaultOptions
 randomStringIO :: IO String
 randomStringIO = fmap (map chr . randomRs (33, 126)) newStdGen
 
-alphaNumeric :: [Char]
+alphaNumeric :: String
 alphaNumeric = ['0' .. '9'] ++ ['a' .. 'z']
 
 alphaNumericAmount :: Int

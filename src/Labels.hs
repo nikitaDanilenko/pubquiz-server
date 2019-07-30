@@ -147,11 +147,11 @@ placementsKeys = additionalChartsKeys ++ [placementKey, placeKey, pointsKey, rou
 
 labelsFromParameterList :: [String] -> Labels
 labelsFromParameterList ws = case ws of
-  r : t : op : mred : mr : btc : m : o : vp : [] -> 
+  [r, t, op, mred, mr, btc, m, o, vp] -> 
       mkLabels r t op mred mr btc m o vp
              cumulativeFallback individualRoundsFallback progressionFallback
              placementFallback placeFallback pointsFallback roundWinnerFallback
-  r : t : op : mred : mr : btc : m : o : vp : c : i : p : [] ->
+  [r, t, op, mred, mr, btc, m, o, vp, c, i, p] ->
       mkLabels r t op mred mr btc m o vp c i p 
              placementFallback placeFallback pointsFallback roundWinnerFallback
   r : t : op : mred : mr : btc : m : o : vp : c : i : p : plcm : plc : ps : rw : _ ->

@@ -47,7 +47,7 @@ noConfigFile _ = do
 
 splitOnSetter :: String -> (String, String)
 splitOnSetter str = (key, drop 1 preValue) where
-  (key, preValue) = span ((/=) '=') str
+  (key, preValue) = span ('=' /=) str
 
 addSeparator :: [String] -> String
 addSeparator = intercalate [pathSeparator]

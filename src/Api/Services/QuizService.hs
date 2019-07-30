@@ -3,6 +3,7 @@
 module Api.Services.QuizService ( quizServiceInit, QuizService ) where
 
 import Control.Applicative                  ( liftA2 )
+import Control.Arrow                        ( first )
 import Control.Exception                    ( catch )
 import Control.Exception.Base               ( IOException )
 import Control.Monad                        ( filterM )
@@ -77,12 +78,23 @@ getSingleQuizLabels = getSingleWithData perQuiz where
     writeBS response
     modifyResponse (setResponseCodePlain 200)
 
+data QUS = QUS { 
+    quizCandidate :: Maybe B.ByteString,
+    userCandidate :: Maybe B.ByteString,
+    signatureCandidate :: Maybe B.ByteString            
+  }
+
+getQUS :: Handler b QuizService QUS
+getQUS = do
+  mQuiz <- getPostParam quizParam
+  mUser <- getPostParam userParam
+  mSignature <- getPostParam signatureParam
+  return (QUS mQuiz mUser mSignature)
+
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
-    mQuiz <- getPostParam quizParam
     mNewContent <- getPostParam rounds
-    mUser <- getPostParam userParam
-    mSignature <- getPostParam signatureParam
+    QUS mQuiz mUser mSignature <- getQUS
     verified <- authenticate mUser mSignature [(quizParam, mQuiz), (rounds, mNewContent)]
     failIfUnverified verified (updateQuizData mQuiz mNewContent)
 
@@ -96,9 +108,7 @@ updateQuizData mQuiz mNewContent = case liftA2 updateWholeQuiz mQuiz (fmap Left 
 
 updateLabels :: Handler b QuizService ()
 updateLabels = do
-  mQuiz <- getPostParam quizParam
-  mUser <- getPostParam userParam
-  mSignature <- getPostParam signatureParam
+  QUS mQuiz mUser mSignature <- getQUS
   verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just labelUpdate)]
   failIfUnverified verified $
     case mQuiz of
@@ -108,7 +118,7 @@ updateLabels = do
         fetchLabels fullLabelsPath
         liftIO createFrontPage
         case liftA2 updateWholeQuiz mQuiz (Just (Right ())) of
-          Nothing -> do writeBS ("Unknown error during label update.")
+          Nothing -> writeBS "Unknown error during label update."
           Just io -> respondToUpdate io
 
 respondToUpdate :: IO Bool -> Handler b QuizService ()
@@ -122,10 +132,8 @@ respondToUpdate io = do
 
 newQuiz :: Handler b QuizService ()
 newQuiz = do
-    mQuiz <- getPostParam quizParam
+    QUS mQuiz mUser mSignature <- getQUS
     mRounds <- getPostParam roundsNumberParam
-    mUser <- getPostParam userParam
-    mSignature <- getPostParam signatureParam
     mNumberOfTeams <- getPostParam numberOfTeamsParam
     verified <- authenticate mUser mSignature [(quizParam, mQuiz),
                                                (actionParam, Just createQuiz)]
@@ -188,7 +196,7 @@ updateWholeQuiz quizLocation content = do
        isValidTextWith validInternalQuizNameChars quizLocation then do
         quizzesFolder <- quizzesFolderIO
         let mkFull :: String -> String
-            mkFull relative = addSeparator [quizzesFolder, (B.unpack quizLocation), relative]
+            mkFull relative = addSeparator [quizzesFolder, B.unpack quizLocation, relative]
 
             fullQuizDir = mkFull ""
             fullQuizPath = mkFull roundsFile
@@ -196,17 +204,15 @@ updateWholeQuiz quizLocation content = do
         case content of
           Left c -> B.writeFile fullQuizPath c
           Right _ -> return ()
-        createWith (map (\(k, v) -> (B.unpack k, v)) [(prefix, fullQuizDir), 
-                                                      (rounds, fullQuizPath),
-                                                      (labels, fullLabelPath)])
+        createWith (map (first B.unpack) [(prefix, fullQuizDir), 
+                                          (rounds, fullQuizPath),
+                                          (labels, fullLabelPath)])
         return True
     else return False
 
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
-    mQuiz <- getPostParam quizParam
-    mUser <- getPostParam userParam
-    mSignature <- getPostParam signatureParam
+    QUS mQuiz mUser mSignature <- getQUS
     verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just lock)]
     let act = maybe (pure ()) 
                     (\q -> quizzesFolderIO >>= 
@@ -283,14 +289,14 @@ createOrFail path endings = do
         B.writeFile (addSeparator [fullPath, roundsFile]) (B.pack (unwords endings))
         return True
 
-validInternalQuizNameChars :: [Char]
+validInternalQuizNameChars :: String
 validInternalQuizNameChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ "-_"
 
-isValidTextWith :: [Char] -> B.ByteString -> Bool
-isValidTextWith vcs = B.all (\c -> c `elem` vcs)
+isValidTextWith :: String -> B.ByteString -> Bool
+isValidTextWith vcs = B.all (`elem` vcs)
 
 quizServiceInit :: SnapletInit b QuizService
-quizServiceInit = do
+quizServiceInit =
     makeSnaplet quizPath "Quiz Service" Nothing $ do
         addRoutes quizRoutes
         return QuizService

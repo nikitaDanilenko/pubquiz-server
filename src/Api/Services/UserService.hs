@@ -20,7 +20,7 @@ userRoutes :: [(B.ByteString, Handler b UserService ())]
 userRoutes = ["createUser" +> method POST createUser]
 
 userServiceInit :: SnapletInit b UserService
-userServiceInit = do
+userServiceInit =
     makeSnaplet userPath "User Service" Nothing $ do
         addRoutes userRoutes
         return UserService

@@ -1,4 +1,4 @@
-{-# Language OverloadedStrings, FlexibleInstances, PackageImports #-}
+{-# Language OverloadedStrings, FlexibleInstances #-}
 
 module Api.Services.EstablishSecret ( SecretService, secretServiceInit ) where
 

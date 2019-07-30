@@ -67,8 +67,8 @@ simpleHeader teamLabel = unlines [
     ]
 
 perGroup :: Int -> String
-perGroup n = unlines ((intercalate ["\\newpage", "\\simpleHeader{#1}"] 
-                                   (chunksOf 2 (replicate n "\\mkTable"))) ++ ["\\newpage"])
+perGroup n = unlines (intercalate ["\\newpage", "\\simpleHeader{#1}"] 
+                                  (chunksOf 2 (replicate n "\\mkTable"))) ++ ["\\newpage"]
 
 footer :: String -> String
 footer teamLabel = unlines [

@@ -2,13 +2,13 @@ module Sheet.SheetMaker ( createSheetWith, defaultEndings, Ending ) where
 
 import Control.Exception       ( catch )
 import Control.Exception.Base  ( IOException )
-import System.Directory        ( setCurrentDirectory, getCurrentDirectory )
+import Control.Monad           ( when, void )
+import System.Directory        ( setCurrentDirectory, getCurrentDirectory, removeFile )
 import System.Process          ( callProcess )
      
 import Constants               ( quizzesFolderIO, addSeparator )
 import Pages.HtmlUtil          ( unEscape )
 import Sheet.Tex               ( mkSheet )
-import System.Directory        ( removeFile )
 
 type Prefix = String
 type Server = String
@@ -22,16 +22,15 @@ createSheetWith teamLabel rounds prefix server endings = do
         fullServerPath = addSeparator [server, prefix, ""]
         sht = mkSheet (safeTeX teamLabel) rounds
         sheetFile = mkSheetFile prefix
-        texFile = concat [sheetFile, ".tex"]
+        texFile = sheetFile ++ ".tex"
 
     setCurrentDirectory fullPath
 
     writeFile texFile sht 
-    let trySheet = do 
-            b <- (mapM_ (createQR fullServerPath) endings >> return True) `catch` noQREncode
-            if b then createPDF texFile endings `catch` noPDFLatex else return ()
+    
+    b <- (mapM_ (createQR fullServerPath) endings >> return True) `catch` noQREncode
+    when b (createPDF texFile endings `catch` noPDFLatex)
 
-    trySheet
     cleanImages endings
     cleanLatex sheetFile
     setCurrentDirectory currentDir
@@ -81,10 +80,10 @@ cleanLatex sheetFile =
 safeRemoveFile :: String -> IO ()
 safeRemoveFile path = removeFile path `catch` noFile where
     noFile :: IOException -> IO ()
-    noFile _ = putStrLn "No file to remove" >> return ()
+    noFile _ = void (putStrLn "No file to remove")
 
 cleanImages :: [Ending] -> IO ()
-cleanImages = mapM_ safeRemoveFile . map (++ ".png")
+cleanImages = mapM_ (safeRemoveFile . (+++ ".png"))
 
 safeTeX :: String -> String
 safeTeX = concatMap safeTeXChar . unEscape
