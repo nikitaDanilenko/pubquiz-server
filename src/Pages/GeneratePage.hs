@@ -233,9 +233,13 @@ chartTypeToConstructor ct = case ct of
   Bar -> "Chart"
   Line -> "Chart.Line"
 
+chartJSFontSize :: Int
+chartJSFontSize = 30
+
 mkChartEntry :: ChartType -> String -> String -> String -> String
 mkChartEntry ct canvasLabel chartTitle chartData = unlines [ 
     "  var " ++ context ++ " = document.getElementById('" ++ canvasLabel ++ "').getContext('2d');",
+    "  Chart.defaults.global.defaultFontSize = " ++ show chartJSFontSize ++ ";",
     "  window.myLine = new " ++ chartTypeToConstructor ct ++ "(" ++ context ++ ", {",
     "      type: 'bar', ",
     "      data: " ++ chartData ++ ",",
