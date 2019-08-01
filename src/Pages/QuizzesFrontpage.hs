@@ -1,13 +1,13 @@
 module Pages.QuizzesFrontpage where
 
 import Control.Monad    ( filterM )
-import Data.List        ( sortBy )
+import Data.List        ( sortBy, intercalate )
 import Data.Ord         ( comparing )
 import System.Directory ( getDirectoryContents, doesFileExist )
 
 import Constants        ( quizzesFolderIO, addSeparator, labelsFile )
 import Labels           ( Labels, mainLabel, defaultLabels )
-import Pages.HtmlUtil   ( taggedV, div, encoding )
+import Pages.HtmlUtil   ( taggedV, encoding )
 
 import Prelude hiding   ( div )
 
@@ -43,13 +43,12 @@ cssPath = "<link rel='stylesheet' type='text/css' href='./style.css'/>"
 mkHtml :: [(String, Labels)] -> String
 mkHtml cls = 
     taggedV "html" (
-           encoding ++
-           taggedV "head" (taggedV "title" "Quizzes" ++ cssPath) ++
-           concatMap (\(c, l) -> div (mkButton (mainLabel l) c)) cls
+           taggedV "head" (taggedV "title" "Quizzes" ++ intercalate "\n" [encoding, cssPath]) ++
+           concatMap (\(c, l) -> taggedV "div" (mkButton (mainLabel l) c)) cls
     )
 
 mkButton :: String -> String -> String
-mkButton text path = unlines ["<a href=\"", path ++ "/index.html", "\" class=\"quizLinkButton\">", text, "</a>"]
+mkButton text path = intercalate "\n" ["<a href=\"", path ++ "/index.html", "\" class=\"quizLinkButton\">", text, "</a>"]
 
 indexFile :: String
 indexFile = "index.html"
