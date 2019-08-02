@@ -141,14 +141,19 @@ cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
 pointPage :: SafeLabels -> Color -> Team -> String
 pointPage safeLabels color team =
   pageHeader ++
-    tagged "html" (
+    taggedV "html" (
       encoding ++
-      tagged "head" 
-             (tagged "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath) ++
-      tagged "body" (
-        centerDiv (h1With coloured (concat [mkTeamName Safe (teamLabel labels) (teamKey team), ": ", mkSum ps])) ++
-        centerDiv (mkTable labels ps) ++
-        centerDiv (mkButton (backToChartView labels))
+      taggedV "head" 
+              (intercalate "\n" [
+                encoding, 
+                taggedV "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath]) ++
+      taggedV "body" (
+        intercalate "\n" [
+          centerDiv (h1With coloured 
+                           (concat [mkTeamName Safe (teamLabel labels) (teamKey team), ": ", mkSum ps])),
+          centerDiv (mkTable labels ps),
+          centerDiv (mkButton (backToChartView labels))
+        ]
       )
     )
   where coloured = "style=\"color:" ++ color ++ "\""
