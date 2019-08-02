@@ -3,12 +3,16 @@ module Pages.HtmlUtil where
 import Data.Char                   ( ord )
 import Data.IntMap                 ( IntMap )
 import qualified Data.IntMap as IM ( lookup, fromList )
+import Data.List                   ( intercalate )
 import Data.Maybe                  ( fromMaybe )
 
 import Prelude hiding ( div )
 
 centerDiv :: String -> String
 centerDiv = div . tagged "center"
+
+centerDivV :: String -> String
+centerDivV = taggedV "div" . taggedV "center"
 
 div :: String -> String
 div = tagged "div"
@@ -25,7 +29,7 @@ tableCell :: String -> String
 tableCell = tagged "td"
 
 tableRow :: String -> String
-tableRow  = (++ "\n") . tagged "tr"
+tableRow  = taggedV "tr"
 
 headerCell :: String -> String
 headerCell = tagged "th"
@@ -40,10 +44,10 @@ taggedWith :: String -> String -> String -> String
 taggedWith attrs t text = concat (tagGroupWith attrs t text)
 
 taggedV :: String -> String -> String
-taggedV t text = unlines (tagGroup t text)
+taggedV t text = intercalate "\n" (tagGroup t text)
 
 taggedVWith :: String -> String -> String -> String
-taggedVWith attrs t text = unlines (tagGroupWith attrs t text)
+taggedVWith attrs t text = intercalate "\n" (tagGroupWith attrs t text)
 
 tagGroup :: String -> String -> [String]
 tagGroup t text = [open, text, close] where
