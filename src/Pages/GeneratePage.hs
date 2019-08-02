@@ -19,7 +19,7 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
                                 cumulativeLabel, progressionLabel, individualRoundsLabel, unwrapped,
                                 placementLabel, roundWinnerLabel, mkHTMLSafe, SafeLabels )
 import Pages.Colours          ( mkHTMLColours )
-import Pages.HtmlUtil         ( centerDiv, h1With, tableCell, tableRow, headerCell, tag, tagged,
+import Pages.HtmlUtil         ( centerDivV, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, encoding )
 import Pages.RoundsParser     ( parseCodesWithMaybeNames )
@@ -142,17 +142,16 @@ pointPage :: SafeLabels -> Color -> Team -> String
 pointPage safeLabels color team =
   pageHeader ++
     taggedV "html" (
-      encoding ++
       taggedV "head" 
               (intercalate "\n" [
                 encoding, 
                 taggedV "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath]) ++
       taggedV "body" (
         intercalate "\n" [
-          centerDiv (h1With coloured 
+          centerDivV (h1With coloured 
                            (concat [mkTeamName Safe (teamLabel labels) (teamKey team), ": ", mkSum ps])),
-          centerDiv (mkTable labels ps),
-          centerDiv (mkButton (backToChartView labels))
+          centerDivV (mkTable labels ps),
+          centerDivV (mkButton (backToChartView labels))
         ]
       )
     )
@@ -181,10 +180,10 @@ tableHeader labels =
 
 mkTable :: Labels -> Points -> String
 mkTable labels ps = 
-  concat [
+  intercalate "\n" [
   openTable, 
   tableHeader labels, 
-  concatMap mkTableLine ps,
+  intercalate "\n" (map mkTableLine ps),
   closeTable] where
     (openTable, closeTable) = tag "table"
 
