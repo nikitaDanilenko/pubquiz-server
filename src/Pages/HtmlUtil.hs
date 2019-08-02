@@ -64,7 +64,7 @@ pageHeader :: String
 pageHeader = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
 
 encoding :: String
-encoding = "<meta charset=\"UTF-8\">"
+encoding = "<meta charset=\"UTF-8\"/>"
 
 htmlSafeChar :: Char -> String
 htmlSafeChar c = fromMaybe [c] (IM.lookup (ord c) specials)
