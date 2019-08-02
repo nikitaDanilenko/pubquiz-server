@@ -426,12 +426,12 @@ createWith associations = do
     unsafeLabels <- readLabels labelsPath
     (codesAndNames, rounds) <- readCodesAndRounds roundsPath
     let (teamsCandidates, winners) = mkTeams rounds
-        colours = mkHTMLColours (length teamsCandidates)
         safeLabels = mkHTMLSafe unsafeLabels
         -- If there are no rounds, we create teams that have not played any rounds yet.
         -- This facilitates the initial creation of the point pages.
         teams = if null teamsCandidates then mkEmptyTeams (map fst codesAndNames) 
                                         else teamsCandidates
+        colours = mkHTMLColours (length teams)
         n = length rounds
     writePointPages prefix safeLabels teams colours
     writeGraphPage prefix safeLabels unsafeLabels n teams winners colours
