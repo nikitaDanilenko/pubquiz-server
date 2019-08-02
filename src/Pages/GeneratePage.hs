@@ -304,11 +304,12 @@ mkChartsWith labels rounds teams colors =
 
 graphPage :: SafeLabels -> Labels -> Int -> [Team] -> [[TeamKey]] -> [Color] -> String
 graphPage safeLbls labels rounds teams winners colors = unlines [
+  pageHeader,
   taggedV "html"
           (unlines [
-             encoding,
              taggedV "head"
                      (unlines [
+                        encoding,
                         tagged "title" (mainLabel safeLabels),
                         taggedWith "src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js'"
                                    "script"
