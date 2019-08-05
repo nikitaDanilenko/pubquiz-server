@@ -3,7 +3,7 @@ body, #mainTitle {
   background: rgb(40, 40, 40);
 }
 
-body, #mainTitle, a.button {
+body, #mainTitle, a.button, a.quizLinkButton {
   font-family: arial, sans-serif;
 }
 
@@ -36,12 +36,7 @@ table {
   margin-bottom: 35px;
 }
 
-h1 {
-  font-family: arial, sans-serif;
-}
-
 td, th {
-  border: 0px;
   text-align: right;
   padding: 8px;
 }
@@ -55,51 +50,37 @@ tr:hover {
   color: rgb(180, 180, 180);
 }
 
-a.button {
+a.button, a.quizLinkButton {
   -webkit-appearance: button;
   -moz-appearance: button;
-  appearance: button;
-
-  padding-top: 15px;
-  padding-bottom: 15px;
-  padding-left: 15px;
-  padding-right: 15px;
-
-  border-radius: 5px;
-
-  color: rgb(250, 250, 250);
-  background-color: rgb(70, 200, 40);
-
-  text-decoration: none;
-}
-
-a.quizLinkButton {
-  -webkit-appearance: button;
-  -moz-appearance: button;
-  appearance: button;
 
   padding-top: 1%;
   padding-bottom: 1%;
   padding-left: 1%;
   padding-right: 1%;
 
-  margin-bottom: 0.5%;
+  border-radius: 10px;
 
-  border-radius: 5px;
+  text-decoration: none;
+}
 
+a.button {
+  color: rgb(250, 250, 250);
+  background-color: rgb(70, 200, 40);
+}
+
+a.quizLinkButton {
   color: rgb(250, 250, 250);
   background-color: rgb(66, 100, 160);
 
   display: block;
   text-align: center;
   width: 35%;
-
-  text-decoration: none;
-  font-family: arial, sans-serif;
 }
 
 .quizLinkButton:hover {
-  background-color: rgb(100, 149, 237);}
+  background-color: rgb(100, 149, 237);
+}
 
 #copyright {
   padding-top: 15px;
@@ -121,4 +102,43 @@ a.quizLinkButton {
 
 #allQuizzes {
   text-align: center;
+}
+
+@media screen and (orientation: portrait) and (max-width: 768px) {
+
+  .ownHeader {
+    font-size: 72pt;
+  }
+
+  th {
+    padding: 5% 5% 10% 5%;
+
+    transform: 
+      rotate(315deg) translate(10%,0%);
+    
+    font-size: medium;
+    text-align: left;
+    /*vertical-align: text-bottom;*/
+    /*text-align: right;*/
+    white-space: ;
+  }
+
+  tr, a {
+    font-size: 40pt;
+  }
+
+  td {
+    text-align: center;
+  }
+   
+  a.button {
+    padding: 10%;
+    width: 95%;
+  }
+
+  a.quizLinkButton {
+    font-size: x-large;
+    width: 90%;
+    height: 5%;
+  }
 }
