@@ -104,7 +104,7 @@ a.quizLinkButton {
   text-align: center;
 }
 
-@media screen and (orientation: portrait) and (max-width: 768px) {
+@media screen and (orientation: portrait) {
 
   .ownHeader {
     font-size: 72pt;
