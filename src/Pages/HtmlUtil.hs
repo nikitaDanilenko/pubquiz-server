@@ -31,6 +31,9 @@ tableCell = tagged "td"
 tableRow :: String -> String
 tableRow  = taggedV "tr"
 
+tableRowWith :: String -> String -> String
+tableRowWith attrs = taggedVWith attrs "tr"
+
 headerCell :: String -> String
 headerCell = tagged "th"
 
