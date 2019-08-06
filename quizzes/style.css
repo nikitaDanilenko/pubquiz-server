@@ -29,7 +29,6 @@ div {
 }
 
 table {
-  font-family: arial, sans-serif;
   border-collapse: collapse;
   width: 100%;
 
@@ -45,7 +44,7 @@ tr:nth-child(even) {
   background-color: rgb(80, 80, 80);
 }
 
-tr:hover {
+tr:not(.tableHeader):hover {
   background-color: rgb(100, 100, 100);
   color: rgb(180, 180, 180);
 }
@@ -116,14 +115,11 @@ a.quizLinkButton {
     transform: 
       rotate(315deg) translate(10%,0%);
     
-    font-size: medium;
+    font-size: x-large;
     text-align: left;
-    /*vertical-align: text-bottom;*/
-    /*text-align: right;*/
-    white-space: ;
   }
 
-  tr, a {
+  tr {
     font-size: 40pt;
   }
 
@@ -131,14 +127,11 @@ a.quizLinkButton {
     text-align: center;
   }
    
-  a.button {
+  a.button, a.quizLinkButton {
     padding: 10%;
-    width: 95%;
+    width: 75%;
+    display: block;
+    font-size: 40pt;
   }
 
-  a.quizLinkButton {
-    font-size: x-large;
-    width: 90%;
-    height: 5%;
-  }
 }
