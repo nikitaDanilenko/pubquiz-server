@@ -21,7 +21,7 @@ import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView
 import Pages.Colours          ( mkHTMLColours )
 import Pages.HtmlUtil         ( centerDivV, h1With, tableCell, tableRow, headerCell, tag, tagged,
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
-                                htmlSafeString, encoding )
+                                htmlSafeString, encoding, tableRowWith )
 import Pages.RoundsParser     ( parseCodesWithMaybeNames )
 
 data RoundRating = RoundRating { 
@@ -170,7 +170,7 @@ mkTableLine rating =
 
 tableHeader :: Labels -> String
 tableHeader labels = 
-  tableRow (concatMap headerCell [
+  tableRowWith "class=tableHeader" (concatMap headerCell [
     roundLabel labels, 
     ownPointsLabel labels, 
     maxReachedLabel labels, 
