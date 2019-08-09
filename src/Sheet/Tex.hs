@@ -1,20 +1,20 @@
 {-# Language OverloadedStrings #-}
 
-module Sheet.Tex ( mkSheet ) where
+module Sheet.Tex ( mkSheet, mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions ) where
 
-import Data.List       ( intercalate )
+import Data.List       ( intercalate, intersperse )
 import Data.List.Split ( chunksOf )
 import Data.Text                     ( Text )
 import qualified Data.Text as T      ( pack, unwords, concat, unpack )
 
-import Text.LaTeX.Base.Class         ( LaTeXC, fromLaTeX )
+import Text.LaTeX.Base.Class         ( LaTeXC, fromLaTeX, braces, comm1, comm2, liftL )
 import Text.LaTeX.Base.Commands      ( documentclass, article, usepackage, raw, table, centering,
                                        tabular, pagestyle, huge2, (&), centering, large2, hline,
-                                       tabularnewline, textwidth )
-import Text.LaTeX.Base.Syntax        ( Measure ( CustomMeasure ), LaTeX ( .. ),
+                                       tabularnewline, textwidth, newpage, document )
+import Text.LaTeX.Base.Syntax        ( Measure ( CustomMeasure ), LaTeX ( .. ), protectText,
                                        TeXArg ( FixArg ), (<>) )
 import Text.LaTeX.Base.Render        ( render ,rendertex )
-import Text.LaTeX.Base.Types         ( Pos ( Here ),
+import Text.LaTeX.Base.Types         ( Pos ( Here, ForcePos ),
                                        TableSpec ( LeftColumn, NameColumn, RightColumn ) )
 import Text.LaTeX.Packages.Babel     ( babel )
 import Text.LaTeX.Packages.Geometry  ( geometry )
@@ -25,19 +25,19 @@ import Text.LaTeX.Packages.QRCode    ( qrcode, qr, ErrorLevel ( Low ), CodeOptio
 finish :: LaTeX -> Text
 finish  = render . (\l -> rendertex l :: LaTeX)
 
-mkString :: LaTeX -> String
-mkString = T.unpack . finish
+type Ending = Text
+
+comm0 :: LaTeXC l => String -> l
+comm0 = fromLaTeX . TeXCommS
 
 simpleTabularStar :: LaTeXC l => [TableSpec] -> l -> l
-simpleTabularStar ts content = mconcat [
-    fromLaTeX (TeXComm "begin" [tabularStar]),
-    braced textwidth,
-    braced (mconcat (map (raw . render) ts)),
-    content,
-    fromLaTeX (TeXComm "end" [tabularStar])
-  ]
-  where tabularStar = FixArg "tabular*"
-
+simpleTabularStar ts content = liftL (TeXEnv "tabular*" []) inner where
+    inner = mconcat [
+              braces textwidth,
+              braces (mconcat (map (raw . render) ts)),
+              content
+            ]
+           
 headerH :: LaTeXC l => l
 headerH = mconcat [
     documentclass [] "scrartcl",
@@ -46,15 +46,18 @@ headerH = mconcat [
     usepackage [] "mathpazo",
     usepackage [] "array",
     usepackage [] ltablex,
-    usepackage [] geometry,
+    usepackage (map (raw . T.pack) ["left=1cm",
+                                    "textwidth=19cm",
+                                    "top=1cm",
+                                    "textheight=27cm"]) geometry,
     usepackage [] qrcode,
 
     pagestyle "empty"
     ]
 
-mkFullHeader :: LaTeXC l => Text -> Int -> Text -> l
-mkFullHeader teamLabel teamNumber pathForQRLink = mconcat [
-    table [Here] (
+mkFullHeader :: LaTeXC l => Text -> Double -> Int -> Text -> l
+mkFullHeader teamLabel heightCm teamNumber pathForQRLink = mconcat [
+    table [ForcePos, Here] (
         simpleTabularStar [
             LeftColumn,
             NameColumn "@{\\extracolsep{\\fill}}", 
@@ -63,7 +66,11 @@ mkFullHeader teamLabel teamNumber pathForQRLink = mconcat [
         (
           mkSimpleHeader teamLabel teamNumber
           &
-          qr (CodeOptions False False Low) pathForQRLink 
+          braces (
+            comm1 "qrset" (raw (T.concat (map T.pack ["height=", show heightCm, "cm"])))
+            <>
+            qr (CodeOptions False False Low) pathForQRLink
+          )
         )
     )
   ]
@@ -72,11 +79,56 @@ mkSimpleHeader :: LaTeXC l => Text -> Int -> l
 mkSimpleHeader teamLabel teamNumber =
     huge2 (raw (T.unwords [teamLabel, T.concat [T.pack (show teamNumber), T.pack ":"]]))
 
-braced :: LaTeXC l => l -> l
-braced text = mconcat [raw "{", text, raw "}"]
+stretch :: Double
+stretch = 2.75
+
+heightQR :: Double
+heightQR = 1
+
+mkSingleTeamSheet :: LaTeXC l => Text -> Text -> [l] -> Int -> l
+mkSingleTeamSheet teamLabel qrPath allRounds teamNumber = 
+    mconcat (mkFullHeader teamLabel heightQR teamNumber qrPath : rds)
+  where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel teamNumber]) allRounds
+
+-- | Takes a maximum and a list of values and produces a sequence of ones and twos.
+--   The motivation is that up to two values but at least one value fit into a single container.
+--   If they fit (each one is small enough), we take the two values.
+--   Otherwise we take only one. 
+onesOrTwos :: Int -> [Int] -> [[Int]]
+onesOrTwos limit = go where
+    go [] = [] 
+    go (a : b : as) | all (<= limit) [a, b] = [a, b] : go as
+    go (a : as) = [a] : go as
+
+fittingPerRound :: Int
+fittingPerRound = 8
+
+mkFullSheet :: LaTeXC l => Text -> [Int] -> [Text] -> l
+mkFullSheet teamLabel qns paths = mconcat [
+    headerH,
+    document (
+        mconcat (
+            zipWith (\i path -> (mkSingleTeamSheet (protectText teamLabel) path allRounds i)) 
+                    [1 ..] 
+                    paths
+        )
+    )
+  ] 
+  where allRounds = map (mconcat . map (mkAnswerTable stretch)) (onesOrTwos fittingPerRound qns)
+
+mkQRPath :: Text -> Ending -> Text
+mkQRPath _ _ = T.pack "undefined"
+
+mkSheetWithArbitraryQuestions :: Text -> [Int] -> [Text] -> Text
+mkSheetWithArbitraryQuestions teamLabel qns paths =
+    finish (mkFullSheet teamLabel qns paths :: LaTeX)
+
+mkSheetWithConstantQuestions :: Text -> Int -> [Text] -> Text
+mkSheetWithConstantQuestions teamLabel n = 
+    mkSheetWithArbitraryQuestions teamLabel (replicate n fittingPerRound)
 
 mkSheet :: String -> Int -> String
-mkSheet teamLabel n = concat [ 
+mkSheet teamLabel n = concat [
     header,
     grp,
     centre,
@@ -89,9 +141,8 @@ mkSheet teamLabel n = concat [
 
 mkAnswerTable :: LaTeXC l => Double -> Int -> l
 mkAnswerTable sf qs = 
-    table [Here] (
-        fromLaTeX (TeXComm "renewcommand" [FixArg (TeXCommS "arraystretch"), 
-                                           FixArg (raw (T.pack (show sf)))])
+    table [ForcePos, Here] (
+        comm2 "renewcommand" (comm0 "arraystretch") (raw (T.pack (show sf)))
         <>
         simpleTabularStar 
                  [LeftColumn]
