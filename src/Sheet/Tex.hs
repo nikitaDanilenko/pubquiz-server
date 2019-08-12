@@ -5,22 +5,19 @@ module Sheet.Tex ( mkSheet, mkSheetWithArbitraryQuestions, mkSheetWithConstantQu
 import Data.List       ( intercalate, intersperse )
 import Data.List.Split ( chunksOf )
 import Data.Text                     ( Text )
-import qualified Data.Text as T      ( pack, unwords, concat, unpack )
+import qualified Data.Text as T      ( pack, unwords, concat )
 
 import Text.LaTeX.Base.Class         ( LaTeXC, fromLaTeX, braces, comm1, comm2, liftL )
-import Text.LaTeX.Base.Commands      ( documentclass, article, usepackage, raw, table, centering,
-                                       tabular, pagestyle, huge2, (&), centering, large2, hline,
+import Text.LaTeX.Base.Commands      ( documentclass, usepackage, raw, table, centering,
+                                       pagestyle, huge2, (&), centering, large2, hline,
                                        tabularnewline, textwidth, newpage, document, medskip,
                                        newline, hfill )
-import Text.LaTeX.Base.Syntax        ( Measure ( CustomMeasure ), LaTeX ( .. ), protectText,
-                                       TeXArg ( FixArg ), (<>) )
+import Text.LaTeX.Base.Syntax        ( LaTeX ( .. ), protectText, (<>) )
 import Text.LaTeX.Base.Render        ( render ,rendertex )
 import Text.LaTeX.Base.Types         ( Pos ( Here, ForcePos ),
                                        TableSpec ( LeftColumn, NameColumn, RightColumn ) )
-import Text.LaTeX.Packages.Babel     ( babel )
 import Text.LaTeX.Packages.Geometry  ( geometry )
 import Text.LaTeX.Packages.Inputenc  ( inputenc )
-import Text.LaTeX.Packages.LTableX   ( tabularx, ltablex )
 import Text.LaTeX.Packages.QRCode    ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
 
 finish :: LaTeX -> Text
@@ -43,10 +40,8 @@ headerH :: LaTeXC l => l
 headerH = mconcat [
     documentclass [] "scrartcl",
     usepackage [] inputenc,
-    usepackage [raw "ngerman"] babel,
     usepackage [] "mathpazo",
     usepackage [] "array",
-    usepackage [] ltablex,
     usepackage (map (raw . T.pack) ["left=1cm",
                                     "textwidth=19cm",
                                     "top=1cm",
