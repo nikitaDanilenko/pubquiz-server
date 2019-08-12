@@ -65,27 +65,3 @@ safeRemoveFile :: String -> IO ()
 safeRemoveFile path = removeFile path `catch` noFile where
     noFile :: IOException -> IO ()
     noFile _ = void (putStrLn "No file to remove")
-
-safeTeX :: String -> String
-safeTeX = concatMap safeTeXChar . unEscape
-
-safeTeXChar :: Char -> String
-safeTeXChar c = case c of
-    'ä'      -> "\\\"a"
-    'ö'      -> "\\\"o"
-    'ü'      -> "\\\"u"
-    'Ä'      -> "\\\"A"
-    'Ö'      -> "\\\"O"
-    'Ü'      -> "\\\"U"
-    'ß'      -> "\\ss{}"
-    '\\'      -> "\\textbackslash"
-    '~'      -> "\\textasciitilde"
-    '&'      -> "\\&"
-    '%'      -> "\\%"
-    '$'      -> "\\$"
-    '#'      -> "\\#"
-    '_'      -> "\\_"
-    '{'      -> "\\{"
-    '}'      -> "\\}"
-    '^'      -> "\\textasciicircum"
-    anyOther -> [anyOther]
