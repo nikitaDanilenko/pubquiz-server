@@ -117,9 +117,6 @@ mkFullSheet teamLabel qns paths = mconcat [
         separator | even (length grouped) = newpage
                   | otherwise             = mconcat [newpage, hfill, medskip, newline, newpage]
 
-mkQRPath :: Text -> Ending -> Text
-mkQRPath _ _ = T.pack "undefined"
-
 mkSheetWithArbitraryQuestions :: Text -> [Int] -> [Text] -> Text
 mkSheetWithArbitraryQuestions teamLabel qns paths =
     finish (mkFullSheet teamLabel qns paths :: LaTeX)
