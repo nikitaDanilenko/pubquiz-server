@@ -10,7 +10,8 @@ import qualified Data.Text as T      ( pack, unwords, concat, unpack )
 import Text.LaTeX.Base.Class         ( LaTeXC, fromLaTeX, braces, comm1, comm2, liftL )
 import Text.LaTeX.Base.Commands      ( documentclass, article, usepackage, raw, table, centering,
                                        tabular, pagestyle, huge2, (&), centering, large2, hline,
-                                       tabularnewline, textwidth, newpage, document )
+                                       tabularnewline, textwidth, newpage, document, medskip,
+                                       newline, hfill )
 import Text.LaTeX.Base.Syntax        ( Measure ( CustomMeasure ), LaTeX ( .. ), protectText,
                                        TeXArg ( FixArg ), (<>) )
 import Text.LaTeX.Base.Render        ( render ,rendertex )
@@ -108,13 +109,18 @@ mkFullSheet teamLabel qns paths = mconcat [
     headerH,
     document (
         mconcat (
+          intersperse separator (
             zipWith (\i path -> (mkSingleTeamSheet (protectText teamLabel) path allRounds i)) 
                     [1 ..] 
                     paths
+          )
         )
     )
   ] 
-  where allRounds = map (mconcat . map (mkAnswerTable stretch)) (onesOrTwos fittingPerRound qns)
+  where grouped = onesOrTwos fittingPerRound qns
+        allRounds = map (mconcat . map (mkAnswerTable stretch)) grouped
+        separator | even (length grouped) = newpage
+                  | otherwise             = mconcat [newpage, hfill, medskip, newline, newpage]
 
 mkQRPath :: Text -> Ending -> Text
 mkQRPath _ _ = T.pack "undefined"
