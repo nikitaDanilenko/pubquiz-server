@@ -285,7 +285,10 @@ showAsBS bss = B.concat [
                          bss),
   B.pack "}"
   ] where
-    secure = B.concatMap (\c -> if c == '\"' then B.pack "\\\"" else B.singleton c)
+    secure = B.concatMap (\c -> case c of
+                                  '\"' -> B.pack "\\\"" 
+                                  '\\' -> B.pack "\\\\"
+                                  _ ->B.singleton c)
 
 defaultLabels :: Labels
 defaultLabels = mkLabels
