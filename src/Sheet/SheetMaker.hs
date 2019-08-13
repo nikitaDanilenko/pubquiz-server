@@ -10,8 +10,7 @@ import System.Directory            ( setCurrentDirectory, getCurrentDirectory, r
 import System.Process              ( callProcess )
 
 import Constants                   ( quizzesFolderIO, addSeparator )
-import Pages.HtmlUtil              ( unEscape )
-import Sheet.Tex                   ( mkSheet, mkSheetWithConstantQuestions )
+import Sheet.Tex                   ( mkSheetWithConstantQuestions )
 
 type Prefix = String
 type Server = String
