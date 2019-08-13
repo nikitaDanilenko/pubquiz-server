@@ -2,23 +2,24 @@
 
 module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions ) where
 
-import Data.List       ( intercalate, intersperse )
-import Data.List.Split ( chunksOf )
-import Data.Text                     ( Text )
-import qualified Data.Text as T      ( pack, unwords, concat )
+import Data.List                    ( intersperse )
+import Data.Text                    ( Text )
+import qualified Data.Text as T     ( pack, unwords, concat )
 
-import Text.LaTeX.Base.Class         ( LaTeXC, fromLaTeX, braces, comm1, comm2, liftL )
-import Text.LaTeX.Base.Commands      ( documentclass, usepackage, raw, table, centering,
-                                       pagestyle, huge2, (&), centering, large2, hline,
-                                       tabularnewline, textwidth, newpage, document, medskip,
-                                       newline, hfill )
-import Text.LaTeX.Base.Syntax        ( LaTeX ( .. ), protectText, (<>) )
-import Text.LaTeX.Base.Render        ( render ,rendertex )
-import Text.LaTeX.Base.Types         ( Pos ( Here, ForcePos ),
-                                       TableSpec ( LeftColumn, NameColumn, RightColumn ) )
-import Text.LaTeX.Packages.Geometry  ( geometry )
-import Text.LaTeX.Packages.Inputenc  ( inputenc )
-import Text.LaTeX.Packages.QRCode    ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
+import Text.LaTeX.Base.Class        ( LaTeXC, fromLaTeX, braces, comm1, comm2, liftL )
+import Text.LaTeX.Base.Commands     ( documentclass, usepackage, raw, table, centering,
+                                      pagestyle, huge2, (&), centering, large2, hline,
+                                      tabularnewline, textwidth, newpage, document, medskip,
+                                      newline, hfill )
+import Text.LaTeX.Base.Syntax       ( LaTeX ( .. ), protectText, (<>) )
+import Text.LaTeX.Base.Render       ( render ,rendertex )
+import Text.LaTeX.Base.Types        ( Pos ( Here, ForcePos ),
+                                      TableSpec ( LeftColumn, NameColumn, RightColumn ) )
+import Text.LaTeX.Packages.Geometry ( geometry )
+import Text.LaTeX.Packages.Inputenc ( inputenc )
+import Text.LaTeX.Packages.QRCode   ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
+
+import Pages.HtmlUtil              ( unEscape )
 
 finish :: LaTeX -> Text
 finish  = render . (\l -> rendertex l :: LaTeX)
@@ -39,7 +40,7 @@ simpleTabularStar ts content = liftL (TeXEnv "tabular*" []) inner where
 headerH :: LaTeXC l => l
 headerH = mconcat [
     documentclass [] "scrartcl",
-    usepackage [] inputenc,
+    usepackage [raw "utf8"] inputenc,
     usepackage [] "mathpazo",
     usepackage [] "array",
     usepackage (map (raw . T.pack) ["left=1cm",
