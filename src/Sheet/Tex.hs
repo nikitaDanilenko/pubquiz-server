@@ -1,6 +1,6 @@
 {-# Language OverloadedStrings #-}
 
-module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions ) where
+module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly ) where
 
 import Data.List                    ( intersperse )
 import Data.Text                    ( Text )
@@ -52,22 +52,32 @@ headerH = mconcat [
     pagestyle "empty"
     ]
 
-mkFullHeader :: LaTeXC l => Text -> Double -> Int -> Text -> l
-mkFullHeader teamLabel heightCm teamNumber pathForQRLink = mconcat [
+mkFullHeader :: LaTeXC l => Text -> Double -> [(Int,  Text)] -> l
+mkFullHeader teamLabel heightCm numbersAndPaths = mconcat [
     table [ForcePos, Here] (
         simpleTabularStar [
             LeftColumn,
             NameColumn "@{\\extracolsep{\\fill}}", 
             RightColumn
         ]
-        (
-          mkSimpleHeader teamLabel teamNumber
-          &
-          braces (
-            comm1 "qrset" (raw (T.concat (map T.pack ["height=", show heightCm, "cm"])))
-            <>
-            qr (CodeOptions False False Low) pathForQRLink
+        (mconcat (
+          intersperse (tabularnewline <> hline) (
+            map (\(i, path) -> mkSimpleHeader teamLabel i
+                               &
+                               braces (
+                                 comm1 "qrset" (raw (T.concat (map T.pack ["height=", 
+                                                                           show heightCm, 
+                                                                           "cm"]
+                                                              )
+                                                     )
+                                               )
+                                 <>
+                                 qr (CodeOptions False False Low) path
+                              )
+                )
+                numbersAndPaths
           )
+        ) 
         )
     )
   ]
@@ -84,7 +94,7 @@ heightQR = 1
 
 mkSingleTeamSheet :: LaTeXC l => Text -> Text -> [l] -> Int -> l
 mkSingleTeamSheet teamLabel qrPath allRounds teamNumber = 
-    mconcat (mkFullHeader teamLabel heightQR teamNumber qrPath : rds)
+    mconcat (mkFullHeader teamLabel heightQR [(teamNumber, qrPath)] : rds)
   where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel teamNumber]) allRounds
 
 -- | Takes a maximum and a list of values and produces a sequence of ones and twos.
@@ -129,7 +139,7 @@ mkSheetWithConstantQuestions teamLabel n =
 mkAnswerTable :: LaTeXC l => Double -> Int -> l
 mkAnswerTable sf qs = 
     table [ForcePos, Here] (
-        comm2 "renewcommand" (comm0 "arraystretch") (raw (T.pack (show sf)))
+        arraystretch sf
         <>
         simpleTabularStar 
                  [LeftColumn]
@@ -147,3 +157,22 @@ mkAnswerTable sf qs =
                   )
                  )
     )
+
+arraystretch :: LaTeXC l => Double -> l
+arraystretch = comm2 "renewcommand" (comm0 "arraystretch") . raw . T.pack . show
+
+qrOnlyHeight :: Double
+qrOnlyHeight = 2
+
+qrOnlyArrayStretch :: Double
+qrOnlyArrayStretch = 10
+
+mkQROnlyContent :: LaTeXC l => Text -> [Text] -> l
+mkQROnlyContent teamLabel paths = mconcat [
+    headerH,
+    arraystretch qrOnlyArrayStretch,
+    document (mkFullHeader teamLabel qrOnlyHeight (zip [1 ..] paths))
+  ]
+
+mkQROnly :: Text -> [Text] -> Text
+mkQROnly teamLabel paths = finish (mkQROnlyContent teamLabel paths)
