@@ -10,7 +10,7 @@ import System.Directory            ( setCurrentDirectory, getCurrentDirectory, r
 import System.Process              ( callProcess )
 
 import Constants                   ( quizzesFolderIO, addSeparator )
-import Sheet.Tex                   ( mkSheetWithConstantQuestions )
+import Sheet.Tex                   ( mkSheetWithConstantQuestions, mkQROnly )
 
 type Prefix = String
 type Server = String
@@ -32,27 +32,47 @@ createSheetWith teamLabel rounds prefix server endings = do
     quizzesFolder <- quizzesFolderIO
     currentDir <- getCurrentDirectory
     
-    let sheet = mkSheetWithConstantQuestions (T.pack teamLabel) rounds paths
+    let tl = T.pack teamLabel
+        sheet = mkSheetWithConstantQuestions tl rounds paths
         fullServerPath = addSeparator [server, prefix, ""]
         paths = map (createQRPath fullServerPath) endings
         buildPath = addSeparator [quizzesFolder, prefix]
         sheetFile = mkSheetFile prefix
-        texFile = sheetFile ++ ".tex"
+
+        qrs = mkQROnly tl paths
+        codesFile = mkCodesFile prefix
     
     setCurrentDirectory buildPath
-    I.writeFile texFile sheet
 
-    createPDF texFile `catch` noPDFLatex
-    cleanLatex sheetFile
+    writeAndCleanPDF sheetFile sheet
+    writeAndCleanPDF codesFile qrs
+
     setCurrentDirectory currentDir
-  where noPDFLatex :: IOException -> IO ()
+
+writeAndCleanPDF :: FilePath -> Text -> IO ()
+writeAndCleanPDF mainPath content = do
+    I.writeFile texFile content
+    createPDF texFile `catch` noPDFLatex
+    cleanLatex mainPath
+  where texFile = mainPath ++ ".tex"
+ 
+        noPDFLatex :: IOException -> IO ()
         noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
 
 sheet :: String
 sheet = "Sheet"
 
+codes :: String
+codes = "QR"
+
 mkSheetFile :: Prefix -> String
-mkSheetFile prefix = concat [prefix, "-", sheet]
+mkSheetFile prefix = mkFile prefix sheet
+
+mkCodesFile :: Prefix -> String
+mkCodesFile prefix = mkFile prefix codes
+
+mkFile :: Prefix -> String -> String
+mkFile prefix suffix = concat [prefix, "-", suffix]
 
 createPDF :: String -> IO ()
 createPDF texFile = callProcess "pdflatex" ["-interaction=nonstopmode", texFile]
