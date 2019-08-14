@@ -37,8 +37,8 @@ simpleTabularStar ts content = liftL (TeXEnv "tabular*" []) inner where
               content
             ]
            
-headerH :: LaTeXC l => l
-headerH = mconcat [
+header :: LaTeXC l => l
+header = mconcat [
     documentclass [] "scrartcl",
     usepackage [raw "utf8"] inputenc,
     usepackage [] "mathpazo",
@@ -112,7 +112,7 @@ fittingPerRound = 8
 
 mkFullSheet :: LaTeXC l => Text -> [Int] -> [Text] -> l
 mkFullSheet teamLabel qns paths = mconcat [
-    headerH,
+    header,
     document (
         mconcat (
           intersperse separator (
@@ -169,7 +169,7 @@ qrOnlyArrayStretch = 10
 
 mkQROnlyContent :: LaTeXC l => Text -> [Text] -> l
 mkQROnlyContent teamLabel paths = mconcat [
-    headerH,
+    header,
     arraystretch qrOnlyArrayStretch,
     document (mkFullHeader teamLabel qrOnlyHeight (zip [1 ..] paths))
   ]
