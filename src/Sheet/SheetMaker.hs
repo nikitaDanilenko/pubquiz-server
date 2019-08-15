@@ -2,7 +2,7 @@ module Sheet.SheetMaker ( createSheetWith, defaultEndings, Ending ) where
 
 import Control.Exception           ( catch )
 import Control.Exception.Base      ( IOException )
-import Control.Monad               ( when, void )
+import Control.Monad               ( void )
 import Data.Text                   ( Text )
 import qualified Data.Text as T    ( pack, concat )
 import qualified Data.Text.IO as I ( writeFile )
@@ -33,7 +33,7 @@ createSheetWith teamLabel rounds prefix server endings = do
     currentDir <- getCurrentDirectory
     
     let tl = T.pack teamLabel
-        sheet = mkSheetWithConstantQuestions tl rounds paths
+        sht = mkSheetWithConstantQuestions tl rounds paths
         fullServerPath = addSeparator [server, prefix, ""]
         paths = map (createQRPath fullServerPath) endings
         buildPath = addSeparator [quizzesFolder, prefix]
@@ -44,7 +44,7 @@ createSheetWith teamLabel rounds prefix server endings = do
     
     setCurrentDirectory buildPath
 
-    writeAndCleanPDF sheetFile sheet
+    writeAndCleanPDF sheetFile sht
     writeAndCleanPDF codesFile qrs
 
     setCurrentDirectory currentDir
