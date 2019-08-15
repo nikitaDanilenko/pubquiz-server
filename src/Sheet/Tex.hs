@@ -3,6 +3,7 @@
 module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly ) where
 
 import Data.List                    ( intersperse )
+import Data.List.Extra              ( chunksOf )
 import Data.Text                    ( Text )
 import qualified Data.Text as T     ( pack, unwords, concat )
 
@@ -10,8 +11,8 @@ import Text.LaTeX.Base.Class        ( LaTeXC, fromLaTeX, braces, comm1, comm2, l
 import Text.LaTeX.Base.Commands     ( documentclass, usepackage, raw, table, centering,
                                       pagestyle, huge2, (&), centering, large2, hline,
                                       tabularnewline, textwidth, newpage, document, medskip,
-                                      newline, hfill )
-import Text.LaTeX.Base.Syntax       ( LaTeX ( .. ), protectText, (<>) )
+                                      newline, hfill, vspace )
+import Text.LaTeX.Base.Syntax       ( LaTeX ( .. ), protectText, (<>), Measure ( Mm ) )
 import Text.LaTeX.Base.Render       ( render ,rendertex )
 import Text.LaTeX.Base.Types        ( Pos ( Here, ForcePos ),
                                       TableSpec ( LeftColumn, NameColumn, RightColumn ) )
@@ -52,8 +53,8 @@ header = mconcat [
     pagestyle "empty"
     ]
 
-mkFullHeader :: LaTeXC l => Text -> Double -> [(Int,  Text)] -> l
-mkFullHeader teamLabel heightCm numbersAndPaths = mconcat [
+mkFullHeader :: LaTeXC l => Text -> Double -> Maybe Double -> [(Int,  Text)] -> l
+mkFullHeader teamLabel heightCm mVspace numbersAndPaths = mconcat [
     table [ForcePos, Here] (
         simpleTabularStar [
             LeftColumn,
@@ -61,7 +62,7 @@ mkFullHeader teamLabel heightCm numbersAndPaths = mconcat [
             RightColumn
         ]
         (mconcat (
-          intersperse (tabularnewline <> hline) (
+          intersperse separator (
             map (\(i, path) -> mkSimpleHeader teamLabel i
                                &
                                braces (
@@ -81,6 +82,7 @@ mkFullHeader teamLabel heightCm numbersAndPaths = mconcat [
         )
     )
   ]
+  where separator = mconcat [maybe mempty (vspace . Mm) mVspace, tabularnewline, hline]
 
 mkSimpleHeader :: LaTeXC l => Text -> Int -> l
 mkSimpleHeader teamLabel teamNumber =
@@ -94,7 +96,7 @@ heightQR = 1
 
 mkSingleTeamSheet :: LaTeXC l => Text -> Text -> [l] -> Int -> l
 mkSingleTeamSheet teamLabel qrPath allRounds teamNumber = 
-    mconcat (mkFullHeader teamLabel heightQR [(teamNumber, qrPath)] : rds)
+    mconcat (mkFullHeader teamLabel heightQR Nothing [(teamNumber, qrPath)] : rds)
   where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel teamNumber]) allRounds
 
 -- | Takes a maximum and a list of values and produces a sequence of ones and twos.
@@ -165,13 +167,26 @@ qrOnlyHeight :: Double
 qrOnlyHeight = 2
 
 qrOnlyArrayStretch :: Double
-qrOnlyArrayStretch = 10
+qrOnlyArrayStretch = 5
+
+extraVspaceQR :: Double
+extraVspaceQR = 5
+
+qrFitting :: Int
+qrFitting = 8
 
 mkQROnlyContent :: LaTeXC l => Text -> [Text] -> l
 mkQROnlyContent teamLabel paths = mconcat [
     header,
     arraystretch qrOnlyArrayStretch,
-    document (mkFullHeader teamLabel qrOnlyHeight (zip [1 ..] paths))
+    document (
+        mconcat (
+          intersperse newpage (
+              map (mkFullHeader teamLabel qrOnlyHeight (Just extraVspaceQR))
+                  (chunksOf qrFitting (zip [1 ..] paths))
+          )
+        )
+    )
   ]
 
 mkQROnly :: Text -> [Text] -> Text
