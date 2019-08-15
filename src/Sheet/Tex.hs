@@ -20,12 +20,10 @@ import Text.LaTeX.Packages.Geometry ( geometry )
 import Text.LaTeX.Packages.Inputenc ( inputenc )
 import Text.LaTeX.Packages.QRCode   ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
 
-import Pages.HtmlUtil              ( unEscape )
-
 finish :: LaTeX -> Text
 finish  = render . (\l -> rendertex l :: LaTeX)
 
-type Ending = Text
+type QRPath = Text
 
 comm0 :: LaTeXC l => String -> l
 comm0 = fromLaTeX . TeXCommS
@@ -53,7 +51,7 @@ header = mconcat [
     pagestyle "empty"
     ]
 
-mkFullHeader :: LaTeXC l => Text -> Double -> Maybe Double -> [(Int,  Text)] -> l
+mkFullHeader :: LaTeXC l => Text -> Double -> Maybe Double -> [(Int,  QRPath)] -> l
 mkFullHeader teamLabel heightCm mVspace numbersAndPaths = mconcat [
     table [ForcePos, Here] (
         simpleTabularStar [
@@ -94,7 +92,7 @@ stretch = 2.75
 heightQR :: Double
 heightQR = 1
 
-mkSingleTeamSheet :: LaTeXC l => Text -> Text -> [l] -> Int -> l
+mkSingleTeamSheet :: LaTeXC l => Text -> QRPath -> [l] -> Int -> l
 mkSingleTeamSheet teamLabel qrPath allRounds teamNumber = 
     mconcat (mkFullHeader teamLabel heightQR Nothing [(teamNumber, qrPath)] : rds)
   where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel teamNumber]) allRounds
@@ -112,7 +110,7 @@ onesOrTwos limit = go where
 fittingPerRound :: Int
 fittingPerRound = 8
 
-mkFullSheet :: LaTeXC l => Text -> [Int] -> [Text] -> l
+mkFullSheet :: LaTeXC l => Text -> [Int] -> [QRPath] -> l
 mkFullSheet teamLabel qns paths = mconcat [
     header,
     document (
@@ -130,11 +128,11 @@ mkFullSheet teamLabel qns paths = mconcat [
         separator | even (length grouped) = newpage
                   | otherwise             = mconcat [newpage, hfill, medskip, newline, newpage]
 
-mkSheetWithArbitraryQuestions :: Text -> [Int] -> [Text] -> Text
+mkSheetWithArbitraryQuestions :: Text -> [Int] -> [QRPath] -> Text
 mkSheetWithArbitraryQuestions teamLabel qns paths =
     finish (mkFullSheet teamLabel qns paths :: LaTeX)
 
-mkSheetWithConstantQuestions :: Text -> Int -> [Text] -> Text
+mkSheetWithConstantQuestions :: Text -> Int -> [QRPath] -> Text
 mkSheetWithConstantQuestions teamLabel n = 
     mkSheetWithArbitraryQuestions teamLabel (replicate n fittingPerRound)
 
@@ -175,7 +173,7 @@ extraVspaceQR = 5
 qrFitting :: Int
 qrFitting = 8
 
-mkQROnlyContent :: LaTeXC l => Text -> [Text] -> l
+mkQROnlyContent :: LaTeXC l => Text -> [QRPath] -> l
 mkQROnlyContent teamLabel paths = mconcat [
     header,
     arraystretch qrOnlyArrayStretch,
@@ -189,5 +187,5 @@ mkQROnlyContent teamLabel paths = mconcat [
     )
   ]
 
-mkQROnly :: Text -> [Text] -> Text
+mkQROnly :: Text -> [QRPath] -> Text
 mkQROnly teamLabel paths = finish (mkQROnlyContent teamLabel paths)
