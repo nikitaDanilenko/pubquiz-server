@@ -1,4 +1,4 @@
-module Sheet.SheetMaker ( createSheetWith, defaultEndings, Ending ) where
+module Sheet.SheetMaker ( createSheetWith, Ending ) where
 
 import Control.Exception           ( catch )
 import Control.Exception.Base      ( IOException )
@@ -15,14 +15,6 @@ import Sheet.Tex                   ( mkSheetWithConstantQuestions, mkQROnly )
 type Prefix = String
 type Server = String
 type Ending = String
-
-defaultEndings :: [Ending]
-defaultEndings = [
-        "sdig1o", "aikp25", "vzt35d", "fs7g5r", "9hf347",
-        "f853q7", "pwi5q3", "weu429", "8fwr7h", "hu5p73",
-        "yle8rf", "mdl20a", "84hrui", "c8vb3w", "la9inh",
-        "k6bghz", "jwb54g", "4geu7y", "nbc6t4", "amv6zh"
-    ]
 
 createQRPath :: Prefix -> Ending -> Text
 createQRPath prefix ending = T.concat (map T.pack [prefix, ending, ".html"])
