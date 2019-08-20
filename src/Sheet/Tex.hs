@@ -20,6 +20,9 @@ import Text.LaTeX.Packages.Geometry ( geometry )
 import Text.LaTeX.Packages.Inputenc ( inputenc )
 import Text.LaTeX.Packages.QRCode   ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
 
+import Sheet.Interval               ( Interval, Size ( Size ), 
+                                      mkBaseInterval, splitTo, isize, toList )
+
 finish :: LaTeX -> Text
 finish  = render . (\l -> rendertex l :: LaTeX)
 
@@ -97,18 +100,24 @@ mkSingleTeamSheet teamLabel qrPath allRounds teamNumber =
     mconcat (mkFullHeader teamLabel heightQR Nothing [(teamNumber, qrPath)] : rds)
   where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel teamNumber]) allRounds
 
--- | Takes a maximum and a list of values and produces a sequence of ones and twos.
---   The motivation is that up to two values but at least one value fit into a single container.
---   If they fit (each one is small enough), we take the two values.
---   Otherwise we take only one. 
-onesOrTwos :: Int -> [Int] -> [[Int]]
-onesOrTwos limit = go where
-    go [] = [] 
-    go (a : b : as) | all (<= limit) [a, b] = [a, b] : go as
-    go (a : as) = [a] : go as
+-- | Takes a maximum and a list of intervals and produces a list of lists of lists of integers.
+--   Each list of lists denotes a collection of answer lines that fit on one sheet.
+--   Each list in such a collection denotes the actual numbers of the lines.
+--   The latter may seem redundant, but is necessary when rounds have so many questions
+--   that they do no longer fit on one page. 
+--   The intervals that are supplied to this function are assumed to be small enough
+--   to fit one page already. 
+onesOrTwos :: Int -> [Interval] -> [[[Int]]]
+onesOrTwos limit = map (map toList) . go where
+    go []                                             = [] 
+    go (a : b : as) | all ((<= limit) . isize) [a, b] = [a, b] : go as
+    go (a : as)                                       = [a] : go as
 
 fittingPerRound :: Int
 fittingPerRound = 8
+
+fittingOnPage :: Int
+fittingOnPage = 18
 
 mkFullSheet :: LaTeXC l => Text -> [Int] -> [QRPath] -> l
 mkFullSheet teamLabel qns paths = mconcat [
@@ -123,7 +132,7 @@ mkFullSheet teamLabel qns paths = mconcat [
         )
     )
   ] 
-  where grouped = onesOrTwos fittingPerRound qns
+  where grouped = onesOrTwos fittingPerRound (concatMap (splitTo fittingOnPage . mkBaseInterval . Size) qns)
         allRounds = map (mconcat . map (mkAnswerTable stretch)) grouped
         separator | even (length grouped) = newpage
                   | otherwise             = mconcat [newpage, hfill, medskip, newline, newpage]
@@ -136,7 +145,7 @@ mkSheetWithConstantQuestions :: Text -> Int -> [QRPath] -> Text
 mkSheetWithConstantQuestions teamLabel n = 
     mkSheetWithArbitraryQuestions teamLabel (replicate n fittingPerRound)
 
-mkAnswerTable :: LaTeXC l => Double -> Int -> l
+mkAnswerTable :: LaTeXC l => Double -> [Int] -> l
 mkAnswerTable sf qs = 
     table [ForcePos, Here] (
         arraystretch sf
@@ -153,7 +162,7 @@ mkAnswerTable sf qs =
                                     hline
                                ]
                         ) 
-                        [1 .. qs]
+                        qs
                   )
                  )
     )
