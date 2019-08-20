@@ -1,6 +1,6 @@
 module Sheet.Interval ( 
-    Interval, Base, Size, 
-    mkInterval, isize, itake, idrop, splitTo, toList 
+    Interval, Base ( .. ), Size ( .. ), 
+    mkInterval, mkBaseInterval, isize, itake, idrop, splitTo, toList 
 ) where
 
 data Interval = Interval { lower :: Int, upper :: Int }
@@ -27,6 +27,9 @@ mkInterval :: Base -> Size -> Interval
 mkInterval base lnth = Interval lower (lower + max size 0) where
   size = int lnth - 1
   lower = int base
+
+mkBaseInterval :: Size -> Interval
+mkBaseInterval = mkInterval (Base 1)
 
 isize :: Interval -> Int
 isize i = 1 + upper i - lower i
