@@ -10,7 +10,7 @@ import System.Directory            ( setCurrentDirectory, getCurrentDirectory, r
 import System.Process              ( callProcess )
 
 import Constants                   ( quizzesFolderIO, addSeparator )
-import Sheet.Tex                   ( mkSheetWithConstantQuestions, mkQROnly )
+import Sheet.Tex                   ( mkSheetWithArbitraryQuestions, mkQROnly )
 
 type Prefix = String
 type Server = String
@@ -19,13 +19,13 @@ type Ending = String
 createQRPath :: Prefix -> Ending -> Text
 createQRPath prefix ending = T.concat (map T.pack [prefix, ending, ".html"])
 
-createSheetWith :: String -> Int -> Prefix -> Server -> [Ending] -> IO ()
+createSheetWith :: String -> [Int] -> Prefix -> Server -> [Ending] -> IO ()
 createSheetWith teamLabel rounds prefix server endings = do
     quizzesFolder <- quizzesFolderIO
     currentDir <- getCurrentDirectory
     
     let tl = T.pack teamLabel
-        sht = mkSheetWithConstantQuestions tl rounds paths
+        sht = mkSheetWithArbitraryQuestions tl rounds paths
         fullServerPath = addSeparator [server, prefix, ""]
         paths = map (createQRPath fullServerPath) endings
         buildPath = addSeparator [quizzesFolder, prefix]
