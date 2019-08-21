@@ -153,7 +153,7 @@ newQuiz = do
               success <- liftIO (createOrFail name endings)
               if success 
                then do
-                let rs = fromMaybe 4 (mRounds >>= fmap fst . B.readInt)
+                rs <- liftIO (maybe (pure defaultRounds) (readRounds . B.unpack) mRounds)
                 fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
                 lbls <- fetchLabels fullLabelsPath
                 liftIO (do serverPath <- serverQuizPathIO
@@ -168,6 +168,14 @@ newQuiz = do
                                     name, 
                                     "already exists or its labels contain invalid symbols"])
                 modifyResponse (setResponseCodePlain 406)
+
+defaultRounds :: [Int]
+defaultRounds = replicate 4 8
+
+readRounds :: String -> IO [Int]
+readRounds text = fmap read (pure text) `catch` handle where
+  handle :: IOException -> IO [Int]
+  handle _ = pure defaultRounds
 
 -- todo: better with JSON directly.
 fetchLabels :: String -> Handler b QuizService Labels
