@@ -110,7 +110,7 @@ data Remainder = Full | Partial Int
 
 -- | Creates groups of intervals, where each group of intervals fits on one page.
 --   There are at most two intervals per page.
---   If there are two intervals, both have a size of at most fittingPerRound.
+--   If there are two intervals, at least one of these has a size of at most fittingPerRound.
 --   This means that having sizes [24, 8], we get the interval groups [1, 18] and [[19, 24], [1, 8]].
 --   The reason for restricting the number to two per page is two-fold.
 --   First, it is more legible in the resulting document.
