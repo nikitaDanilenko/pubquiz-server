@@ -2,7 +2,6 @@
 
 module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly ) where
 
-import Control.Arrow                ( (&&&) )
 import Data.List                    ( intersperse )
 import Data.List.Extra              ( chunksOf )
 import Data.Text                    ( Text )
@@ -22,7 +21,7 @@ import Text.LaTeX.Packages.Inputenc ( inputenc )
 import Text.LaTeX.Packages.QRCode   ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
 
 import Sheet.Interval               ( Interval, Size ( Size ), 
-                                      mkBaseInterval, splitTo, isize, toList, itake, idrop )
+                                      mkBaseInterval, isize, toList, itake, idrop )
 
 finish :: LaTeX -> Text
 finish  = render . (\l -> rendertex l :: LaTeX)
