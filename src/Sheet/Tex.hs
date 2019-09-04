@@ -116,11 +116,13 @@ data Remainder = Full | Partial Int
 --   The reason for restricting the number to two per page is two-fold.
 --   First, it is more legible in the resulting document.
 --   Second, determining whether a new table with a specific header fits on a page is not simple
---   to do in LaTeX and may require manual computations (i.e. do [2, 2, 2] fit on one page?).
+--   to do in LaTeX and may require manual computations (i.e. do [5, 5, 5] fit on one page?).
 --   Since this is a likely uninteresting corner case, we use a simple implementation here.
 mkIntervals :: [Int] -> [[Interval]]
 mkIntervals = reverse . (\(x, _, _) -> x) . go ([], [], Full) . map (mkBaseInterval . Size) . filter (> 0) where
-  go acc        []               = acc
+  go acc@(is, page, _) []
+    | null page = acc
+    | otherwise = (reverse page : is, [], Full)
   go (is, _, Full) (int : ints)
     | sz > fittingOnPage  = go ([start] : is, [], Full) (idrop fittingOnPage int : ints)
     | sz == fittingOnPage = go ([start] : is, [], Full) ints
