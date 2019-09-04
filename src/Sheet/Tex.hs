@@ -2,6 +2,7 @@
 
 module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly ) where
 
+import Control.Arrow                ( (&&&) )
 import Data.List                    ( intersperse )
 import Data.List.Extra              ( chunksOf )
 import Data.Text                    ( Text )
@@ -21,7 +22,7 @@ import Text.LaTeX.Packages.Inputenc ( inputenc )
 import Text.LaTeX.Packages.QRCode   ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
 
 import Sheet.Interval               ( Interval, Size ( Size ), 
-                                      mkBaseInterval, splitTo, isize, toList )
+                                      mkBaseInterval, splitTo, isize, toList, itake, idrop )
 
 finish :: LaTeX -> Text
 finish  = render . (\l -> rendertex l :: LaTeX)
@@ -100,24 +101,38 @@ mkSingleTeamSheet teamLabel qrPath allRounds teamNumber =
     mconcat (mkFullHeader teamLabel heightQR Nothing [(teamNumber, qrPath)] : rds)
   where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel teamNumber]) allRounds
 
--- | Takes a maximum and a list of intervals and produces a list of lists of lists of integers.
---   Each list of lists denotes a collection of answer lines that fit on one sheet.
---   Each list in such a collection denotes the actual numbers of the lines.
---   The latter may seem redundant, but is necessary when rounds have so many questions
---   that they do no longer fit on one page. 
---   The intervals that are supplied to this function are assumed to be small enough
---   to fit one page already. 
-onesOrTwos :: Int -> [Interval] -> [[[Int]]]
-onesOrTwos limit = map (map toList) . go where
-    go []                                             = [] 
-    go (a : b : as) | all ((<= limit) . isize) [a, b] = [a, b] : go as
-    go (a : as)                                       = [a] : go as
-
 fittingPerRound :: Int
 fittingPerRound = 8
 
 fittingOnPage :: Int
 fittingOnPage = 18
+
+data Remainder = Full | Partial Int
+
+-- | Creates groups of intervals, where each group of intervals fits on one page.
+--   There are at most two intervals per page.
+--   If there are two intervals, both have a size of at most fittingPerRound.
+--   This means that having sizes [24, 8], we get the interval groups [1, 18] and [[19, 24], [1, 8]].
+--   The reason for restricting the number to two per page is two-fold.
+--   First, it is more legible in the resulting document.
+--   Second, determining whether a new table with a specific header fits on a page is not simple
+--   to do in LaTeX and may require manual computations (i.e. do [2, 2, 2] fit on one page?).
+--   Since this is a likely uninteresting corner case, we use a simple implementation here.
+mkIntervals :: [Int] -> [[Interval]]
+mkIntervals = reverse . (\(x, _, _) -> x) . go ([], [], Full) . map (mkBaseInterval . Size) . filter (> 0) where
+  go acc        []               = acc
+  go (is, _, Full) (int : ints)
+    | sz > fittingOnPage  = go ([start] : is, [], Full) (idrop fittingOnPage int : ints)
+    | sz == fittingOnPage = go ([start] : is, [], Full) ints
+    | otherwise           = go (is, [int], Partial (fittingOnPage - sz)) ints
+    where sz = isize int
+          start = itake fittingOnPage int
+  go (is, page, Partial rest) l@(int : ints) = go (reverse newPage : is, [], Full) newInts where
+    (newPage, newInts) 
+      | rest >= fittingPerRound && sz <= fittingPerRound = (int : page, ints)
+      | rest >= fittingPerRound && sz > fittingPerRound  = (itake fittingPerRound int : page, idrop fittingPerRound int : ints)
+      | otherwise = (page, l)
+    sz = isize int
 
 mkFullSheet :: LaTeXC l => Text -> [Int] -> [QRPath] -> l
 mkFullSheet teamLabel qns paths = mconcat [
@@ -132,7 +147,7 @@ mkFullSheet teamLabel qns paths = mconcat [
         )
     )
   ] 
-  where grouped = onesOrTwos fittingPerRound (concatMap (splitTo fittingOnPage . mkBaseInterval . Size) qns)
+  where grouped = map (map toList) (mkIntervals qns)
         allRounds = map (mconcat . map (mkAnswerTable stretch)) grouped
         separator | even (length grouped) = newpage
                   | otherwise             = mconcat [newpage, hfill, medskip, newline, newpage]
