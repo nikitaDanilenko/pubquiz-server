@@ -93,7 +93,7 @@ stretch :: Double
 stretch = 2.75
 
 heightQR :: Double
-heightQR = 1
+heightQR = 2
 
 mkSingleTeamSheet :: LaTeXC l => Text -> QRPath -> [l] -> Int -> l
 mkSingleTeamSheet teamLabel qrPath allRounds teamNumber = 
