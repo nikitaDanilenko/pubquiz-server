@@ -69,7 +69,7 @@ randomNonDistinct numberOfStrings size = do
 
 randomDistinctWithAdditional :: Int -> Int -> [String] -> IO [String]
 randomDistinctWithAdditional numberOfStrings size exs = do
-    chunks <- randomNonDistinct
+    chunks <- randomNonDistinct numberOfStrings size
     let uniqueChunks = disambiguate (exs ++ chunks)
     return uniqueChunks
 
