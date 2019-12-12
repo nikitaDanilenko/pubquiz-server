@@ -58,10 +58,19 @@ randomAlphaNumeric :: IO String
 randomAlphaNumeric = fmap (map (alphaNumeric !!) . randomRs (0, alphaNumericAmount - 1)) newStdGen
 
 randomDistinctAlphaNumeric :: Int -> Int -> IO [String]
-randomDistinctAlphaNumeric numberOfStrings size = do
+randomDistinctAlphaNumeric numberOfStrings size = 
+    fmap disambiguate (randomNonDistinct numberOfStrings size)
+
+randomNonDistinct :: Int -> Int -> IO [String]
+randomNonDistinct numberOfStrings size = do
     randomInfinite <- randomAlphaNumeric
     let chunks = take numberOfStrings (chunk size randomInfinite)
-        uniqueChunks = disambiguate chunks
+    return chunks
+
+randomDistinctWithAdditional :: Int -> Int -> [String] -> IO [String]
+randomDistinctWithAdditional numberOfStrings size exs = do
+    chunks <- randomNonDistinct
+    let uniqueChunks = disambiguate (exs ++ chunks)
     return uniqueChunks
 
 chunk :: Int -> [a] -> [[a]]
