@@ -34,7 +34,7 @@ import Pages.QuizzesFrontpage               ( createFrontPage )
 import Labels                               ( Labels, teamLabel, showAsBS, parameters, 
                                               defaultLabels )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
-import Utils                                ( (+>), randomDistinctAlphaNumeric )
+import Utils                                ( (+>), randomDistinctAlphaNumeric, randomDistinctWithAdditional )
 
 data QuizService = QuizService
 
@@ -109,17 +109,40 @@ updateQuizData mQuiz mNewContent = case liftA2 updateWholeQuiz mQuiz (fmap Left 
 updateLabels :: Handler b QuizService ()
 updateLabels = do
   QUS mQuiz mUser mSignature <- getQUS
+  mRounds <- getPostParam roundsNumberParam
+  mNumberOfTeams <- getPostParam numberOfTeamsParam
   verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just labelUpdate)]
   failIfUnverified verified $
     case mQuiz of
       Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
       Just name -> do
-        fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
-        fetchLabels fullLabelsPath
+        endings <- readCurrentEndings name
+        let desiredTeams = mkActualTeamNumber mNumberOfTeams
+        otherEndings <- liftIO (adjustEndings endings desiredTeams)
+        fetchRoundsAndLabelsAndMakeSheet name mRounds otherEndings
         liftIO createFrontPage
         case liftA2 updateWholeQuiz mQuiz (Just (Right ())) of
           Nothing -> writeBS "Unknown error during label update."
           Just io -> respondToUpdate io
+
+readCurrentEndings :: B.ByteString -> Handler b QuizService [Ending]
+readCurrentEndings name = do
+  mText <- liftIO (readQuizFile name)
+  return (maybe [] (concatMap (words . B.unpack) . take 1 . B.lines) mText)
+
+mkActualTeamNumber :: Maybe B.ByteString -> Int
+mkActualTeamNumber = maybe 20 (read . B.unpack)
+
+adjustEndings :: [Ending] -> Int -> IO [Ending]
+adjustEndings es n = 
+  if l >= n 
+    then return (take n es)
+  else
+    randomDistinctWithAdditional (n - l) teamCodeLength es
+  where l = length es
+
+teamCodeLength :: Int
+teamCodeLength = 6
 
 respondToUpdate :: IO Bool -> Handler b QuizService ()
 respondToUpdate io = do 
@@ -141,26 +164,18 @@ newQuiz = do
       case mQuiz of
           Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
           Just name -> do 
-              let uName = B.unpack name
-                  gs = maybe 20 (read . B.unpack) mNumberOfTeams
+              let gs = mkActualTeamNumber mNumberOfTeams
               {- todo: Each ending (code) is at least six symbols long, but this may change.
                  If the number drops to five, one needs to account for the possibility
                  of the string "index" occurring, which would break either the group with
                  that label or the main page.
                  A similar warning holds true, should there be more additional pages,
                  whose names might overlap with randomly generated strings. -}
-              endings <- liftIO (randomDistinctAlphaNumeric gs 6)
+              endings <- liftIO (randomDistinctAlphaNumeric gs teamCodeLength)
               success <- liftIO (createOrFail name endings)
               if success 
                then do
-                rs <- liftIO (maybe (pure defaultRounds) (readRounds . B.unpack) mRounds)
-                fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
-                lbls <- fetchLabels fullLabelsPath
-                liftIO (do serverPath <- serverQuizPathIO
-                           let fullServerPath = addSeparator [server, serverPath]
-                           createSheetWith (teamLabel lbls) rs uName fullServerPath endings
-                           updateWholeQuiz name (Left (B.pack (unwords endings)))
-                           createFrontPage)
+                fetchRoundsAndLabelsAndMakeSheet name mRounds endings
                 writeBS (B.unwords ["Created quiz", name]) 
                 modifyResponse (setResponseCodePlain 201)
                else do
@@ -176,6 +191,21 @@ readRounds :: String -> IO [Int]
 readRounds text = fmap read (pure text) `catch` handle where
   handle :: IOException -> IO [Int]
   handle _ = pure defaultRounds
+
+fetchRoundsAndLabelsAndMakeSheet :: B.ByteString 
+                                 -> Maybe B.ByteString 
+                                 -> [Ending] 
+                                 -> Handler b QuizService ()
+fetchRoundsAndLabelsAndMakeSheet name mRounds endings = do
+  rs <- liftIO (maybe (pure defaultRounds) (readRounds . B.unpack) mRounds)
+  fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
+  lbls <- fetchLabels fullLabelsPath
+  liftIO (do serverPath <- serverQuizPathIO
+             let fullServerPath = addSeparator [server, serverPath]
+                 uName = B.unpack name
+             createSheetWith (teamLabel lbls) rs uName fullServerPath endings
+             updateWholeQuiz name (Left (B.pack (unwords endings)))
+             createFrontPage)
 
 -- todo: better with JSON directly.
 fetchLabels :: String -> Handler b QuizService Labels
@@ -296,6 +326,13 @@ createOrFail path endings = do
         createDirectory fullPath
         B.writeFile (addSeparator [fullPath, roundsFile]) (B.pack (unwords endings))
         return True
+
+writeEndings :: String -> [Ending] -> IO ()
+writeEndings path endings = do
+  ls <- fmap B.lines (B.readFile path)
+  let remainder = drop 1 ls
+      es = B.pack (unwords endings)
+  B.writeFile path (B.unlines (es : ls))
 
 validInternalQuizNameChars :: String
 validInternalQuizNameChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ "-_"
