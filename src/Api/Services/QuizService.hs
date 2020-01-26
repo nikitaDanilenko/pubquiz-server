@@ -43,7 +43,7 @@ quizRoutes = [
     "all" +> method GET sendAvailable,
     "getQuizData" +> method GET getSingleQuizData,
     "getQuizLabels" +> method GET getSingleQuizLabels,
-    "updateLabels" +> method POST updateLabels,
+    "updateQuizSettings" +> method POST updateQuizSettings,
     "update" +> method POST updateQuiz,
     "lock" +> method POST lockQuiz,
     "new" +> method POST newQuiz
@@ -106,8 +106,8 @@ updateQuizData mQuiz mNewContent = case liftA2 updateWholeQuiz mQuiz (fmap Left 
                 modifyResponse (setResponseCodePlain 406)
   Just io -> respondToUpdate io
 
-updateLabels :: Handler b QuizService ()
-updateLabels = do
+updateQuizSettings :: Handler b QuizService ()
+updateQuizSettings = do
   QUS mQuiz mUser mSignature <- getQUS
   mRounds <- getPostParam roundsNumberParam
   mNumberOfTeams <- getPostParam numberOfTeamsParam
