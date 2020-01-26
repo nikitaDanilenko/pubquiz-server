@@ -111,7 +111,10 @@ updateLabels = do
   QUS mQuiz mUser mSignature <- getQUS
   mRounds <- getPostParam roundsNumberParam
   mNumberOfTeams <- getPostParam numberOfTeamsParam
-  verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just labelUpdate)]
+  verified <- authenticate mUser mSignature [(quizParam, mQuiz), 
+                                             (roundsNumberParam, mRounds),
+                                             (numberOfTeamsParam, mNumberOfTeams),
+                                             (actionParam, Just labelUpdate)]
   failIfUnverified verified $
     case mQuiz of
       Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
