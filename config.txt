@@ -1,3 +1,8 @@
 quizzesFolder=./quizzes
 serverRelativeQuizPath=quizzes
 database=./db
+databaseHost=
+databaseName=
+databaseUser=
+databasePassword=
+databasePort=
