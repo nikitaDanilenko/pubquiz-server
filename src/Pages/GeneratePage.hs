@@ -439,6 +439,3 @@ createWith associations = do
         labelsPath = fromMaybe "labels.txt" (lookup "labels" kvs)
         roundsPath = fromMaybe "rounds.txt" (lookup "rounds" kvs)
         prefix     = fromMaybe "./"         (lookup "prefix" kvs)
-
---main :: IO ()
---main = getArgs >>= createWith . map splitOnSetter
