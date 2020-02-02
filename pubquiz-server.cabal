@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 48bca969c2e8bea0d6232615c77191056d8ed2eb8fed439d8e983589208a77d8
+-- hash: 7a2b5f2dca924c4cd7ce098e1bba04d7bc9d7bc81675329fa68adea0d453fb33
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
       Constants
       Db.Configuration
       Db.Connection
+      Db.Instances
       Labels
       Main
       Pages.Colours
@@ -69,6 +70,7 @@ library
     , lens >=4.17 && <4.18
     , monad-logger
     , parsec >=3.1 && <4
+    , path-pieces
     , persistent
     , persistent-postgresql
     , persistent-template
@@ -80,6 +82,7 @@ library
     , snap-server >=1.1 && <1.2
     , split >=0.2 && <1
     , text >=1.2 && <1.3
+    , time
   default-language: Haskell2010
 
 executable pubquiz-server-exe
@@ -96,6 +99,7 @@ executable pubquiz-server-exe
       Constants
       Db.Configuration
       Db.Connection
+      Db.Instances
       Labels
       Pages.Colours
       Pages.GeneratePage
@@ -124,6 +128,7 @@ executable pubquiz-server-exe
     , lens >=4.17 && <4.18
     , monad-logger
     , parsec >=3.1 && <4
+    , path-pieces
     , persistent
     , persistent-postgresql
     , persistent-template
@@ -136,4 +141,5 @@ executable pubquiz-server-exe
     , snap-server >=1.1 && <1.2
     , split >=0.2 && <1
     , text >=1.2 && <1.3
+    , time
   default-language: Haskell2010
