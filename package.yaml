@@ -43,6 +43,9 @@ dependencies:
 - persistent-postgresql
 - persistent-template
 - monad-logger
+- time
+- path-pieces
+
 
 library:
   source-dirs: src
