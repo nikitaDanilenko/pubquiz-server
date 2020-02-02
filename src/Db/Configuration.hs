@@ -1,8 +1,10 @@
 module Db.Configuration where
 
-import           Constants     (configMap, databaseHost, databaseName,
-                                databasePassword, databasePort, databaseUser)
-import           Data.Map.Lazy ((!?))
+import           Constants             (configMap, databaseHost, databaseName,
+                                        databasePassword, databasePort,
+                                        databaseUser)
+import           Data.ByteString.Char8 as B (pack)
+import           Data.Map.Lazy         ((!?))
 
 data Configuration =
   Configuration
@@ -15,6 +17,7 @@ data Configuration =
 
 toConnection :: Configuration -> String
 toConnection c =
+  B.pack $
   unwords
     (zipWith
        (\k v -> concat [k, "=", v])
