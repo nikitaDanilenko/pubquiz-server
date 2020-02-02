@@ -27,9 +27,10 @@ toConnection c =
 readConfiguration :: IO Configuration
 readConfiguration = do
   settings <- configMap
-  let parameters = traverse (settings !?) [databaseHost, databaseName, databaseUser, databasePassword, databasePort]
+  let positions = [databaseHost, databaseName, databaseUser, databasePassword, databasePort]
+      parameters = traverse (settings !?) positions
       config =
         case parameters of
           Just (h:n:u:pw:p:_) -> Configuration h n u pw p
-          _ -> error "Database connection not fully specified"
+          _ -> error ("Database connection not fully specified:" ++ show (map (settings !?) positions)) 
   pure config
