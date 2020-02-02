@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 839796a192dfd2e8a3de3dc63f975c9fde9e6efed0880aceea942f90c28c2ffc
+-- hash: 48bca969c2e8bea0d6232615c77191056d8ed2eb8fed439d8e983589208a77d8
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -38,6 +38,8 @@ library
       Api.Services.UserService
       Application
       Constants
+      Db.Configuration
+      Db.Connection
       Labels
       Main
       Pages.Colours
@@ -65,7 +67,11 @@ library
     , extra >=1 && <2
     , filepath >=1.4 && <2.0
     , lens >=4.17 && <4.18
+    , monad-logger
     , parsec >=3.1 && <4
+    , persistent
+    , persistent-postgresql
+    , persistent-template
     , process >=1 && <2
     , random >=1 && <2
     , snap >=1.1 && <1.2
@@ -88,6 +94,8 @@ executable pubquiz-server-exe
       Api.Services.UserService
       Application
       Constants
+      Db.Configuration
+      Db.Connection
       Labels
       Pages.Colours
       Pages.GeneratePage
@@ -114,7 +122,11 @@ executable pubquiz-server-exe
     , extra >=1 && <2
     , filepath >=1.4 && <2.0
     , lens >=4.17 && <4.18
+    , monad-logger
     , parsec >=3.1 && <4
+    , persistent
+    , persistent-postgresql
+    , persistent-template
     , process >=1 && <2
     , pubquiz-server
     , random >=1 && <2
