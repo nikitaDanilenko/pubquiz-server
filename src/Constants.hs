@@ -7,6 +7,9 @@ import Control.Exception.Base               ( IOException )
 import Data.List                            ( intercalate )
 import Data.Maybe                           ( fromMaybe )
 import qualified Data.ByteString.Char8 as B
+import Data.Map                             ( Map )
+import Data.Map.Lazy                        ( (!?) )
+import qualified Data.Map as M              ( fromList )
 import qualified Data.Text as T             ( Text )
 import System.FilePath                      ( pathSeparator )
 import System.Directory                     ( doesDirectoryExist, createDirectoryIfMissing )
@@ -29,11 +32,17 @@ createDBFolder = dbFolderIO >>= createDirectoryIfMissing True
 configFile :: String
 configFile = "./config.txt"
 
-readFromConfigFile :: String -> String -> IO String
-readFromConfigFile param dft = do
+configMap :: IO (Map String String)
+configMap = do
   text <- readFile configFile `catch` noConfigFile
   let settings = map splitOnSetter (lines text)
-      path = fromMaybe dft (lookup param settings)
+      kvsMap = M.fromList settings
+  return kvsMap
+
+readFromConfigFile :: String -> String -> IO String
+readFromConfigFile param dft = do
+  settings <- configMap
+  let path = fromMaybe dft (settings !? param)
   return path
 
 quizzesFolderIO :: IO String
@@ -171,6 +180,21 @@ quizPath = "quiz"
 
 userPath :: T.Text
 userPath = "users"
+
+databaseHost :: String
+databaseHost = "dataBaseHost"
+
+databaseName :: String
+databaseName = "databaseName"
+
+databaseUser :: String
+databaseUser = "databaseUser"
+
+databasePassword :: String
+databasePassword = "databasePassword"
+
+databasePort :: String
+databasePort = "databasePort"
 
 publicExponent :: Integer
 publicExponent = 103787
