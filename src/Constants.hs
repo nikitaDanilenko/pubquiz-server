@@ -182,7 +182,7 @@ userPath :: T.Text
 userPath = "users"
 
 databaseHost :: String
-databaseHost = "dataBaseHost"
+databaseHost = "databaseHost"
 
 databaseName :: String
 databaseName = "databaseName"
