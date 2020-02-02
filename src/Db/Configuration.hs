@@ -3,7 +3,7 @@ module Db.Configuration where
 import           Constants             (configMap, databaseHost, databaseName,
                                         databasePassword, databasePort,
                                         databaseUser)
-import           Data.ByteString.Char8 as B (pack)
+import qualified Data.ByteString.Char8 as B (ByteString, pack)
 import           Data.Map.Lazy         ((!?))
 
 data Configuration =
@@ -15,7 +15,7 @@ data Configuration =
     , port     :: String
     }
 
-toConnection :: Configuration -> String
+toConnection :: Configuration -> B.ByteString
 toConnection c =
   B.pack $
   unwords
