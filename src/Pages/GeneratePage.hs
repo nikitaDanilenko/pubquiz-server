@@ -1,4 +1,4 @@
-module Pages.GeneratePage ( createWith, main ) where
+module Pages.GeneratePage ( createWith ) where
 
 import Control.Arrow          ( second, (&&&), (***), (>>>) )
 import Control.Exception      ( catch )
@@ -440,5 +440,5 @@ createWith associations = do
         roundsPath = fromMaybe "rounds.txt" (lookup "rounds" kvs)
         prefix     = fromMaybe "./"         (lookup "prefix" kvs)
 
-main :: IO ()
-main = getArgs >>= createWith . map splitOnSetter
+--main :: IO ()
+--main = getArgs >>= createWith . map splitOnSetter
