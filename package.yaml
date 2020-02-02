@@ -39,6 +39,10 @@ dependencies:
 - extra >= 1 && < 2
 - colour >= 2.1 && < 3
 - HaTeX >= 3 && < 4
+- persistent
+- persistent-postgresql
+- persistent-template
+- monad-logger
 
 library:
   source-dirs: src
