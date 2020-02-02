@@ -73,8 +73,6 @@ DbRoundReached
   deriving Show
 |]
 
-connStr = "host=localhost dbname=testdb user=test password=test port=5432"
-
 performMigration :: IO ()
 performMigration =
   readConfiguration >>= \config ->
