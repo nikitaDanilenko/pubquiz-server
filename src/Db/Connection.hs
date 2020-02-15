@@ -91,7 +91,7 @@ runSql action =
     runStderrLoggingT $ withPostgresqlPool (toConnection config) 10 $ liftIO . runSqlPersistMPool action
 
 performMigration :: IO ()
-performMigration = runSql $ runMigration migrateAll
+performMigration = runSql (runMigration migrateAll)
 
 insertOrReplace ::
      ( MonadIO m
