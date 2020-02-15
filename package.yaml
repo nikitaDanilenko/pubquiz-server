@@ -45,6 +45,8 @@ dependencies:
 - monad-logger
 - time
 - path-pieces
+- transformers
+- resourcet
 
 
 library:

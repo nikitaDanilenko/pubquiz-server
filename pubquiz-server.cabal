@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3b9fd7e98596f366c6832348362e206312c3a8f7b728658988d4ceacf6475d12
+-- hash: 4509607ba207d4bd000ad22e9e6177fa17aa80f88d33488ab73ac988ee98c1e3
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -40,13 +40,15 @@ library
       Constants
       Db.Configuration
       Db.Connection
+      Db.DbTypes
       Db.Instances
-      Db.PointCollection
+      Db.Storage
       Labels
       Main
       Pages.Colours
       Pages.GeneratePage
       Pages.HtmlUtil
+      Pages.PointComputation
       Pages.QuizzesFrontpage
       Pages.RoundsParser
       Sheet.Interval
@@ -77,6 +79,7 @@ library
     , persistent-template
     , process >=1 && <2
     , random >=1 && <2
+    , resourcet
     , snap >=1.1 && <1.2
     , snap-core >=1.0 && <2
     , snap-loader-static >=0.9 && <1.1
@@ -84,6 +87,7 @@ library
     , split >=0.2 && <1
     , text >=1.2 && <1.3
     , time
+    , transformers
   default-language: Haskell2010
 
 executable pubquiz-server-exe
@@ -100,12 +104,14 @@ executable pubquiz-server-exe
       Constants
       Db.Configuration
       Db.Connection
+      Db.DbTypes
       Db.Instances
-      Db.PointCollection
+      Db.Storage
       Labels
       Pages.Colours
       Pages.GeneratePage
       Pages.HtmlUtil
+      Pages.PointComputation
       Pages.QuizzesFrontpage
       Pages.RoundsParser
       Sheet.Interval
@@ -137,6 +143,7 @@ executable pubquiz-server-exe
     , process >=1 && <2
     , pubquiz-server
     , random >=1 && <2
+    , resourcet
     , snap >=1.1 && <1.2
     , snap-core >=1.0 && <2
     , snap-loader-static >=0.9 && <1.1
@@ -144,4 +151,5 @@ executable pubquiz-server-exe
     , split >=0.2 && <1
     , text >=1.2 && <1.3
     , time
+    , transformers
   default-language: Haskell2010
