@@ -1,10 +1,16 @@
 module Db.DbTypes where
 
+import           GHC.Natural (Natural)
+
 newtype TeamNumber =
-  TeamNumber Integer
+  TeamNumber
+    { unTeamNumber :: Natural
+    }
 
 newtype RoundNumber =
-  RoundNumber Integer
+  RoundNumber
+    { unRoundNumber :: Natural
+    }
 
 newtype Code =
   Code String
@@ -14,8 +20,10 @@ newtype TeamName =
 
 newtype QuizName =
   QuizName String
-  
+
 newtype Place =
   Place String
 
-data Activity = Active | Inactive
+data Activity
+  = Active
+  | Inactive
