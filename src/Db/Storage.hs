@@ -1,17 +1,22 @@
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE GADTs        #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Db.Storage where
 
-import           Control.Monad.IO.Class      (liftIO)
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Control.Monad.Trans.Reader  (ReaderT)
+
 import           Data.Time.Calendar          (Day)
 import           Database.Persist
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
-import           Db.Connection               (DbQuiz, DbQuizId, DbRoundReachable(..), runSql,
-                                              DbRoundReachable (..))
+import           Db.Connection               (DbLabels (..), DbQuiz (..),
+                                              DbQuizId, DbRoundReachable (..),
+                                              EntityField (..), insertOrReplace,
+                                              mkFilter, runSql)
 import           Db.DbTypes                  (Activity, Code, Place, QuizName,
-                                              RoundNumber, unRoundNumber, TeamName, TeamNumber)
+                                              RoundNumber, TeamName, TeamNumber,
+                                              unRoundNumber)
 import           Labels                      (Labels)
 import           Pages.PointComputation      (RoundRating)
 
@@ -19,11 +24,7 @@ setTeamRoundPoints :: DbQuizId -> RoundNumber -> TeamNumber -> Double -> IO ()
 setTeamRoundPoints = undefined
 
 setReachable :: DbQuizId -> RoundNumber -> Double -> IO (Key DbRoundReachable)
---setReachable = undefined
-setReachable qid rn p = undefined
-
-
-prepareSetReachable qid rn p = upsert (DbRoundReachable qid (unRoundNumber rn) p) []
+setReachable qid rn p = undefined --insertOrReplace
 
 setTeam :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> IO ()
 setTeam = undefined
@@ -61,3 +62,18 @@ findAllCurrentPointsPerRound = undefined
 --   Usually, this means that the numbers at the same position are non-decreasing.
 findAllCurrentPointsPerRoundCumulative :: DbQuizId -> IO [(RoundNumber, [(TeamNumber, Double)])]
 findAllCurrentPointsPerRoundCumulative = undefined
+
+-- * Auxiliary functions
+repsertQuiz :: MonadIO m => DbQuiz -> ReaderT SqlBackend m (Key DbQuiz)
+repsertQuiz =
+  insertOrReplace [mkFilter DbQuizPlace dbQuizPlace, mkFilter DbQuizDate dbQuizDate, mkFilter DbQuizName dbQuizName]
+
+repsertLabels :: MonadIO m => DbLabels -> ReaderT SqlBackend m (Key DbLabels)
+repsertLabels = insertOrReplace [mkFilter DbLabelsQuizId dbLabelsQuizId]
+
+repsertRoundReached :: MonadIO m => DbRoundReachable -> ReaderT SqlBackend m (Key DbRoundReachable)
+repsertRoundReached =
+  insertOrReplace
+    [ mkFilter DbRoundReachableQuizId dbRoundReachableQuizId
+    , mkFilter DbRoundReachableRoundNumber dbRoundReachableRoundNumber
+    ]
