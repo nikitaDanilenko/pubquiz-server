@@ -54,7 +54,7 @@ DbQuiz
   place String
   date Day
   name String
-  locked Bool
+  active Bool
   UniqueDbQuiz place date name
   deriving Show
 DbLabels
