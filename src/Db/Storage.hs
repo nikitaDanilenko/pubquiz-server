@@ -7,11 +7,16 @@ import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.Trans.Reader  (ReaderT)
 
 import           Data.Time.Calendar          (Day)
-import           Database.Persist
-import           Database.Persist.Postgresql
-import           Database.Persist.TH
-import           Db.Connection               (DbLabels (..), DbQuiz (..),
-                                              DbQuizId, DbRoundReachable (..),
+
+import           Database.Persist            (Key)
+import           Database.Persist.Postgresql (SqlBackend)
+
+import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
+                                              DbQuizId,
+                                              DbRoundReachable (dbRoundReachableQuizId, dbRoundReachableRoundNumber),
+                                              DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
+                                              DbTeamNameCode (dbTeamNameCodeQuizId, dbTeamNameCodeTeamNumber),
+                                              DbUser (dbUserUserName),
                                               EntityField (..), insertOrReplace,
                                               mkFilter, runSql)
 import           Db.DbTypes                  (Activity, Code, Place, QuizName,
@@ -71,9 +76,25 @@ repsertQuiz =
 repsertLabels :: MonadIO m => DbLabels -> ReaderT SqlBackend m (Key DbLabels)
 repsertLabels = insertOrReplace [mkFilter DbLabelsQuizId dbLabelsQuizId]
 
-repsertRoundReached :: MonadIO m => DbRoundReachable -> ReaderT SqlBackend m (Key DbRoundReachable)
-repsertRoundReached =
+repsertTeamNameCode :: MonadIO m => DbTeamNameCode -> ReaderT SqlBackend m (Key DbTeamNameCode)
+repsertTeamNameCode =
+  insertOrReplace
+    [mkFilter DbTeamNameCodeQuizId dbTeamNameCodeQuizId, mkFilter DbTeamNameCodeTeamNumber dbTeamNameCodeTeamNumber]
+
+repsertRoundReachable :: MonadIO m => DbRoundReachable -> ReaderT SqlBackend m (Key DbRoundReachable)
+repsertRoundReachable =
   insertOrReplace
     [ mkFilter DbRoundReachableQuizId dbRoundReachableQuizId
     , mkFilter DbRoundReachableRoundNumber dbRoundReachableRoundNumber
     ]
+
+repsertRoundReached :: MonadIO m => DbRoundReached -> ReaderT SqlBackend m (Key DbRoundReached)
+repsertRoundReached =
+  insertOrReplace
+    [ mkFilter DbRoundReachedQuizId dbRoundReachedQuizId
+    , mkFilter DbRoundReachedRoundNumber dbRoundReachedRoundNumber
+    , mkFilter DbRoundReachedTeamNumber dbRoundReachedTeamNumber
+    ]
+
+repsertUser :: MonadIO m => DbUser -> ReaderT SqlBackend m (Key DbUser)
+repsertUser = insertOrReplace [mkFilter DbUserUserName dbUserUserName]
