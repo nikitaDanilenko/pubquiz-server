@@ -99,14 +99,16 @@ insertOrReplace ::
      , PersistEntity record
      , PersistEntityBackend record ~ BaseBackend backend
      , PersistStoreWrite backend
-     , PersistField key
      )
-  => [(record -> key, EntityField record key)]
+  => [record -> Filter record]
   -> record
   -> ReaderT backend m (Key record)
-insertOrReplace keysFields record = do
-  r <- selectFirst (map (\(keyOf, field) -> field ==. keyOf record) keysFields) []
+insertOrReplace mkFilters record = do
+  r <- selectFirst (map ($ record) mkFilters) []
   case r of
     Nothing -> insert record
     Just s -> fmap (const ek) (repsert ek record)
       where ek = entityKey s
+
+mkFilter :: PersistField key => EntityField record key -> (record -> key) -> record -> Filter record
+mkFilter field keyOf record = field ==. keyOf record
