@@ -6,11 +6,11 @@ module Db.Storage where
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.Trans.Reader  (ReaderT)
 
-import           Data.Time.Calendar          (Day)
-
-import           Database.Persist            (Key)
+import           Database.Persist            (Key, checkUnique, insert)
 import           Database.Persist.Postgresql (SqlBackend)
 
+import           Data.List                   (intercalate)
+import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                               DbQuizId,
                                               DbRoundReachable (dbRoundReachableQuizId, dbRoundReachableRoundNumber),
@@ -18,30 +18,91 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               DbTeamNameCode (dbTeamNameCodeQuizId, dbTeamNameCodeTeamNumber),
                                               DbUser (dbUserUserName),
                                               EntityField (..), insertOrReplace,
-                                              mkFilter, runSql)
-import           Db.DbTypes                  (Activity, Code, Place, QuizName,
-                                              RoundNumber, TeamName, TeamNumber,
-                                              unRoundNumber)
-import           Labels                      (Labels)
+                                              mkDbLabels, mkDbQuiz,
+                                              mkDbRoundReachable,
+                                              mkDbRoundReached,
+                                              mkDbTeamNameCode, mkFilter,
+                                              runSql)
+import           Db.DbTypes                  (Activity (..), Code, Place,
+                                              QuizDate, QuizName, RoundNumber,
+                                              TeamName, TeamNumber,
+                                              Unwrappable (unwrap, wrap))
+import           Labels                      (Labels (..), mkLabels)
 import           Pages.PointComputation      (RoundRating)
 
-setTeamRoundPoints :: DbQuizId -> RoundNumber -> TeamNumber -> Double -> IO ()
-setTeamRoundPoints = undefined
+type Statement m k = ReaderT SqlBackend m k
+
+setTeamRoundPoints :: DbQuizId -> RoundNumber -> TeamNumber -> Double -> IO (Key DbRoundReached)
+setTeamRoundPoints qid rn tn p = runSql (setTeamRoundPointsStatement qid rn tn p)
+
+setTeamRoundPointsStatement ::
+     MonadIO m => DbQuizId -> RoundNumber -> TeamNumber -> Double -> Statement m (Key DbRoundReached)
+setTeamRoundPointsStatement qid rn tn p = repsertRoundReached (mkDbRoundReached qid rn tn p)
 
 setReachable :: DbQuizId -> RoundNumber -> Double -> IO (Key DbRoundReachable)
-setReachable qid rn p = undefined --insertOrReplace
+setReachable qid rn p = runSql (setReachableStatement qid rn p)
 
-setTeam :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> IO ()
-setTeam = undefined
+setReachableStatement :: MonadIO m => DbQuizId -> RoundNumber -> Double -> Statement m (Key DbRoundReachable)
+setReachableStatement qid rn p = repsertRoundReachable (mkDbRoundReachable qid rn p)
 
-setLabels :: DbQuizId -> Labels -> IO ()
-setLabels = undefined
+setTeam :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> IO (Key DbTeamNameCode)
+setTeam qid tn c tname a = runSql (setTeamStatement qid tn c tname a)
 
-createQuiz :: Place -> Day -> QuizName -> IO ()
-createQuiz = undefined
+setTeamStatement ::
+     MonadIO m => DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> Statement m (Key DbTeamNameCode)
+setTeamStatement qid tn c tname a = repsertTeamNameCode (mkDbTeamNameCode qid tn c tname a)
 
-lockQuiz :: DbQuizId -> IO ()
-lockQuiz = undefined
+setLabels :: DbQuizId -> Labels -> IO (Key DbLabels)
+setLabels qid lbls = runSql (setLabelsStatement qid lbls)
+
+setLabelsStatement :: MonadIO m => DbQuizId -> Labels -> Statement m (Key DbLabels)
+setLabelsStatement qid lbls =
+  repsertLabels
+    (mkDbLabels
+       qid
+       (wrap (roundLabel lbls))
+       (wrap (teamLabel lbls))
+       (wrap (ownPointsLabel lbls))
+       (wrap (maxReachedLabel lbls))
+       (wrap (maxReachableLabel lbls))
+       (wrap (backToChartView lbls))
+       (wrap (mainLabel lbls))
+       (wrap (ownPageLabel lbls))
+       (wrap (viewPrevious lbls))
+       (wrap (cumulativeLabel lbls))
+       (wrap (individualRoundsLabel lbls))
+       (wrap (progressionLabel lbls))
+       (wrap (placementLabel lbls))
+       (wrap (placeLabel lbls))
+       (wrap (pointsLabel lbls))
+       (wrap (roundWinnerLabel lbls)))
+
+createQuiz :: Place -> QuizDate -> QuizName -> IO (Key DbQuiz)
+createQuiz p d n = runSql (createQuizStatement p d n)
+
+-- | Creates a statement for the creation of a new, hence active, quiz.
+--   If a quiz with the same place, date, and time exists,
+--   an exception is raised.
+createQuizStatement :: MonadIO m => Place -> QuizDate -> QuizName -> Statement m (Key DbQuiz)
+createQuizStatement p d n = do
+  isUnique <- checkUnique newQuiz
+  maybe (insert newQuiz) (const (error errorMsg)) isUnique
+  where
+    newQuiz = mkDbQuiz p d n Active
+    errorMsg =
+      unwords
+        [ "Quiz with"
+        , intercalate
+            ","
+            (zipWith (\k v -> concat [k, "=", v]) ["place", "date", "name"] [unwrap p, show (unwrap d :: Day), unwrap n])
+        , "already exists."
+        ]
+
+lockQuiz :: Place -> QuizDate -> QuizName -> IO (Key DbQuiz)
+lockQuiz p d n = runSql (lockQuizStatement p d n)
+
+lockQuizStatement :: MonadIO m => Place -> QuizDate -> QuizName -> Statement m (Key DbQuiz)
+lockQuizStatement p d n = repsertQuiz (mkDbQuiz p d n Inactive)
 
 findAllQuizzes :: IO [DbQuiz]
 findAllQuizzes = undefined
@@ -69,26 +130,26 @@ findAllCurrentPointsPerRoundCumulative :: DbQuizId -> IO [(RoundNumber, [(TeamNu
 findAllCurrentPointsPerRoundCumulative = undefined
 
 -- * Auxiliary functions
-repsertQuiz :: MonadIO m => DbQuiz -> ReaderT SqlBackend m (Key DbQuiz)
+repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
 repsertQuiz =
   insertOrReplace [mkFilter DbQuizPlace dbQuizPlace, mkFilter DbQuizDate dbQuizDate, mkFilter DbQuizName dbQuizName]
 
-repsertLabels :: MonadIO m => DbLabels -> ReaderT SqlBackend m (Key DbLabels)
+repsertLabels :: MonadIO m => DbLabels -> Statement m (Key DbLabels)
 repsertLabels = insertOrReplace [mkFilter DbLabelsQuizId dbLabelsQuizId]
 
-repsertTeamNameCode :: MonadIO m => DbTeamNameCode -> ReaderT SqlBackend m (Key DbTeamNameCode)
+repsertTeamNameCode :: MonadIO m => DbTeamNameCode -> Statement m (Key DbTeamNameCode)
 repsertTeamNameCode =
   insertOrReplace
     [mkFilter DbTeamNameCodeQuizId dbTeamNameCodeQuizId, mkFilter DbTeamNameCodeTeamNumber dbTeamNameCodeTeamNumber]
 
-repsertRoundReachable :: MonadIO m => DbRoundReachable -> ReaderT SqlBackend m (Key DbRoundReachable)
+repsertRoundReachable :: MonadIO m => DbRoundReachable -> Statement m (Key DbRoundReachable)
 repsertRoundReachable =
   insertOrReplace
     [ mkFilter DbRoundReachableQuizId dbRoundReachableQuizId
     , mkFilter DbRoundReachableRoundNumber dbRoundReachableRoundNumber
     ]
 
-repsertRoundReached :: MonadIO m => DbRoundReached -> ReaderT SqlBackend m (Key DbRoundReached)
+repsertRoundReached :: MonadIO m => DbRoundReached -> Statement m (Key DbRoundReached)
 repsertRoundReached =
   insertOrReplace
     [ mkFilter DbRoundReachedQuizId dbRoundReachedQuizId
@@ -96,5 +157,5 @@ repsertRoundReached =
     , mkFilter DbRoundReachedTeamNumber dbRoundReachedTeamNumber
     ]
 
-repsertUser :: MonadIO m => DbUser -> ReaderT SqlBackend m (Key DbUser)
+repsertUser :: MonadIO m => DbUser -> Statement m (Key DbUser)
 repsertUser = insertOrReplace [mkFilter DbUserUserName dbUserUserName]
