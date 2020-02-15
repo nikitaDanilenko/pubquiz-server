@@ -12,7 +12,6 @@
 
 module Db.Connection where
 
-import           Api.Services.SavedUser                (UserName)
 import           Control.Monad.IO.Class                (MonadIO, liftIO)
 import           Control.Monad.Logger                  (NoLoggingT,
                                                         runStderrLoggingT)
@@ -44,7 +43,7 @@ import           Db.DbTypes                            (Activity,
                                                         TeamNumber,
                                                         Unwrappable (unwrap),
                                                         UserHash, UserSalt,
-                                                        ViewPreviousLabel)
+                                                        ViewPreviousLabel, UserName)
 import           Db.Instances
 import           GHC.Natural                           (Natural)
 
@@ -56,6 +55,7 @@ DbQuiz
   date Day
   name String
   locked Bool
+  UniqueDbQuiz place date name
   deriving Show
 DbLabels
   quizId DbQuizId
