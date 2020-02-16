@@ -6,10 +6,14 @@ module Db.Storage where
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.Trans.Reader  (ReaderT)
 
-import           Database.Persist            (Key, checkUnique, insert)
+import           Database.Persist            (Entity, Key, checkUnique,
+                                              entityVal, insert, selectFirst,
+                                              selectList, (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Data.List                   (intercalate)
+import           Data.Maybe                  (catMaybes)
+import           Data.Ord                    (comparing)
 import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                               DbQuizId,
@@ -27,8 +31,8 @@ import           Db.DbTypes                  (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap))
+import           Db.DbUtil                   (Ratings, ratingsFromDb)
 import           Labels                      (Labels (..), mkLabels)
-import           Pages.PointComputation      (RoundRating)
 
 type Statement m k = ReaderT SqlBackend m k
 
@@ -104,30 +108,20 @@ lockQuiz p d n = runSql (lockQuizStatement p d n)
 lockQuizStatement :: MonadIO m => Place -> QuizDate -> QuizName -> Statement m (Key DbQuiz)
 lockQuizStatement p d n = repsertQuiz (mkDbQuiz p d n Inactive)
 
-findAllQuizzes :: IO [DbQuiz]
-findAllQuizzes = undefined
+findAllQuizzes :: IO [Entity DbQuiz]
+findAllQuizzes = runSql findAllQuizzesStatement
 
-findRoundRating :: DbQuizId -> TeamNumber -> RoundNumber -> IO RoundRating
-findRoundRating = undefined
+findAllQuizzesStatement :: MonadIO m => Statement m [Entity DbQuiz]
+findAllQuizzesStatement = selectList [] []
 
--- | Returns the round ratings for a fixed team for the given list of rounds.
---   Each round rating corresponds to a line in the detailed table of points
---   available at the team point page.
-findRoundRatings :: DbQuizId -> TeamNumber -> [RoundNumber] -> IO [RoundRating]
-findRoundRatings qid tn = mapM (findRoundRating qid tn)
+findRatings :: DbQuizId -> IO Ratings
+findRatings = runSql . findRatingsStatement
 
--- | Returns the current point per round progression for each team in the quiz.
---   This is to say that the numbers represent the points in each individual round,
---   rather than the cumulative result.
-findAllCurrentPointsPerRound :: DbQuizId -> IO [(RoundNumber, [(TeamNumber, Double)])]
-findAllCurrentPointsPerRound = undefined
-
--- | Returns the cumulative point progression for each team in the quiz.
---   This is to say that each number represents the cumulative points for the given
---   round and team.
---   Usually, this means that the numbers at the same position are non-decreasing.
-findAllCurrentPointsPerRoundCumulative :: DbQuizId -> IO [(RoundNumber, [(TeamNumber, Double)])]
-findAllCurrentPointsPerRoundCumulative = undefined
+findRatingsStatement :: MonadIO m => DbQuizId -> Statement m Ratings
+findRatingsStatement qid = do
+  reachables <- selectList [DbRoundReachableQuizId ==. qid] []
+  reacheds <- selectList [DbRoundReachedQuizId ==. qid] []
+  return (ratingsFromDb (map entityVal reachables) (map entityVal reacheds))
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
