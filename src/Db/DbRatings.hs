@@ -1,4 +1,4 @@
-module Db.DbUtil where
+module Db.DbRatings where
 
 import           Control.Arrow ((&&&))
 import           Data.Function (on)

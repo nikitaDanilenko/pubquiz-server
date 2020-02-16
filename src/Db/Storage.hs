@@ -31,7 +31,7 @@ import           Db.DbTypes                  (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap))
-import           Db.DbUtil                   (Ratings, ratingsFromDb)
+import           Db.DbRatings                   (Ratings, ratingsFromDb)
 import           Labels                      (Labels (..), mkLabels)
 
 type Statement m k = ReaderT SqlBackend m k
