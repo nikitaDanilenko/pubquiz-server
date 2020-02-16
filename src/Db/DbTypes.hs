@@ -12,6 +12,7 @@ newtype TeamNumber =
 
 newtype RoundNumber =
   RoundNumber Natural
+    deriving (Eq, Ord)
 
 newtype Code =
   Code String
