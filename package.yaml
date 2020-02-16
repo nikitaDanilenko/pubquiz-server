@@ -47,6 +47,7 @@ dependencies:
 - path-pieces
 - transformers
 - resourcet
+- aeson
 
 
 library:
