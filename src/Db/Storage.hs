@@ -19,18 +19,19 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                               DbTeamNameCode (dbTeamNameCodeQuizId, dbTeamNameCodeTeamNumber),
                                               DbUser (dbUserUserName),
-                                              EntityField (..), insertOrReplace,
-                                              mkDbLabels, mkDbQuiz,
+                                              EntityField (..),
+                                              dbLabelsToLabels, insertOrReplace,
+                                              labelsToDbLabels, mkDbQuiz,
                                               mkDbRoundReachable,
                                               mkDbRoundReached,
-                                              mkDbTeamNameCode,
-                                              mkFallbackLabels, mkFilter,
+                                              mkDbTeamNameCode, mkFilter,
                                               runSql)
 import           Db.DbRatings                (Ratings, ratingsFromDb)
 import           Db.DbTypes                  (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
-                                              Unwrappable (unwrap, wrap))
+                                              Unwrappable (unwrap, wrap),
+                                              fallbackLabels)
 import           Labels                      (Labels (..), mkLabels)
 
 type Statement m k = ReaderT SqlBackend m k
@@ -55,11 +56,11 @@ setTeamStatement ::
      MonadIO m => DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> Statement m (Key DbTeamNameCode)
 setTeamStatement qid tn c tname a = repsertTeamNameCode (mkDbTeamNameCode qid tn c tname a)
 
-setLabels :: DbLabels -> IO (Key DbLabels)
-setLabels = runSql . setLabelsStatement
+setLabels :: DbQuizId -> Labels -> IO (Key DbLabels)
+setLabels qid lbls = runSql (setLabelsStatement qid lbls)
 
-setLabelsStatement :: MonadIO m => DbLabels -> Statement m (Key DbLabels)
-setLabelsStatement = repsertLabels
+setLabelsStatement :: MonadIO m => DbQuizId -> Labels -> Statement m (Key DbLabels)
+setLabelsStatement qid lbls = repsertLabels (labelsToDbLabels qid lbls)
 
 createQuiz :: Place -> QuizDate -> QuizName -> IO (Key DbQuiz)
 createQuiz p d n = runSql (createQuizStatement p d n)
@@ -103,11 +104,12 @@ findRatingsStatement qid = do
   reacheds <- selectList [DbRoundReachedQuizId ==. qid] []
   return (ratingsFromDb (map entityVal reachables) (map entityVal reacheds))
 
-findLabels :: DbQuizId -> IO DbLabels
+findLabels :: DbQuizId -> IO Labels
 findLabels = runSql . findLabelsStatement
 
-findLabelsStatement :: MonadIO m => DbQuizId -> Statement m DbLabels
-findLabelsStatement qid = fmap (maybe (mkFallbackLabels qid) entityVal) (selectFirst [DbLabelsQuizId ==. qid] [])
+findLabelsStatement :: MonadIO m => DbQuizId -> Statement m Labels
+findLabelsStatement qid =
+  fmap (maybe fallbackLabels (dbLabelsToLabels . entityVal)) (selectFirst [DbLabelsQuizId ==. qid] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
