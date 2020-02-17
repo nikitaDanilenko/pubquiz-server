@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE ExplicitForAll             #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
@@ -26,6 +27,7 @@ import           Db.Configuration                      (readConfiguration,
 import           Db.DbTypes                            (Activity,
                                                         BackToChartViewLabel,
                                                         Code, CumulativeLabel,
+                                                        Fallback (fallback),
                                                         IndividualRoundsLabel,
                                                         MainLabel,
                                                         MaxReachableLabel,
@@ -42,8 +44,9 @@ import           Db.DbTypes                            (Activity,
                                                         TeamLabel, TeamName,
                                                         TeamNumber,
                                                         Unwrappable (unwrap),
-                                                        UserHash, UserSalt,
-                                                        ViewPreviousLabel, UserName)
+                                                        UserHash, UserName,
+                                                        UserSalt,
+                                                        ViewPreviousLabel)
 import           Db.Instances
 import           GHC.Natural                           (Natural)
 
@@ -148,6 +151,27 @@ mkDbLabels qid rd t own mr mred btc m op vp c ir pr plcmt plc pts rw =
     (unwrap plc)
     (unwrap pts)
     (unwrap rw)
+
+mkFallbackLabels :: DbQuizId -> DbLabels
+mkFallbackLabels qid = 
+  DbLabels
+    qid
+    (unwrap (fallback :: RoundLabel))
+    (unwrap (fallback :: TeamLabel))
+    (unwrap (fallback :: OwnPointsLabel))
+    (unwrap (fallback :: MaxReachedLabel))
+    (unwrap (fallback :: MaxReachableLabel))
+    (unwrap (fallback :: BackToChartViewLabel))
+    (unwrap (fallback :: MainLabel))
+    (unwrap (fallback :: OwnPageLabel))
+    (unwrap (fallback :: ViewPreviousLabel))
+    (unwrap (fallback :: CumulativeLabel))
+    (unwrap (fallback :: IndividualRoundsLabel))
+    (unwrap (fallback :: ProgressionLabel))
+    (unwrap (fallback :: PlacementLabel))
+    (unwrap (fallback :: PlaceLabel))
+    (unwrap (fallback :: PointsLabel))
+    (unwrap (fallback :: RoundWinnerLabel))
 
 mkDbTeamNameCode :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> DbTeamNameCode
 mkDbTeamNameCode qid tn c tl a = DbTeamNameCode qid (unwrap tn) (unwrap c) (unwrap tl) (unwrap a)
