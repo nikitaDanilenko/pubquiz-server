@@ -2,7 +2,7 @@
 
 module Api.Services.QuizService ( quizServiceInit, QuizService ) where
 
-import Control.Applicative                  ( liftA2 )
+import Control.Applicative                  ( liftA2, liftA3 )
 import Control.Arrow                        ( first )
 import Control.Exception                    ( catch )
 import Control.Exception.Base               ( IOException )
@@ -85,11 +85,7 @@ data QUS = QUS {
   }
 
 getQUS :: Handler b QuizService QUS
-getQUS = do
-  mQuiz <- getPostParam quizParam
-  mUser <- getPostParam userParam
-  mSignature <- getPostParam signatureParam
-  return (QUS mQuiz mUser mSignature)
+getQUS = liftA3 QUS (getPostParam quizParam) (getPostParam userParam) (getPostParam signatureParam)
 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
