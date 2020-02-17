@@ -27,7 +27,6 @@ import           Db.Configuration                      (readConfiguration,
 import           Db.DbTypes                            (Activity,
                                                         BackToChartViewLabel,
                                                         Code, CumulativeLabel,
-                                                        Fallback (fallback),
                                                         IndividualRoundsLabel,
                                                         MainLabel,
                                                         MaxReachableLabel,
@@ -43,12 +42,14 @@ import           Db.DbTypes                            (Activity,
                                                         RoundWinnerLabel,
                                                         TeamLabel, TeamName,
                                                         TeamNumber,
-                                                        Unwrappable (unwrap),
+                                                        Unwrappable (unwrap, wrap),
                                                         UserHash, UserName,
                                                         UserSalt,
                                                         ViewPreviousLabel)
 import           Db.Instances
 import           GHC.Natural                           (Natural)
+import           Labels                                (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, mainLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
+                                                        mkLabels)
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
@@ -113,6 +114,7 @@ DbUser
 mkDbQuiz :: Place -> QuizDate -> QuizName -> Activity -> DbQuiz
 mkDbQuiz p qd qn a = DbQuiz (unwrap p) (unwrap qd) (unwrap qn) (unwrap a)
 
+-- todo: This function will become obsolete, once labels are fully typed.
 mkDbLabels ::
      DbQuizId
   -> RoundLabel
@@ -152,27 +154,6 @@ mkDbLabels qid rd t own mr mred btc m op vp c ir pr plcmt plc pts rw =
     (unwrap pts)
     (unwrap rw)
 
-mkFallbackLabels :: DbQuizId -> DbLabels
-mkFallbackLabels qid = 
-  DbLabels
-    qid
-    (unwrap (fallback :: RoundLabel))
-    (unwrap (fallback :: TeamLabel))
-    (unwrap (fallback :: OwnPointsLabel))
-    (unwrap (fallback :: MaxReachedLabel))
-    (unwrap (fallback :: MaxReachableLabel))
-    (unwrap (fallback :: BackToChartViewLabel))
-    (unwrap (fallback :: MainLabel))
-    (unwrap (fallback :: OwnPageLabel))
-    (unwrap (fallback :: ViewPreviousLabel))
-    (unwrap (fallback :: CumulativeLabel))
-    (unwrap (fallback :: IndividualRoundsLabel))
-    (unwrap (fallback :: ProgressionLabel))
-    (unwrap (fallback :: PlacementLabel))
-    (unwrap (fallback :: PlaceLabel))
-    (unwrap (fallback :: PointsLabel))
-    (unwrap (fallback :: RoundWinnerLabel))
-
 mkDbTeamNameCode :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> DbTeamNameCode
 mkDbTeamNameCode qid tn c tl a = DbTeamNameCode qid (unwrap tn) (unwrap c) (unwrap tl) (unwrap a)
 
@@ -184,6 +165,48 @@ mkDbRoundReached qid rn tn = DbRoundReached qid (unwrap rn) (unwrap tn)
 
 mkDbUser :: UserName -> UserSalt -> UserHash -> DbUser
 mkDbUser n s h = DbUser (unwrap n) (unwrap s) (unwrap h)
+
+dbLabelsToLabels :: DbLabels -> Labels
+dbLabelsToLabels dbLabels =
+  mkLabels
+    (dbLabelsRoundLabel dbLabels)
+    (dbLabelsTeamLabel dbLabels)
+    (dbLabelsOwnPointsLabel dbLabels)
+    (dbLabelsMaxReachedLabel dbLabels)
+    (dbLabelsMaxReachableLabel dbLabels)
+    (dbLabelsBackToChartView dbLabels)
+    (dbLabelsMainLabel dbLabels)
+    (dbLabelsOwnPageLabel dbLabels)
+    (dbLabelsViewPrevious dbLabels)
+    (dbLabelsCumulativeLabel dbLabels)
+    (dbLabelsIndividualRoundsLabel dbLabels)
+    (dbLabelsProgressionLabel dbLabels)
+    (dbLabelsPlacementLabel dbLabels)
+    (dbLabelsPlaceLabel dbLabels)
+    (dbLabelsPointsLabel dbLabels)
+    (dbLabelsRoundWinnerLabel dbLabels)
+
+-- todo: wrapping will become obsolete once labels are fully typed.
+labelsToDbLabels :: DbQuizId -> Labels -> DbLabels
+labelsToDbLabels qid lbls =
+  mkDbLabels
+    qid
+    (wrap (roundLabel lbls))
+    (wrap (teamLabel lbls))
+    (wrap (ownPointsLabel lbls))
+    (wrap (maxReachedLabel lbls))
+    (wrap (maxReachableLabel lbls))
+    (wrap (backToChartView lbls))
+    (wrap (mainLabel lbls))
+    (wrap (ownPageLabel lbls))
+    (wrap (viewPrevious lbls))
+    (wrap (cumulativeLabel lbls))
+    (wrap (individualRoundsLabel lbls))
+    (wrap (progressionLabel lbls))
+    (wrap (placementLabel lbls))
+    (wrap (placeLabel lbls))
+    (wrap (pointsLabel lbls))
+    (wrap (roundWinnerLabel lbls))
 
 runSql :: ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> IO a
 runSql action =
