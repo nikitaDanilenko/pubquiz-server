@@ -7,7 +7,6 @@ module Db.DbTypes where
 
 import           Data.Aeson         (FromJSON, ToJSON)
 import           Data.Time.Calendar (Day)
-import           Db.Connection      (DbLabels)
 import           GHC.Generics       (Generic)
 import           GHC.Natural        (Natural)
 import           Labels             (Labels)
@@ -342,49 +341,49 @@ instance FromJSON UserSalt
 instance FromJSON UserHash
 
 instance Fallback RoundLabel where
-  fallback = "Runde"
+  fallback = wrap "Runde"
 
 instance Fallback TeamLabel where
-  fallback = "Gruppe"
+  fallback = wrap "Gruppe"
 
 instance Fallback OwnPointsLabel where
-  fallback = "Erreichte Punkte"
+  fallback = wrap "Erreichte Punkte"
 
 instance Fallback MaxReachedLabel where
-  fallback = "Erreichte Höchstpunktzahl"
+  fallback = wrap "Erreichte Höchstpunktzahl"
 
 instance Fallback MaxReachableLabel where
-  fallback = "Erreichbare Punkte"
+  fallback = wrap "Erreichbare Punkte"
 
 instance Fallback BackToChartViewLabel where
-  fallback = "Gesamtansicht"
+  fallback = wrap "Gesamtansicht"
 
 instance Fallback MainLabel where
-  fallback = "Pubquiz"
+  fallback = wrap "Pubquiz"
 
 instance Fallback OwnPageLabel where
-  fallback = "Eigene Punkte"
+  fallback = wrap "Eigene Punkte"
 
 instance Fallback ViewPreviousLabel where
-  fallback = "Alle Quizzes"
+  fallback = wrap "Alle Quizzes"
 
 instance Fallback CumulativeLabel where
-  fallback = "Gesamtpunkte"
+  fallback = wrap "Gesamtpunkte"
 
 instance Fallback IndividualRoundsLabel where
-  fallback = "Punkte pro Runde"
+  fallback = wrap "Punkte pro Runde"
 
 instance Fallback ProgressionLabel where
-  fallback = "Verlauf"
+  fallback = wrap "Verlauf"
 
 instance Fallback PlacementLabel where
-  fallback = "Platzierungen"
+  fallback = wrap "Platzierungen"
 
 instance Fallback PlaceLabel where
-  fallback = "Platz"
+  fallback = wrap "Platz"
 
 instance Fallback PointsLabel where
-  fallback = "Punkte"
+  fallback = wrap "Punkte"
 
 instance Fallback RoundWinnerLabel where
-  fallback = "Rundensieger"
+  fallback = wrap "Rundensieger"
