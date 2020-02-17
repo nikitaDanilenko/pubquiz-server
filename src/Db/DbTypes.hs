@@ -1,18 +1,22 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 
 module Db.DbTypes where
 
+import           Data.Aeson         (FromJSON, ToJSON)
 import           Data.Time.Calendar (Day)
+import           GHC.Generics       (Generic)
 import           GHC.Natural        (Natural)
 
 newtype TeamNumber =
   TeamNumber Natural
+  deriving (Generic)
 
 newtype RoundNumber =
   RoundNumber Natural
-    deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 newtype Code =
   Code String
@@ -203,3 +207,11 @@ instance Unwrappable UserSalt String where
 instance Unwrappable UserHash String where
   unwrap (UserHash s) = s
   wrap = UserHash
+
+instance ToJSON TeamNumber
+
+instance ToJSON RoundNumber
+
+instance FromJSON TeamNumber
+
+instance FromJSON RoundNumber
