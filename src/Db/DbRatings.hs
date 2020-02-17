@@ -49,5 +49,3 @@ ratingsFromDb reachables reacheds = Ratings (toList (intersectionWith RoundRatin
            ((RoundNumber . dbRoundReachedRoundNumber . head) &&&
             map (uncurry TeamRating . ((TeamNumber . dbRoundReachedTeamNumber) &&& dbRoundReachedPoints)))
            (groupBy ((==) `on` dbRoundReachedRoundNumber) (sortOn dbRoundReachedRoundNumber reacheds)))
-    mkRoundNumber = undefined
-    mkRoundRating = undefined
