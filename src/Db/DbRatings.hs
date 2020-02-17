@@ -10,7 +10,7 @@ import           Data.Map      (fromList, intersectionWith, toList)
 import           Data.Text     (pack)
 import           Db.Connection (DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
                                 DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber))
-import           Db.DbTypes    (RoundNumber (RoundNumber),
+import           General.Types (RoundNumber (RoundNumber),
                                 TeamNumber (TeamNumber))
 import           GHC.Generics
 

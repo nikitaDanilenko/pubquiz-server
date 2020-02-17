@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Pages.GeneratePage ( createWith ) where
 
 import Control.Arrow          ( second, (&&&), (***), (>>>) )
@@ -13,7 +14,7 @@ import System.Environment     ( getArgs )
 
 import Prelude hiding         ( lookup, div )
 
-import Labels                 ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
+import General.Labels         ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel, unwrapped,
@@ -23,6 +24,7 @@ import Pages.HtmlUtil         ( centerDivV, h1With, tableCell, tableRow, headerC
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, encoding, tableRowWith )
 import Pages.RoundsParser     ( parseCodesWithMaybeNames )
+import General.Types          ( Unwrappable (unwrap) )
 
 import Pages.PointComputation
 
@@ -53,13 +55,13 @@ pointPage safeLabels color team =
       taggedV "head" 
               (intercalate "\n" [
                 encoding, 
-                taggedV "title" (concat [mainLabel labels, ": ", ownPageLabel labels]) ++ cssPath]) ++
+                taggedV "title" (concat [unwrap $ mainLabel labels, ": ", unwrap $ ownPageLabel labels]) ++ cssPath]) ++
       taggedV "body" (
         intercalate "\n" [
         centerDivV (h1With coloured 
-                           (concat [mkTeamName Safe (teamLabel labels) (teamKey team), ": ", mkSum ps])),
+                           (concat [mkTeamName Safe (unwrap $ teamLabel labels) (teamKey team), ": ", mkSum ps])),
           centerDivV (mkTable labels ps),
-          centerDivV (mkButton (backToChartView labels))
+          centerDivV (mkButton (unwrap $ backToChartView labels))
         ]
       )
     )
@@ -79,10 +81,10 @@ mkTableLine rating =
 tableHeader :: Labels -> String
 tableHeader labels = 
   tableRowWith "class=tableHeader" (concatMap headerCell [
-    roundLabel labels, 
-    ownPointsLabel labels, 
-    maxReachedLabel labels, 
-    maxReachableLabel labels
+    unwrap $ roundLabel labels, 
+    unwrap $ ownPointsLabel labels, 
+    unwrap $ maxReachedLabel labels, 
+    unwrap $ maxReachableLabel labels
     ]
   )
 
@@ -197,14 +199,14 @@ mkChartsWith labels rounds teams colors =
             "};",
             "",
             "window.onload = function() {",
-            mkChartEntry Bar barChartLabel (cumulativeLabel labels) cumulativeData,
-            mkChartEntry Line lineChartLabel (progressionLabel labels) cumulativeData,
-            mkChartEntry Bar perRoundChartLabel (individualRoundsLabel labels) perRoundData,
+            mkChartEntry Bar barChartLabel (unwrap $ cumulativeLabel labels) cumulativeData,
+            mkChartEntry Line lineChartLabel (unwrap $ progressionLabel labels) cumulativeData,
+            mkChartEntry Bar perRoundChartLabel (unwrap $ individualRoundsLabel labels) perRoundData,
             "};"
             ]
           )
-  where lbls = roundList (roundLabel labels) rounds
-        mkDataSet f = intercalate "," (zipWith (f (roundLabel labels) (teamLabel labels))
+  where lbls = roundList (unwrap $ roundLabel labels) rounds
+        mkDataSet f = intercalate "," (zipWith (f (unwrap $ roundLabel labels) (unwrap $ teamLabel labels))
                                                teams 
                                                colors)
         cumulativeData = "cumulativeData"
@@ -218,7 +220,7 @@ graphPage safeLbls labels rounds teams winners colors = unlines [
              taggedV "head"
                      (unlines [
                         encoding,
-                        tagged "title" (mainLabel safeLabels),
+                        tagged "title" (unwrap $ mainLabel safeLabels),
                         taggedWith "src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js'"
                                    "script"
                                    "",
@@ -229,23 +231,23 @@ graphPage safeLbls labels rounds teams winners colors = unlines [
                      (unlines [
                         taggedWith "id = 'mainTitle'"
                                    "div"
-                                   (mainLabel safeLabels),
+                                   (unwrap $ mainLabel safeLabels),
                         taggedWith "id = 'top3'"
                                    "div"
                                    (unlines[
-                                             tagged "label" (placementLabel safeLabels),
-                                             mkTopDownList (teamLabel safeLabels)
-                                                           (placeLabel safeLabels)
-                                                           (pointsLabel safeLabels)
+                                             tagged "label" (unwrap $ placementLabel safeLabels),
+                                             mkTopDownList (unwrap $ teamLabel safeLabels)
+                                                           (unwrap $ placeLabel safeLabels)
+                                                           (unwrap $ pointsLabel safeLabels)
                                                            teams
                                             ]
                                    ),
                         taggedWith "id = 'winners'"
                                    "div"
                                    (unlines [
-                                      tagged "label" (roundWinnerLabel safeLabels),
-                                      mkWinnerList (roundLabel safeLabels) 
-                                                   (teamLabel safeLabels) 
+                                      tagged "label" (unwrap $ roundWinnerLabel safeLabels),
+                                      mkWinnerList (unwrap $ roundLabel safeLabels) 
+                                                   (unwrap $ teamLabel safeLabels) 
                                                    winners
                                       ]
                                     ),
@@ -262,7 +264,7 @@ graphPage safeLbls labels rounds teams winners colors = unlines [
                                     ),
                         taggedWith "id = 'allQuizzes'"
                                    "div"
-                                   (mkButtonTo "../index.html" (viewPrevious safeLabels))
+                                   (mkButtonTo "../index.html" (unwrap $ viewPrevious safeLabels))
                       ]
                      ) 
             ]

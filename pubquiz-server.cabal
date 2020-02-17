@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cefa253914f2528d0536541bb80b37f58980b8bcd1a4564b6a9170db65d126b8
+-- hash: 8d046c8c3491a001c686d38cf9eddb6ebdbe734d42b9f040b9f07c10d11d224b
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -41,10 +41,10 @@ library
       Db.Configuration
       Db.Connection
       Db.DbRatings
-      Db.DbTypes
       Db.Instances
       Db.Storage
-      Labels
+      General.Labels
+      General.Types
       Main
       Pages.Colours
       Pages.GeneratePage
@@ -107,10 +107,10 @@ executable pubquiz-server-exe
       Db.Configuration
       Db.Connection
       Db.DbRatings
-      Db.DbTypes
       Db.Instances
       Db.Storage
-      Labels
+      General.Labels
+      General.Types
       Pages.Colours
       Pages.GeneratePage
       Pages.HtmlUtil

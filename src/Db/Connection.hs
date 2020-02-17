@@ -24,7 +24,7 @@ import           Database.Persist.Postgresql
 import           Database.Persist.TH
 import           Db.Configuration                      (readConfiguration,
                                                         toConnection)
-import           Db.DbTypes                            (Activity,
+import           General.Types                         (Activity,
                                                         BackToChartViewLabel,
                                                         Code, CumulativeLabel,
                                                         IndividualRoundsLabel,
@@ -48,7 +48,7 @@ import           Db.DbTypes                            (Activity,
                                                         ViewPreviousLabel)
 import           Db.Instances
 import           GHC.Natural                           (Natural)
-import           Labels                                (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, mainLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
+import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, mainLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
                                                         mkLabels)
 
 share
@@ -186,27 +186,26 @@ dbLabelsToLabels dbLabels =
     (dbLabelsPointsLabel dbLabels)
     (dbLabelsRoundWinnerLabel dbLabels)
 
--- todo: wrapping will become obsolete once labels are fully typed.
 labelsToDbLabels :: DbQuizId -> Labels -> DbLabels
 labelsToDbLabels qid lbls =
   mkDbLabels
     qid
-    (wrap (roundLabel lbls))
-    (wrap (teamLabel lbls))
-    (wrap (ownPointsLabel lbls))
-    (wrap (maxReachedLabel lbls))
-    (wrap (maxReachableLabel lbls))
-    (wrap (backToChartView lbls))
-    (wrap (mainLabel lbls))
-    (wrap (ownPageLabel lbls))
-    (wrap (viewPrevious lbls))
-    (wrap (cumulativeLabel lbls))
-    (wrap (individualRoundsLabel lbls))
-    (wrap (progressionLabel lbls))
-    (wrap (placementLabel lbls))
-    (wrap (placeLabel lbls))
-    (wrap (pointsLabel lbls))
-    (wrap (roundWinnerLabel lbls))
+    (roundLabel lbls)
+    (teamLabel lbls)
+    (ownPointsLabel lbls)
+    (maxReachedLabel lbls)
+    (maxReachableLabel lbls)
+    (backToChartView lbls)
+    (mainLabel lbls)
+    (ownPageLabel lbls)
+    (viewPrevious lbls)
+    (cumulativeLabel lbls)
+    (individualRoundsLabel lbls)
+    (progressionLabel lbls)
+    (placementLabel lbls)
+    (placeLabel lbls)
+    (pointsLabel lbls)
+    (roundWinnerLabel lbls)
 
 runSql :: ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> IO a
 runSql action =

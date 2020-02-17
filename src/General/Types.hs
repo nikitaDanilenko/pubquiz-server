@@ -3,13 +3,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 
-module Db.DbTypes where
+module General.Types where
 
 import           Data.Aeson         (FromJSON, ToJSON)
 import           Data.Time.Calendar (Day)
 import           GHC.Generics       (Generic)
 import           GHC.Natural        (Natural)
-import           Labels             (Labels, mkLabels)
 
 newtype TeamNumber =
   TeamNumber Natural
@@ -388,22 +387,3 @@ instance Fallback PointsLabel where
 instance Fallback RoundWinnerLabel where
   fallback = wrap "Rundensieger"
 
-fallbackLabels :: Labels
-fallbackLabels =
-  mkLabels
-    (unwrap (fallback :: RoundLabel))
-    (unwrap (fallback :: TeamLabel))
-    (unwrap (fallback :: OwnPointsLabel))
-    (unwrap (fallback :: MaxReachedLabel))
-    (unwrap (fallback :: MaxReachableLabel))
-    (unwrap (fallback :: BackToChartViewLabel))
-    (unwrap (fallback :: MainLabel))
-    (unwrap (fallback :: OwnPageLabel))
-    (unwrap (fallback :: ViewPreviousLabel))
-    (unwrap (fallback :: CumulativeLabel))
-    (unwrap (fallback :: IndividualRoundsLabel))
-    (unwrap (fallback :: ProgressionLabel))
-    (unwrap (fallback :: PlacementLabel))
-    (unwrap (fallback :: PlaceLabel))
-    (unwrap (fallback :: PointsLabel))
-    (unwrap (fallback :: RoundWinnerLabel))

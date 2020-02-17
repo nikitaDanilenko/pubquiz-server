@@ -27,12 +27,11 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbTeamNameCode, mkFilter,
                                               runSql)
 import           Db.DbRatings                (Ratings, ratingsFromDb)
-import           Db.DbTypes                  (Activity (..), Code, Place,
+import           General.Types               (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
-                                              Unwrappable (unwrap, wrap),
-                                              fallbackLabels)
-import           Labels                      (Labels (..), mkLabels)
+                                              Unwrappable (unwrap, wrap))
+import           General.Labels              (Labels (..), mkLabels, fallbackLabels)
 
 type Statement m k = ReaderT SqlBackend m k
 

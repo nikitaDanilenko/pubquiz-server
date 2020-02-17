@@ -6,8 +6,9 @@ import Data.Ord         ( comparing )
 import System.Directory ( getDirectoryContents, doesFileExist )
 
 import Constants        ( quizzesFolderIO, addSeparator, labelsFile )
-import Labels           ( Labels, mainLabel, defaultLabels )
+import General.Labels   ( Labels, mainLabel, defaultLabels )
 import Pages.HtmlUtil   ( tagged, taggedV, encoding, pageHeader )
+import General.Types    ( Unwrappable (unwrap) )
 
 import Prelude hiding   ( div )
 
@@ -45,7 +46,7 @@ mkHtml cls =
     pageHeader ++
     taggedV "html" (
            taggedV "head" (taggedV "title" "Quizzes" ++ intercalate "\n" [encoding, cssPath]) ++
-           intercalate "\n" (map (\(c, l) -> tagged "div" (mkButton (mainLabel l) c)) cls)
+           intercalate "\n" (map (\(c, l) -> tagged "div" (mkButton (unwrap $ mainLabel l) c)) cls)
     )
 
 mkButton :: String -> String -> String

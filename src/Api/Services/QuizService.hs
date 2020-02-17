@@ -31,10 +31,11 @@ import Constants                            ( quizzesFolderIO, locked, addSepara
                                               roundWinnerParam, labelUpdate, roundParam, teamParam )
 import Pages.GeneratePage                   ( createWith )
 import Pages.QuizzesFrontpage               ( createFrontPage )
-import Labels                               ( Labels, teamLabel, showAsBS, parameters, 
+import General.Labels                       ( Labels, teamLabel, showAsBS, parameters, 
                                               defaultLabels )
 import Sheet.SheetMaker                     ( createSheetWith, Ending )
 import Utils                                ( (+>), randomDistinctAlphaNumeric, randomDistinctWithAdditional )
+import General.Types                        ( Unwrappable (unwrap) )
 
 data QuizService = QuizService
 
@@ -42,7 +43,7 @@ quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes = [
     "all" +> method GET sendAvailable,
     "getQuizData" +> method GET getSingleQuizData,
-    "getQuizLabels" +> method GET getSingleQuizLabels,
+    "getQuizLabels" +> method GET getSingleQuizLabelsLegacy,
     "updateQuizSettings" +> method POST updateQuizSettings,
     "update" +> method POST updateQuiz,
     "lock" +> method POST lockQuiz,
@@ -68,8 +69,8 @@ getSingleQuizData = getSingleWithData perQuiz where
                   >>= maybe (modifyResponse (setResponseCodePlain 404)) 
                             (\c -> writeBS c >> modifyResponse (setResponseCodePlain 200))
         
-getSingleQuizLabels :: Handler b QuizService ()
-getSingleQuizLabels = getSingleWithData perQuiz where
+getSingleQuizLabelsLegacy :: Handler b QuizService ()
+getSingleQuizLabelsLegacy = getSingleWithData perQuiz where
 
   perQuiz :: B.ByteString -> Handler b QuizService ()
   perQuiz q = do
@@ -202,7 +203,7 @@ fetchRoundsAndLabelsAndMakeSheet name mRounds endings = do
   liftIO (do serverPath <- serverQuizPathIO
              let fullServerPath = addSeparator [server, serverPath]
                  uName = B.unpack name
-             createSheetWith (teamLabel lbls) rs uName fullServerPath endings
+             createSheetWith (unwrap $ teamLabel lbls) rs uName fullServerPath endings
              updateWholeQuiz name (Left (B.pack (unwords endings)))
              createFrontPage)
 
