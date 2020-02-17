@@ -12,8 +12,6 @@ import           Database.Persist            (Entity, Key, checkUnique,
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Data.List                   (intercalate)
-import           Data.Maybe                  (catMaybes)
-import           Data.Ord                    (comparing)
 import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                               DbQuizId,
@@ -25,13 +23,14 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbLabels, mkDbQuiz,
                                               mkDbRoundReachable,
                                               mkDbRoundReached,
-                                              mkDbTeamNameCode, mkFilter,
+                                              mkDbTeamNameCode,
+                                              mkFallbackLabels, mkFilter,
                                               runSql)
+import           Db.DbRatings                (Ratings, ratingsFromDb)
 import           Db.DbTypes                  (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap))
-import           Db.DbRatings                   (Ratings, ratingsFromDb)
 import           Labels                      (Labels (..), mkLabels)
 
 type Statement m k = ReaderT SqlBackend m k
@@ -56,30 +55,11 @@ setTeamStatement ::
      MonadIO m => DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> Statement m (Key DbTeamNameCode)
 setTeamStatement qid tn c tname a = repsertTeamNameCode (mkDbTeamNameCode qid tn c tname a)
 
-setLabels :: DbQuizId -> Labels -> IO (Key DbLabels)
-setLabels qid lbls = runSql (setLabelsStatement qid lbls)
+setLabels :: DbLabels -> IO (Key DbLabels)
+setLabels = runSql . setLabelsStatement
 
-setLabelsStatement :: MonadIO m => DbQuizId -> Labels -> Statement m (Key DbLabels)
-setLabelsStatement qid lbls =
-  repsertLabels
-    (mkDbLabels
-       qid
-       (wrap (roundLabel lbls))
-       (wrap (teamLabel lbls))
-       (wrap (ownPointsLabel lbls))
-       (wrap (maxReachedLabel lbls))
-       (wrap (maxReachableLabel lbls))
-       (wrap (backToChartView lbls))
-       (wrap (mainLabel lbls))
-       (wrap (ownPageLabel lbls))
-       (wrap (viewPrevious lbls))
-       (wrap (cumulativeLabel lbls))
-       (wrap (individualRoundsLabel lbls))
-       (wrap (progressionLabel lbls))
-       (wrap (placementLabel lbls))
-       (wrap (placeLabel lbls))
-       (wrap (pointsLabel lbls))
-       (wrap (roundWinnerLabel lbls)))
+setLabelsStatement :: MonadIO m => DbLabels -> Statement m (Key DbLabels)
+setLabelsStatement = repsertLabels
 
 createQuiz :: Place -> QuizDate -> QuizName -> IO (Key DbQuiz)
 createQuiz p d n = runSql (createQuizStatement p d n)
@@ -122,6 +102,12 @@ findRatingsStatement qid = do
   reachables <- selectList [DbRoundReachableQuizId ==. qid] []
   reacheds <- selectList [DbRoundReachedQuizId ==. qid] []
   return (ratingsFromDb (map entityVal reachables) (map entityVal reacheds))
+
+findLabels :: DbQuizId -> IO DbLabels
+findLabels = runSql . findLabelsStatement
+
+findLabelsStatement :: MonadIO m => DbQuizId -> Statement m DbLabels
+findLabelsStatement qid = fmap (maybe (mkFallbackLabels qid) entityVal) (selectFirst [DbLabelsQuizId ==. qid] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
