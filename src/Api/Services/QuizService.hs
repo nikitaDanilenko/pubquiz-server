@@ -13,6 +13,7 @@ import           Control.Exception.Base (IOException)
 import           Control.Monad          (filterM)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8  as B
+import qualified Data.ByteString.Lazy   as L
 import           Data.Maybe             (fromMaybe, maybe)
 import           Snap.Core              (Method (GET, POST), getPostParam,
                                          getQueryParam, method, modifyResponse,
@@ -24,7 +25,8 @@ import           System.Directory       (createDirectory, doesDirectoryExist,
                                          doesFileExist, getDirectoryContents)
 
 import           Api.Services.HashCheck (authenticate, failIfUnverified)
-import           Api.Services.SnapUtil  (setResponseCodePlain)
+import           Api.Services.SnapUtil  (setResponseCodeJSON,
+                                         setResponseCodePlain)
 import           Constants              (actionParam, addSeparator,
                                          backToChartViewParam, createQuiz,
                                          cumulativeParam, individualParam,
@@ -39,9 +41,9 @@ import           Constants              (actionParam, addSeparator,
                                          roundsFile, roundsNumberParam, server,
                                          serverQuizPathIO, signatureParam,
                                          teamParam, userParam, viewQuizzesParam)
-import           Data.Aeson             (encode)
+import           Data.Aeson             (decode, encode)
 import           Db.DbConversion        (QuizInfo, mkQuizInfo)
-import           Db.Storage             (findAllActiveQuizzes)
+import           Db.Storage             (findAllActiveQuizzes, findLabels)
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
 import           General.Types          (Unwrappable (unwrap))
@@ -56,9 +58,8 @@ data QuizService =
 
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
--- todo: adjust routes after legacy removal
   [ "all" +> method GET sendAvailableLegacy
-  , "allNew" +> method GET sendAvailableActive  
+  , "allNew" +> method GET sendAvailableActive
   , "getQuizData" +> method GET getSingleQuizData
   , "getQuizLabels" +> method GET getSingleQuizLabelsLegacy
   , "updateQuizSettings" +> method POST updateQuizSettings
@@ -67,6 +68,9 @@ quizRoutes =
   , "new" +> method POST newQuiz
   ]
 
+-- todo: switch all writeBS uses to writeLBS
+-- todo: adjust routes after legacy removal
+-- todo: remove all legacy functions
 -- Finds the list of unlocked quizzes and returns it in bulk.
 sendAvailableLegacy :: Handler b QuizService ()
 sendAvailableLegacy = do
@@ -78,8 +82,9 @@ sendAvailableActive :: Handler b QuizService ()
 sendAvailableActive = do
   active <- liftIO getActiveQuizzes
   writeLBS (encode active)
-  modifyResponse (setResponseCodePlain 200)
+  modifyResponse (setResponseCodeJSON 200)
 
+-- todo: remove or adjust
 getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
 getSingleWithData fetchAction =
   getQueryParam quizParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
@@ -101,6 +106,22 @@ getSingleQuizLabelsLegacy = getSingleWithData perQuiz
       let response = B.intercalate "\n" (map B.pack (parameters lbls))
       writeBS response
       modifyResponse (setResponseCodePlain 200)
+
+getSingleWithDataJSON :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
+getSingleWithDataJSON fetchAction =
+  getQueryParam quizParam >>= maybe (modifyResponse (setResponseCodeJSON 400)) fetchAction
+
+getSingleQuizLabels :: Handler b QuizService ()
+getSingleQuizLabels = getSingleWithDataJSON perQuiz
+  where
+    perQuiz :: B.ByteString -> Handler b QuizService ()
+    perQuiz q =
+      case decode (L.fromStrict q) of
+        Nothing -> writeBS (B.unwords [B.pack "Invalid quiz id:", q]) >> modifyResponse (setResponseCodeJSON 400)
+        Just qid -> do
+          lbls <- liftIO (findLabels qid)
+          writeLBS (encode lbls)
+          modifyResponse (setResponseCodeJSON 200)
 
 data QUS =
   QUS
