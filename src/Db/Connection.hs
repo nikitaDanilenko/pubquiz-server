@@ -206,7 +206,7 @@ labelsToDbLabels qid lbls =
     (placeLabel lbls)
     (pointsLabel lbls)
     (roundWinnerLabel lbls)
-
+-- todo: either remove logging or pipe it directly into a log file
 runSql :: ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> IO a
 runSql action =
   readConfiguration >>= \config ->
