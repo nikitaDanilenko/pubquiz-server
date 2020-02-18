@@ -89,11 +89,11 @@ lockQuiz p d n = runSql (lockQuizStatement p d n)
 lockQuizStatement :: MonadIO m => Place -> QuizDate -> QuizName -> Statement m (Key DbQuiz)
 lockQuizStatement p d n = repsertQuiz (mkDbQuiz p d n Inactive)
 
-findAllQuizzes :: IO [Entity DbQuiz]
-findAllQuizzes = runSql findAllQuizzesStatement
+findAllActiveQuizzes :: IO [Entity DbQuiz]
+findAllActiveQuizzes = runSql findAllActiveQuizzesStatement
 
-findAllQuizzesStatement :: MonadIO m => Statement m [Entity DbQuiz]
-findAllQuizzesStatement = selectList [] []
+findAllActiveQuizzesStatement :: MonadIO m => Statement m [Entity DbQuiz]
+findAllActiveQuizzesStatement = selectList [DbQuizActive ==. True] []
 
 findRatings :: DbQuizId -> IO Ratings
 findRatings = runSql . findRatingsStatement
