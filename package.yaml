@@ -48,6 +48,7 @@ dependencies:
 - transformers
 - resourcet
 - aeson
+- case-insensitive
 
 
 library:
