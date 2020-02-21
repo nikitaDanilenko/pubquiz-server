@@ -49,6 +49,7 @@ dependencies:
 - resourcet
 - aeson
 - case-insensitive
+- elm-bridge
 
 
 library:
