@@ -6,6 +6,8 @@
 module General.Types where
 
 import           Data.Aeson         (FromJSON, ToJSON)
+import           Data.Text          (Text)
+import qualified Data.Text          as T
 import           Data.Time.Calendar (Day)
 import           GHC.Generics       (Generic)
 import           GHC.Natural        (Natural)
@@ -19,19 +21,19 @@ newtype RoundNumber =
   deriving (Eq, Ord, Generic)
 
 newtype Code =
-  Code String
+  Code Text
   deriving (Generic)
 
 newtype TeamName =
-  TeamName String
+  TeamName Text
   deriving (Generic)
 
 newtype QuizName =
-  QuizName String
+  QuizName Text
   deriving (Generic)
 
 newtype Place =
-  Place String
+  Place Text
   deriving (Generic)
 
 newtype QuizDate =
@@ -43,79 +45,79 @@ data Activity
   | Inactive
 
 newtype RoundLabel =
-  RoundLabel String
+  RoundLabel Text
   deriving (Generic)
 
 newtype TeamLabel =
-  TeamLabel String
+  TeamLabel Text
   deriving (Generic)
 
 newtype OwnPointsLabel =
-  OwnPointsLabel String
+  OwnPointsLabel Text
   deriving (Generic)
 
 newtype MaxReachedLabel =
-  MaxReachedLabel String
+  MaxReachedLabel Text
   deriving (Generic)
 
 newtype MaxReachableLabel =
-  MaxReachableLabel String
+  MaxReachableLabel Text
   deriving (Generic)
 
 newtype BackToChartViewLabel =
-  BackToChartViewLabel String
+  BackToChartViewLabel Text
   deriving (Generic)
 
 newtype MainLabel =
-  MainLabel String
+  MainLabel Text
   deriving (Generic)
 
 newtype OwnPageLabel =
-  OwnPageLabel String
+  OwnPageLabel Text
   deriving (Generic)
 
 newtype ViewPreviousLabel =
-  ViewPreviousLabel String
+  ViewPreviousLabel Text
   deriving (Generic)
 
 newtype CumulativeLabel =
-  CumulativeLabel String
+  CumulativeLabel Text
   deriving (Generic)
 
 newtype IndividualRoundsLabel =
-  IndividualRoundsLabel String
+  IndividualRoundsLabel Text
   deriving (Generic)
 
 newtype ProgressionLabel =
-  ProgressionLabel String
+  ProgressionLabel Text
   deriving (Generic)
 
 newtype PlacementLabel =
-  PlacementLabel String
+  PlacementLabel Text
   deriving (Generic)
 
 newtype PlaceLabel =
-  PlaceLabel String
+  PlaceLabel Text
   deriving (Generic)
 
 newtype PointsLabel =
-  PointsLabel String
+  PointsLabel Text
   deriving (Generic)
 
 newtype RoundWinnerLabel =
-  RoundWinnerLabel String
+  RoundWinnerLabel Text
   deriving (Generic)
 
 newtype UserName =
-  UserName String
+  UserName Text
   deriving (Generic)
 
 newtype UserSalt =
-  UserSalt String
+  UserSalt Text
   deriving (Generic)
 
 newtype UserHash =
-  UserHash String
+  UserHash Text
   deriving (Generic)
 
 class Unwrappable t v where
@@ -133,19 +135,19 @@ instance Unwrappable RoundNumber Natural where
   unwrap (RoundNumber rn) = rn
   wrap = RoundNumber
 
-instance Unwrappable Code String where
+instance Unwrappable Code Text where
   unwrap (Code c) = c
   wrap = Code
 
-instance Unwrappable TeamName String where
+instance Unwrappable TeamName Text where
   unwrap (TeamName tn) = tn
   wrap = TeamName
 
-instance Unwrappable QuizName String where
+instance Unwrappable QuizName Text where
   unwrap (QuizName qn) = qn
   wrap = QuizName
 
-instance Unwrappable Place String where
+instance Unwrappable Place Text where
   unwrap (Place p) = p
   wrap = Place
 
@@ -159,79 +161,79 @@ instance Unwrappable QuizDate Day where
   unwrap (QuizDate d) = d
   wrap = QuizDate
 
-instance Unwrappable RoundLabel String where
+instance Unwrappable RoundLabel Text where
   unwrap (RoundLabel l) = l
   wrap = RoundLabel
 
-instance Unwrappable TeamLabel String where
+instance Unwrappable TeamLabel Text where
   unwrap (TeamLabel l) = l
   wrap = TeamLabel
 
-instance Unwrappable OwnPointsLabel String where
+instance Unwrappable OwnPointsLabel Text where
   unwrap (OwnPointsLabel l) = l
   wrap = OwnPointsLabel
 
-instance Unwrappable MaxReachedLabel String where
+instance Unwrappable MaxReachedLabel Text where
   unwrap (MaxReachedLabel l) = l
   wrap = MaxReachedLabel
 
-instance Unwrappable MaxReachableLabel String where
+instance Unwrappable MaxReachableLabel Text where
   unwrap (MaxReachableLabel l) = l
   wrap = MaxReachableLabel
 
-instance Unwrappable BackToChartViewLabel String where
+instance Unwrappable BackToChartViewLabel Text where
   unwrap (BackToChartViewLabel l) = l
   wrap = BackToChartViewLabel
 
-instance Unwrappable MainLabel String where
+instance Unwrappable MainLabel Text where
   unwrap (MainLabel l) = l
   wrap = MainLabel
 
-instance Unwrappable OwnPageLabel String where
+instance Unwrappable OwnPageLabel Text where
   unwrap (OwnPageLabel l) = l
   wrap = OwnPageLabel
 
-instance Unwrappable ViewPreviousLabel String where
+instance Unwrappable ViewPreviousLabel Text where
   unwrap (ViewPreviousLabel l) = l
   wrap = ViewPreviousLabel
 
-instance Unwrappable CumulativeLabel String where
+instance Unwrappable CumulativeLabel Text where
   unwrap (CumulativeLabel l) = l
   wrap = CumulativeLabel
 
-instance Unwrappable IndividualRoundsLabel String where
+instance Unwrappable IndividualRoundsLabel Text where
   unwrap (IndividualRoundsLabel l) = l
   wrap = IndividualRoundsLabel
 
-instance Unwrappable ProgressionLabel String where
+instance Unwrappable ProgressionLabel Text where
   unwrap (ProgressionLabel l) = l
   wrap = ProgressionLabel
 
-instance Unwrappable PlacementLabel String where
+instance Unwrappable PlacementLabel Text where
   unwrap (PlacementLabel l) = l
   wrap = PlacementLabel
 
-instance Unwrappable PlaceLabel String where
+instance Unwrappable PlaceLabel Text where
   unwrap (PlaceLabel l) = l
   wrap = PlaceLabel
 
-instance Unwrappable PointsLabel String where
+instance Unwrappable PointsLabel Text where
   unwrap (PointsLabel l) = l
   wrap = PointsLabel
 
-instance Unwrappable RoundWinnerLabel String where
+instance Unwrappable RoundWinnerLabel Text where
   unwrap (RoundWinnerLabel l) = l
   wrap = RoundWinnerLabel
 
-instance Unwrappable UserName String where
+instance Unwrappable UserName Text where
   unwrap (UserName s) = s
   wrap = UserName
 
-instance Unwrappable UserSalt String where
+instance Unwrappable UserSalt Text where
   unwrap (UserSalt s) = s
   wrap = UserSalt
 
-instance Unwrappable UserHash String where
+instance Unwrappable UserHash Text where
   unwrap (UserHash s) = s
   wrap = UserHash
 
@@ -340,50 +342,49 @@ instance FromJSON UserSalt
 instance FromJSON UserHash
 
 instance Fallback RoundLabel where
-  fallback = wrap "Runde"
+  fallback = wrap (T.pack "Runde")
 
 instance Fallback TeamLabel where
-  fallback = wrap "Gruppe"
+  fallback = wrap (T.pack "Gruppe")
 
 instance Fallback OwnPointsLabel where
-  fallback = wrap "Erreichte Punkte"
+  fallback = wrap (T.pack "Erreichte Punkte")
 
 instance Fallback MaxReachedLabel where
-  fallback = wrap "Erreichte Höchstpunktzahl"
+  fallback = wrap (T.pack "Erreichte Höchstpunktzahl")
 
 instance Fallback MaxReachableLabel where
-  fallback = wrap "Erreichbare Punkte"
+  fallback = wrap (T.pack "Erreichbare Punkte")
 
 instance Fallback BackToChartViewLabel where
-  fallback = wrap "Gesamtansicht"
+  fallback = wrap (T.pack "Gesamtansicht")
 
 instance Fallback MainLabel where
-  fallback = wrap "Pubquiz"
+  fallback = wrap (T.pack "Pubquiz")
 
 instance Fallback OwnPageLabel where
-  fallback = wrap "Eigene Punkte"
+  fallback = wrap (T.pack "Eigene Punkte")
 
 instance Fallback ViewPreviousLabel where
-  fallback = wrap "Alle Quizzes"
+  fallback = wrap (T.pack "Alle Quizzes")
 
 instance Fallback CumulativeLabel where
-  fallback = wrap "Gesamtpunkte"
+  fallback = wrap (T.pack "Gesamtpunkte")
 
 instance Fallback IndividualRoundsLabel where
-  fallback = wrap "Punkte pro Runde"
+  fallback = wrap (T.pack "Punkte pro Runde")
 
 instance Fallback ProgressionLabel where
-  fallback = wrap "Verlauf"
+  fallback = wrap (T.pack "Verlauf")
 
 instance Fallback PlacementLabel where
-  fallback = wrap "Platzierungen"
+  fallback = wrap (T.pack "Platzierungen")
 
 instance Fallback PlaceLabel where
-  fallback = wrap "Platz"
+  fallback = wrap (T.pack "Platz")
 
 instance Fallback PointsLabel where
-  fallback = wrap "Punkte"
+  fallback = wrap (T.pack "Punkte")
 
 instance Fallback RoundWinnerLabel where
-  fallback = wrap "Rundensieger"
-
+  fallback = wrap (T.pack "Rundensieger")
