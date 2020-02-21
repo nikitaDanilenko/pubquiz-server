@@ -94,6 +94,12 @@ roundsNumberParam = "roundsNumber"
 quizParam :: B.ByteString
 quizParam = "quiz"
 
+quizSettingsParam :: B.ByteString
+quizSettingsParam = "quizSettings"
+
+credentialsParam :: B.ByteString
+credentialsParam = "credentials"
+
 roundsFile :: String
 roundsFile = "rounds.txt"
 
