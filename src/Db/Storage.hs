@@ -12,6 +12,7 @@ import           Database.Persist            (Entity, Key, checkUnique,
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Data.List                   (intercalate)
+import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                               DbQuizId,
@@ -26,7 +27,8 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbRoundReached,
                                               mkDbTeamNameCode, mkFilter,
                                               runSql)
-import           Db.DbConversion             (Ratings, ratingsFromDb)
+import           Db.DbConversion             (QuizPDN (date, name, place),
+                                              Ratings, ratingsFromDb)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -62,14 +64,14 @@ setLabels qid lbls = runSql (setLabelsStatement qid lbls)
 setLabelsStatement :: MonadIO m => DbQuizId -> Labels -> Statement m (Key DbLabels)
 setLabelsStatement qid lbls = repsertLabels (labelsToDbLabels qid lbls)
 
-createQuiz :: Place -> QuizDate -> QuizName -> IO (Key DbQuiz)
-createQuiz p d n = runSql (createQuizStatement p d n)
+createQuiz :: QuizPDN -> IO (Key DbQuiz)
+createQuiz = runSql . createQuizStatement
 
 -- | Creates a statement for the creation of a new, hence active, quiz.
 --   If a quiz with the same place, date, and time exists,
 --   an exception is raised.
-createQuizStatement :: MonadIO m => Place -> QuizDate -> QuizName -> Statement m (Key DbQuiz)
-createQuizStatement p d n = do
+createQuizStatement :: MonadIO m => QuizPDN -> Statement m (Key DbQuiz)
+createQuizStatement ndp = do
   isUnique <- checkUnique newQuiz
   maybe (insert newQuiz) (const (error errorMsg)) isUnique
   where
@@ -79,9 +81,13 @@ createQuizStatement p d n = do
         [ "Quiz with"
         , intercalate
             ","
-            (zipWith (\k v -> concat [k, "=", v]) ["place", "date", "name"] [unwrap p, show (unwrap d :: Day), unwrap n])
+            (zipWith
+               (\k v -> concat [k, "=", v])
+               ["place", "date", "name"]
+               [T.unpack (unwrap p), show (unwrap d :: Day), T.unpack (unwrap n)])
         , "already exists."
         ]
+    (p, d, n) = (place ndp, date ndp, name ndp)
 
 lockQuiz :: Place -> QuizDate -> QuizName -> IO (Key DbQuiz)
 lockQuiz p d n = runSql (lockQuizStatement p d n)
