@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module General.Types where
 
@@ -123,6 +124,11 @@ newtype UserHash =
 class Unwrappable t v where
   unwrap :: t -> v
   wrap :: v -> t
+
+-- todo: This should not be necessary once no strings are used.
+instance Unwrappable t Text => Unwrappable t String where
+  unwrap  = T.unpack . unwrap
+  wrap = wrap . T.pack
 
 class Fallback t where
   fallback :: t

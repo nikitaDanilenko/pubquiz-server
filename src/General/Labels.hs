@@ -275,6 +275,7 @@ withAdditionalCharts = withKeyList additionalChartsKeys
 withPlacements :: Parser [String]
 withPlacements = withKeyList placementsKeys
 
+-- todo: use text directly
 mkLabels ::
      String
   -> String
