@@ -6,52 +6,71 @@ module Api.Services.QuizService
   , QuizService
   ) where
 
-import           Control.Applicative    (liftA2, liftA3)
-import           Control.Arrow          (first)
-import           Control.Exception      (catch)
-import           Control.Exception.Base (IOException)
-import           Control.Monad          (filterM)
-import           Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString.Char8  as B
-import qualified Data.ByteString.Lazy   as L
-import           Data.Maybe             (fromMaybe, maybe)
-import           Snap.Core              (Method (GET, POST), getPostParam,
-                                         getQueryParam, method, modifyResponse,
-                                         writeBS, writeLBS)
-import           Snap.Snaplet           (Handler, SnapletInit, addRoutes,
-                                         makeSnaplet)
+import           Control.Applicative       (liftA2, liftA3)
+import           Control.Arrow             (first)
+import           Control.Exception         (catch)
+import           Control.Exception.Base    (IOException)
+import           Control.Monad             (filterM)
+import           Control.Monad.IO.Class    (liftIO)
+import qualified Data.ByteString.Char8     as B
+import qualified Data.ByteString.Lazy      as L
+import           Data.Maybe                (fromMaybe, maybe)
+import qualified Data.Text                 as T
+import           Snap.Core                 (Method (GET, POST), getPostParam,
+                                            getQueryParam, method,
+                                            modifyResponse, writeBS, writeLBS)
+import           Snap.Snaplet              (Handler, SnapletInit, addRoutes,
+                                            makeSnaplet)
 
-import           System.Directory       (createDirectory, doesDirectoryExist,
-                                         doesFileExist, getDirectoryContents)
+import           System.Directory          (createDirectory, doesDirectoryExist,
+                                            doesFileExist, getDirectoryContents)
 
-import           Api.Services.HashCheck (authenticate, failIfUnverified)
-import           Api.Services.SnapUtil  (setResponseCodeJSON,
-                                         setResponseCodePlain)
-import           Constants              (actionParam, addSeparator,
-                                         backToChartViewParam, createQuiz,
-                                         cumulativeParam, individualParam,
-                                         labelUpdate, labels, labelsFile, lock,
-                                         locked, mainParam, maxReachableParam,
-                                         maxReachedParam, numberOfTeamsParam,
-                                         ownPageParam, ownPointsParam,
-                                         placeParam, placementParam,
-                                         pointsParam, prefix, progressionParam,
-                                         quizParam, quizPath, quizzesFolderIO,
-                                         roundParam, roundWinnerParam, rounds,
-                                         roundsFile, roundsNumberParam, server,
-                                         serverQuizPathIO, signatureParam,
-                                         teamParam, userParam, viewQuizzesParam)
-import           Data.Aeson             (decode, encode)
-import           Db.DbConversion        (QuizInfo, mkQuizInfo)
-import           Db.Storage             (findAllActiveQuizzes, findLabels)
-import           General.Labels         (Labels, defaultLabels, parameters,
-                                         showAsBS, teamLabel)
-import           General.Types          (Unwrappable (unwrap))
-import           Pages.GeneratePage     (createWith)
-import           Pages.QuizzesFrontpage (createFrontPage)
-import           Sheet.SheetMaker       (Ending, createSheetWith)
-import           Utils                  (randomDistinctAlphaNumeric,
-                                         randomDistinctWithAdditional, (+>))
+import           Api.Services.HashCheck    (authenticate,
+                                            authenticateWithCredentials,
+                                            failIfUnverified)
+import           Api.Services.SnapUtil     (setResponseCodeJSON,
+                                            setResponseCodePlain)
+import           Constants                 (actionParam, addSeparator,
+                                            backToChartViewParam, createQuiz,
+                                            credentialsParam, cumulativeParam,
+                                            individualParam, labelUpdate,
+                                            labels, labelsFile, lock, locked,
+                                            mainParam, maxReachableParam,
+                                            maxReachedParam, numberOfTeamsParam,
+                                            ownPageParam, ownPointsParam,
+                                            placeParam, placementParam,
+                                            pointsParam, prefix,
+                                            progressionParam, quizInfoParam,
+                                            quizPath, quizSettingsParam,
+                                            quizzesFolderIO, roundParam,
+                                            roundWinnerParam, rounds,
+                                            roundsFile, roundsNumberParam,
+                                            server, serverQuizPathIO,
+                                            signatureParam, teamParam,
+                                            userParam, viewQuizzesParam)
+import           Data.Aeson                (FromJSON, decode, encode)
+import           Data.Functor.Identity     (Identity (Identity))
+import           Db.Connection             (DbQuizId)
+import           Db.DbConversion           (Credentials, QuizInfo, QuizSettings,
+                                            fallbackSettings, identifier,
+                                            mkQuizInfo, numberOfTeams, quizId,
+                                            user)
+import qualified Db.DbConversion           as D
+import           Db.Storage                (findAllActiveQuizzes, findLabels,
+                                            setTeam)
+import qualified Db.Storage                as S
+import           General.Labels            (Labels, defaultLabels, parameters,
+                                            showAsBS, teamLabel)
+import           General.Types             (Activity (Active), Code (Code),
+                                            TeamName (TeamName),
+                                            TeamNumber (TeamNumber),
+                                            Unwrappable (unwrap))
+import           GHC.Natural               (naturalToInt)
+import           Pages.GeneratePage        (createWith)
+import           Pages.QuizzesFrontpage    (createFrontPage)
+import           Sheet.SheetMaker          (Ending, createSheetWith)
+import           Utils                     (randomDistinctAlphaNumeric,
+                                            randomDistinctWithAdditional, (+>))
 
 data QuizService =
   QuizService
@@ -65,7 +84,7 @@ quizRoutes =
   , "updateQuizSettings" +> method POST updateQuizSettings
   , "update" +> method POST updateQuiz
   , "lock" +> method POST lockQuiz
-  , "new" +> method POST newQuiz
+  , "new" +> method POST newQuizLegacy
   ]
 
 -- todo: switch all writeBS uses to writeLBS
@@ -87,7 +106,7 @@ sendAvailableActive = do
 -- todo: remove or adjust
 getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
 getSingleWithData fetchAction =
-  getQueryParam quizParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
+  getQueryParam quizInfoParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
 
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = getSingleWithData perQuiz
@@ -109,7 +128,7 @@ getSingleQuizLabelsLegacy = getSingleWithData perQuiz
 
 getSingleWithDataJSON :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
 getSingleWithDataJSON fetchAction =
-  getQueryParam quizParam >>= maybe (modifyResponse (setResponseCodeJSON 400)) fetchAction
+  getQueryParam quizInfoParam >>= maybe (modifyResponse (setResponseCodeJSON 400)) fetchAction
 
 getSingleQuizLabels :: Handler b QuizService ()
 getSingleQuizLabels = getSingleWithDataJSON perQuiz
@@ -131,13 +150,13 @@ data QUS =
     }
 
 getQUS :: Handler b QuizService QUS
-getQUS = liftA3 QUS (getPostParam quizParam) (getPostParam userParam) (getPostParam signatureParam)
+getQUS = liftA3 QUS (getPostParam quizInfoParam) (getPostParam userParam) (getPostParam signatureParam)
 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
   mNewContent <- getPostParam rounds
   QUS mQuiz mUser mSignature <- getQUS
-  verified <- authenticate mUser mSignature [(quizParam, mQuiz), (rounds, mNewContent)]
+  verified <- authenticate mUser mSignature [(quizInfoParam, mQuiz), (rounds, mNewContent)]
   failIfUnverified verified (updateQuizData mQuiz mNewContent)
 
 updateQuizData :: Maybe B.ByteString -> Maybe B.ByteString -> Handler b QuizService ()
@@ -146,7 +165,15 @@ updateQuizData mQuiz mNewContent =
     Nothing -> do
       writeBS
         (B.concat
-           ["Malfolmed request:\n", quizParam, "=", B.pack (show mQuiz), "\n", rounds, "=", B.pack (show mNewContent)])
+           [ "Malfolmed request:\n"
+           , quizInfoParam
+           , "="
+           , B.pack (show mQuiz)
+           , "\n"
+           , rounds
+           , "="
+           , B.pack (show mNewContent)
+           ])
       modifyResponse (setResponseCodePlain 406)
     Just io -> respondToUpdate io
 
@@ -159,7 +186,7 @@ updateQuizSettings = do
     authenticate
       mUser
       mSignature
-      [ (quizParam, mQuiz)
+      [ (quizInfoParam, mQuiz)
       , (roundsNumberParam, mRounds)
       , (numberOfTeamsParam, mNumberOfTeams)
       , (actionParam, Just labelUpdate)
@@ -204,12 +231,12 @@ respondToUpdate io = do
     else modifyResponse (setResponseCodePlain 406) >>
          writeBS "Requested quiz is locked or the update contains invalid symbols."
 
-newQuiz :: Handler b QuizService ()
-newQuiz = do
+newQuizLegacy :: Handler b QuizService ()
+newQuizLegacy = do
   QUS mQuiz mUser mSignature <- getQUS
   mRounds <- getPostParam roundsNumberParam
   mNumberOfTeams <- getPostParam numberOfTeamsParam
-  verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just createQuiz)]
+  verified <- authenticate mUser mSignature [(quizInfoParam, mQuiz), (actionParam, Just createQuiz)]
   failIfUnverified verified $
     case mQuiz of
       Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
@@ -232,6 +259,32 @@ newQuiz = do
             writeBS (B.unwords ["Quiz", name, "already exists or its labels contain invalid symbols"])
             modifyResponse (setResponseCodePlain 406)
 
+attemptDecode :: (Functor f, FromJSON a) => f (Maybe B.ByteString) -> f (Maybe a)
+attemptDecode = fmap (>>= decode . L.fromStrict)
+
+newQuiz :: Handler b QuizService ()
+newQuiz = do
+  mQuizInfoRaw <- getPostParam quizInfoParam
+  let Identity mQuizInfo = attemptDecode (Identity mQuizInfoRaw)
+  mCredentials <- attemptDecode (getPostParam credentialsParam)
+  mSettings <- attemptDecode (getPostParam quizSettingsParam)
+  verified <- authenticateWithCredentials mCredentials [(quizInfoParam, mQuizInfoRaw), (actionParam, Just createQuiz)]
+  failIfUnverified verified $
+    case mQuizInfo of
+      Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
+      Just quizInfo -> do
+        let settings = fromMaybe fallbackSettings mSettings
+            gs = numberOfTeams settings
+        endings <- liftIO (randomDistinctAlphaNumeric (naturalToInt gs) teamCodeLength)
+        let teamCodeNames =
+              zipWith
+                (\n e -> (TeamNumber n, Code e, TeamName (unwrap (teamLabel (D.labels settings)))))
+                [1 .. gs]
+                (map T.pack endings)
+        liftIO (S.createQuiz (identifier quizInfo))
+        liftIO (mapM (\(t, c, n) -> setTeam (quizId quizInfo) t c n Active) teamCodeNames)
+        pure ()
+
 defaultRounds :: [Int]
 defaultRounds = replicate 4 8
 
@@ -245,18 +298,18 @@ fetchRoundsAndLabelsAndMakeSheet :: B.ByteString -> Maybe B.ByteString -> [Endin
 fetchRoundsAndLabelsAndMakeSheet name mRounds endings = do
   rs <- liftIO (maybe (pure defaultRounds) (readRounds . B.unpack) mRounds)
   fullLabelsPath <- liftIO (mkFullPathIO name labelsFile)
-  lbls <- fetchLabels fullLabelsPath
+  lbls <- fetchLabelsLegacy fullLabelsPath
   liftIO
     (do serverPath <- serverQuizPathIO
         let fullServerPath = addSeparator [server, serverPath]
             uName = B.unpack name
-        createSheetWith (unwrap $ teamLabel lbls) rs uName fullServerPath endings
+        createSheetWith (T.unpack $ unwrap $ teamLabel lbls) rs uName fullServerPath endings
         updateWholeQuiz name (Left (B.pack (unwords endings)))
         createFrontPage)
 
 -- todo: better with JSON directly.
-fetchLabels :: String -> Handler b QuizService Labels
-fetchLabels fullPath = do
+fetchLabelsLegacy :: String -> Handler b QuizService Labels
+fetchLabelsLegacy fullPath = do
   params <-
     mapM
       getPostParam
@@ -310,7 +363,7 @@ updateWholeQuiz quizLocation content = do
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
   QUS mQuiz mUser mSignature <- getQUS
-  verified <- authenticate mUser mSignature [(quizParam, mQuiz), (actionParam, Just lock)]
+  verified <- authenticate mUser mSignature [(quizInfoParam, mQuiz), (actionParam, Just lock)]
   let act =
         maybe
           (pure ())
@@ -330,9 +383,11 @@ getNonLockedQuizzesLegacy = do
 getActiveQuizzes :: IO [QuizInfo]
 getActiveQuizzes = fmap (map mkQuizInfo) findAllActiveQuizzes
 
+-- todo: remove this function
 areLabelsPresent :: String -> IO Bool
 areLabelsPresent folder = doesFileExist (addSeparator [folder, labelsFile])
 
+-- todo: remove this function
 isQuizOpen :: String -> IO Bool
 isQuizOpen folder = fmap not (doesFileExist (addSeparator [folder, locked]))
 
