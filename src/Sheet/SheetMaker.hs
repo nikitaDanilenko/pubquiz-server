@@ -9,7 +9,7 @@ import qualified Data.Text.IO as I ( writeFile )
 import System.Directory            ( setCurrentDirectory, getCurrentDirectory, removeFile )
 import System.Process              ( callProcess )
 
-import Constants                   ( quizzesFolderIO, addSeparator )
+import Constants                   ( quizzesFolderIO, addSeparator, sheetsFolderIO )
 import Sheet.Tex                   ( mkSheetWithArbitraryQuestions, mkQROnly )
 
 type Prefix = String
@@ -21,20 +21,19 @@ createQRPath prefix ending = T.concat (map T.pack [prefix, ending, ".html"])
 
 createSheetWith :: String -> [Int] -> Prefix -> Server -> [Ending] -> IO ()
 createSheetWith teamLabel rounds prefix server endings = do
-    quizzesFolder <- quizzesFolderIO
+    sheetsFolder <- sheetsFolderIO
     currentDir <- getCurrentDirectory
     
     let tl = T.pack teamLabel
         sht = mkSheetWithArbitraryQuestions tl rounds paths
         fullServerPath = addSeparator [server, prefix, ""]
         paths = map (createQRPath fullServerPath) endings
-        buildPath = addSeparator [quizzesFolder, prefix]
         sheetFile = mkSheetFile prefix
 
         qrs = mkQROnly tl paths
         codesFile = mkCodesFile prefix
     
-    setCurrentDirectory buildPath
+    setCurrentDirectory sheetsFolder
 
     writeAndCleanPDF sheetFile sht
     writeAndCleanPDF codesFile qrs
@@ -70,7 +69,7 @@ createPDF :: String -> IO ()
 createPDF texFile = callProcess "pdflatex" ["-interaction=nonstopmode", texFile]
 
 cleanLatex :: String -> IO ()
-cleanLatex sheetFile = mapM_  safeRemoveFile (map (sheetFile ++) [".log", ".aux", ".tex"])
+cleanLatex sheetFile = mapM_ (safeRemoveFile . (sheetFile ++)) [".log", ".aux", ".tex"]
 
 safeRemoveFile :: String -> IO ()
 safeRemoveFile path = removeFile path `catch` noFile where
