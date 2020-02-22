@@ -13,7 +13,7 @@ import           Data.Time.Calendar (Day)
 import           Db.Connection      (DbQuizId)
 import           Db.DbConversion    (Credentials, QuizInfo, QuizPDN,
                                      QuizSettings, Ratings, RoundRating,
-                                     TeamRating)
+                                     TeamRating, TeamCodeNameNumber, Header)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ETCon (ETCon), ETVar (ETVar),
                                      EType (ETyCon),
@@ -104,6 +104,10 @@ deriveElmDef defaultOptions ''Labels
 
 deriveElmDef defaultOptions ''Password
 
+deriveElmDef defaultOptions ''TeamCodeNameNumber
+
+deriveElmDef defaultOptions ''Header
+
 instance IsElmDefinition Day where
   compileElmDef _ =
     ETypeAlias
@@ -160,4 +164,6 @@ main path =
     , DefineElm (Proxy :: Proxy Labels)
     , DefineElm (Proxy :: Proxy DbQuizId)
     , DefineElm (Proxy :: Proxy Password)
+    , DefineElm (Proxy :: Proxy TeamCodeNameNumber)
+    , DefineElm (Proxy :: Proxy Header)
     ]
