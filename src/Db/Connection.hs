@@ -160,9 +160,6 @@ mkDbLabels qid rd t own mr mred btc m op vp c ir pr plcmt plc pts rw =
     (unwrap pts)
     (unwrap rw)
 
-mkDbTeamNameCode :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> DbTeamNameCode
-mkDbTeamNameCode qid tn c tl a = DbTeamNameCode qid (unwrap tn) (unwrap c) (unwrap tl) (unwrap a)
-
 mkDbRoundReachable :: DbQuizId -> RoundNumber -> Double -> DbRoundReachable
 mkDbRoundReachable qid rn = DbRoundReachable qid (unwrap rn)
 
