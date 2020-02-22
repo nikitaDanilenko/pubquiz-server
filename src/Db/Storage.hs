@@ -28,17 +28,16 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               dbUserUserHash, dbUserUserSalt,
                                               insertOrReplace, labelsToDbLabels,
                                               mkDbQuiz, mkDbRoundReachable,
-                                              mkDbRoundReached,
-                                              mkDbTeamNameCode, mkFilter,
+                                              mkDbRoundReached, mkFilter,
                                               runSql, DbQuiz)
 import           Db.DbConversion             (QuizInfo,
                                               QuizPDN (date, name, place),
                                               Ratings (roundRatings), SavedUser,
                                               dbUserToSavedUser, ratingsFromDb,
                                               savedUserToDbUser, userHash,
-                                              userName, userSalt, mkQuizInfo, 
+                                              userName, userSalt, mkQuizInfo,
                                               TeamRating (teamNumber, rating),
-                                              RoundRating (reachableInRound, points))
+                                              RoundRating (reachableInRound, points), Header)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -62,12 +61,11 @@ setReachable qid rn p = runSql (setReachableStatement qid rn p)
 setReachableStatement :: MonadIO m => DbQuizId -> RoundNumber -> Double -> Statement m (Key DbRoundReachable)
 setReachableStatement qid rn p = repsertRoundReachable (mkDbRoundReachable qid rn p)
 
-setTeam :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> IO (Key DbTeamNameCode)
-setTeam qid tn c tname a = runSql (setTeamStatement qid tn c tname a)
+setTeamInfo :: DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> IO (Key DbTeamNameCode)
+setTeamInfo qid ti = runSql (setTeamStatement qid ti)
 
-setTeamStatement ::
-     MonadIO m => DbQuizId -> TeamNumber -> Code -> TeamName -> Activity -> Statement m (Key DbTeamNameCode)
-setTeamStatement qid tn c tname a = repsertTeamNameCode (mkDbTeamNameCode qid tn c tname a)
+setTeamStatement :: MonadIO m => DbQuizId -> TeamInfo -> Statement m (Key DbTeamNameCode)
+setTeamStatement qid ti = repsertTeamNameCode (teamInfoToDbTeamNameCode qid ti)
 
 setLabels :: DbQuizId -> Labels -> IO (Key DbLabels)
 setLabels qid lbls = runSql (setLabelsStatement qid lbls)
@@ -95,6 +93,9 @@ setRatingsStatement qid ratings = mapM_ (uncurry (setRoundRatingStatement qid)) 
   setRoundRatingStatement qid rd rr = do
     setReachableStatement qid rd (reachableInRound rr)
     mapM_ (setTeamRatingStatement qid rd) (points rr)
+
+setHeaderStatement :: MonadIO m => DbQuizId -> Header -> Statement m ()
+setHeaderStatement qid header =
 
 createQuiz :: QuizPDN -> IO (Key DbQuiz)
 createQuiz = runSql . createQuizStatement
