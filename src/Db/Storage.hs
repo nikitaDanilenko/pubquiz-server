@@ -182,7 +182,7 @@ findTeamInfos :: DbQuizId -> IO [TeamInfo]
 findTeamInfos = runSql . findTeamInfosStatement
 
 findTeamInfosStatement :: MonadIO m => DbQuizId -> Statement m [TeamInfo]
-findTeamInfosStatement qid = fmap (fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] []) 
+findTeamInfosStatement qid = fmap (fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
