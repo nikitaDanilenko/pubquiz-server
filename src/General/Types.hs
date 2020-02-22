@@ -1,46 +1,39 @@
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module General.Types where
 
-import           Data.Aeson.TH      (deriveJSON, defaultOptions)
+import           Data.Aeson.TH      (defaultOptions, deriveJSON)
 import           Data.Text          (Text)
 import qualified Data.Text          as T
 import           Data.Time.Calendar (Day)
-import           GHC.Generics       (Generic)
 import           GHC.Natural        (Natural)
 
 newtype TeamNumber =
   TeamNumber Natural
-  deriving (Generic)
 
 newtype RoundNumber =
   RoundNumber Natural
-  deriving (Eq, Ord, Generic)
+  deriving (Eq, Ord)
 
 newtype Code =
   Code Text
-  deriving (Generic)
 
 newtype TeamName =
   TeamName Text
-  deriving (Generic)
 
 newtype QuizName =
   QuizName Text
-  deriving (Generic)
 
 newtype Place =
   Place Text
-  deriving (Generic)
 
 newtype QuizDate =
   QuizDate Day
-  deriving (Generic)
 
 data Activity
   = Active
@@ -48,79 +41,60 @@ data Activity
 
 newtype RoundLabel =
   RoundLabel Text
-  deriving (Generic)
 
 newtype TeamLabel =
   TeamLabel Text
-  deriving (Generic)
 
 newtype OwnPointsLabel =
   OwnPointsLabel Text
-  deriving (Generic)
 
 newtype MaxReachedLabel =
   MaxReachedLabel Text
-  deriving (Generic)
 
 newtype MaxReachableLabel =
   MaxReachableLabel Text
-  deriving (Generic)
 
 newtype BackToChartViewLabel =
   BackToChartViewLabel Text
-  deriving (Generic)
 
 newtype MainLabel =
   MainLabel Text
-  deriving (Generic)
 
 newtype OwnPageLabel =
   OwnPageLabel Text
-  deriving (Generic)
 
 newtype ViewPreviousLabel =
   ViewPreviousLabel Text
-  deriving (Generic)
 
 newtype CumulativeLabel =
   CumulativeLabel Text
-  deriving (Generic)
 
 newtype IndividualRoundsLabel =
   IndividualRoundsLabel Text
-  deriving (Generic)
 
 newtype ProgressionLabel =
   ProgressionLabel Text
-  deriving (Generic)
 
 newtype PlacementLabel =
   PlacementLabel Text
-  deriving (Generic)
 
 newtype PlaceLabel =
   PlaceLabel Text
-  deriving (Generic)
 
 newtype PointsLabel =
   PointsLabel Text
-  deriving (Generic)
 
 newtype RoundWinnerLabel =
   RoundWinnerLabel Text
-  deriving (Generic)
 
 newtype UserName =
   UserName Text
-  deriving (Generic)
 
 newtype UserSalt =
   UserSalt Text
-  deriving (Generic)
 
 newtype UserHash =
   UserHash Text
-  deriving (Generic)
 
 class Unwrappable t v where
   unwrap :: t -> v
@@ -128,7 +102,7 @@ class Unwrappable t v where
 
 -- todo: This should not be necessary once no strings are used.
 instance Unwrappable t Text => Unwrappable t String where
-  unwrap  = T.unpack . unwrap
+  unwrap = T.unpack . unwrap
   wrap = wrap . T.pack
 
 class Fallback t where

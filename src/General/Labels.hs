@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module General.Labels
   ( Labels
@@ -37,7 +37,7 @@ import           Text.Parsec.Token             (makeTokenParser, stringLiteral)
 import           Text.ParserCombinators.Parsec (Parser, char, choice, spaces,
                                                 string, try)
 
-import           Data.Aeson                    (FromJSON, ToJSON)
+import           Data.Aeson.TH                 (defaultOptions, deriveJSON)
 import           General.Types                 (BackToChartViewLabel,
                                                 CumulativeLabel,
                                                 Fallback (fallback),
@@ -50,16 +50,14 @@ import           General.Types                 (BackToChartViewLabel,
                                                 RoundWinnerLabel, TeamLabel,
                                                 Unwrappable (unwrap, wrap),
                                                 ViewPreviousLabel)
-import           GHC.Generics                  (Generic)
 import           Pages.HtmlUtil                (htmlSafeString)
 
 newtype SafeLabels =
   SafeLabels
     { unwrapped :: Labels
     }
-    
--- todo: remove fallbacks, parsers, otherwise unused functions
 
+-- todo: remove fallbacks, parsers, otherwise unused functions
 -- todo: remove show instance
 data Labels =
   Labels
@@ -80,11 +78,8 @@ data Labels =
     , pointsLabel           :: PointsLabel
     , roundWinnerLabel      :: RoundWinnerLabel
     }
-  deriving (Generic)
 
-instance ToJSON Labels
-
-instance FromJSON Labels
+deriveJSON defaultOptions ''Labels
 
 instance Read Labels where
   readsPrec _ text =

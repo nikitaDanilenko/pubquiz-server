@@ -1,9 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Db.DbConversion where
 
 import           Control.Arrow    ((&&&))
-import           Data.Aeson       (FromJSON, ToJSON (toJSON), object, (.=))
+import           Data.Aeson.TH    (deriveJSON, defaultOptions)
 import           Data.Function    (on)
 import           Data.List        (groupBy, sortOn)
 import           Data.Map         (fromList, intersectionWith, toList)
@@ -18,7 +18,6 @@ import           General.Labels   (Labels, fallbackLabels)
 import           General.Types    (Place, QuizDate, QuizName,
                                    RoundNumber (RoundNumber),
                                    TeamNumber (TeamNumber), wrap)
-import           GHC.Generics     (Generic)
 import           GHC.Natural      (Natural)
 
 data TeamRating =
@@ -26,56 +25,43 @@ data TeamRating =
     { teamNumber :: TeamNumber
     , rating     :: Double
     }
-  deriving (Generic)
 
-instance ToJSON TeamRating
-
-instance FromJSON TeamRating
+deriveJSON defaultOptions ''TeamRating
 
 data RoundRating =
   RoundRating
     { reachableInRound :: Double
     , points           :: [TeamRating]
     }
-  deriving (Generic)
 
-instance ToJSON RoundRating
-
-instance FromJSON RoundRating
+deriveJSON defaultOptions ''RoundRating
 
 newtype Ratings =
   Ratings
     { roundRatings :: [(RoundNumber, RoundRating)]
     }
-  deriving (Generic)
 
-instance ToJSON Ratings
-
-instance FromJSON Ratings
+deriveJSON defaultOptions ''Ratings
 
 data Credentials =
   Credentials
     { user      :: T.Text
     , signature :: T.Text
     }
-  deriving (Generic)
 
-instance FromJSON Credentials
+deriveJSON defaultOptions ''Credentials
 
 data QuizSettings =
   QuizSettings
-    { numberOfRounds :: Natural
-    , numberOfTeams  :: Natural
-    , labels         :: Labels
+    { rounds        :: [Natural]
+    , numberOfTeams :: Natural
+    , labels        :: Labels
     }
-  deriving (Generic)
 
-instance ToJSON QuizSettings
-
-instance FromJSON QuizSettings
+deriveJSON defaultOptions ''QuizSettings
 
 fallbackSettings :: QuizSettings
-fallbackSettings = QuizSettings {numberOfRounds = 4, numberOfTeams = 20, labels = fallbackLabels}
+fallbackSettings = QuizSettings {rounds = replicate 4 8, numberOfTeams = 20, labels = fallbackLabels}
 
 -- | Merges a list of reachable points and a list of reached points in their respective database representations
 --   into a unified rating element.
@@ -98,22 +84,16 @@ data QuizPDN =
     , date  :: QuizDate
     , name  :: QuizName
     }
-  deriving (Generic)
 
-instance ToJSON QuizPDN
-
-instance FromJSON QuizPDN
+deriveJSON defaultOptions ''QuizPDN
 
 data QuizInfo =
   QuizInfo
     { quizId     :: DbQuizId
     , identifier :: QuizPDN
     }
-  deriving (Generic)
 
-instance ToJSON QuizInfo
-
-instance FromJSON QuizInfo
+deriveJSON defaultOptions ''QuizInfo
 
 mkQuizInfo :: Entity DbQuiz -> QuizInfo
 mkQuizInfo eq =
