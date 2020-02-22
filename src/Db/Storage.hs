@@ -38,7 +38,7 @@ import           Db.DbConversion             (QuizInfo,
                                               userName, userSalt, mkQuizInfo,
                                               TeamRating (teamNumber, rating),
                                               RoundRating (reachableInRound, points), Header (teamInfos),
-                                              TeamInfo, teamInfoToDbTeamNameCode)
+                                              TeamInfo, teamInfoToDbTeamNameCode, dbTeamNameCodeToTeamInfo)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -173,6 +173,12 @@ findQuizInfo = runSql . findQuizInfoStatement
 
 findQuizInfoStatement :: MonadIO m => DbQuizId -> Statement m (Maybe QuizInfo)
 findQuizInfoStatement qid = fmap (fmap mkQuizInfo) (selectFirst [DbQuizId ==. qid] [])
+
+findTeamInfos :: DbQuizId -> IO [TeamInfo]
+findTeamInfos = runSql . findTeamInfosStatement
+
+findTeamInfosStatement :: MonadIO m => DbQuizId -> Statement m [TeamInfo]
+findTeamInfosStatement qid = fmap (fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] []) 
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
