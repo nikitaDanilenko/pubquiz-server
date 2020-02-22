@@ -34,7 +34,7 @@ import           General.Labels              (Labels (..), fallbackLabels,
 import           General.Types               (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
-                                              Unwrappable (unwrap, wrap))
+                                              Unwrappable (unwrap, wrap), UserName)
 
 type Statement m k = ReaderT SqlBackend m k
 
@@ -116,6 +116,12 @@ findLabels = runSql . findLabelsStatement
 findLabelsStatement :: MonadIO m => DbQuizId -> Statement m Labels
 findLabelsStatement qid =
   fmap (maybe fallbackLabels (dbLabelsToLabels . entityVal)) (selectFirst [DbLabelsQuizId ==. qid] [])
+
+findUser :: UserName -> IO (Maybe DbUser)
+findUser = runSql . findUserStatement
+
+findUserStatement :: MonadIO m => UserName -> Statement m (Maybe DbUser)
+findUserStatement userName = fmap (fmap entityVal) (selectFirst [DbUserUserName ==. unwrap userName] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
