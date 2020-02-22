@@ -338,3 +338,5 @@ deriveJSON defaultOptions ''UserSalt
 deriveJSON defaultOptions ''UserHash
 
 deriveJSON defaultOptions ''Password
+
+deriveJSON defaultOptions ''Activity
