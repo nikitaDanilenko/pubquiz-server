@@ -26,7 +26,6 @@ import           System.Directory          (createDirectory, doesDirectoryExist,
                                             doesFileExist, getDirectoryContents)
 
 import           Api.Services.HashCheck    (authenticate,
-                                            authenticateWithCredentials,
                                             failIfUnverified)
 import           Api.Services.SnapUtil     (setResponseCodeJSON,
                                             setResponseCodePlain, attemptDecode)
@@ -155,8 +154,10 @@ getQUS = liftA3 QUS (getPostParam quizPDNParam) (getPostParam userParam) (getPos
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
   mNewContent <- getPostParam rounds
+  -- todo logic is wrong.
   QUS mQuiz mUser mSignature <- getQUS
-  verified <- authenticate mUser mSignature [(quizPDNParam, mQuiz), (rounds, mNewContent)]
+  mCredentials <- attemptDecode (getPostParam credentialsParam)
+  verified <- authenticate mCredentials [(quizPDNParam, mQuiz), (rounds, mNewContent)]
   failIfUnverified verified (updateQuizData mQuiz mNewContent)
 
 updateQuizData :: Maybe B.ByteString -> Maybe B.ByteString -> Handler b QuizService ()
@@ -179,13 +180,14 @@ updateQuizData mQuiz mNewContent =
 
 updateQuizSettings :: Handler b QuizService ()
 updateQuizSettings = do
-  QUS mQuiz mUser mSignature <- getQUS
+  QUS mQuiz _ _ <- getQUS
+  -- todo: logic is wrong
   mRounds <- getPostParam roundsNumberParam
   mNumberOfTeams <- getPostParam numberOfTeamsParam
+  mCredentials <- attemptDecode (getPostParam credentialsParam)
   verified <-
     authenticate
-      mUser
-      mSignature
+      mCredentials
       [ (quizPDNParam, mQuiz)
       , (roundsNumberParam, mRounds)
       , (numberOfTeamsParam, mNumberOfTeams)
@@ -236,7 +238,9 @@ newQuizLegacy = do
   QUS mQuiz mUser mSignature <- getQUS
   mRounds <- getPostParam roundsNumberParam
   mNumberOfTeams <- getPostParam numberOfTeamsParam
-  verified <- authenticate mUser mSignature [(quizPDNParam, mQuiz), (actionParam, Just createQuiz)]
+  -- todo: won't fix, this will be removed
+  mCredentials <- attemptDecode (getPostParam credentialsParam)
+  verified <- authenticate mCredentials [(quizPDNParam, mQuiz), (actionParam, Just createQuiz)]
   failIfUnverified verified $
     case mQuiz of
       Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
@@ -265,7 +269,7 @@ newQuiz = do
   let Identity mQuizPDN = attemptDecode (Identity mQuizPDNRaw)
   mCredentials <- attemptDecode (getPostParam credentialsParam)
   mSettings <- attemptDecode (getPostParam quizSettingsParam)
-  verified <- authenticateWithCredentials mCredentials [(quizPDNParam, mQuizPDNRaw), (actionParam, Just createQuiz)]
+  verified <- authenticate mCredentials [(quizPDNParam, mQuizPDNRaw), (actionParam, Just createQuiz)]
   failIfUnverified verified $
     case mQuizPDN of
       Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
@@ -360,7 +364,9 @@ updateWholeQuiz quizLocation content = do
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
   QUS mQuiz mUser mSignature <- getQUS
-  verified <- authenticate mUser mSignature [(quizPDNParam, mQuiz), (actionParam, Just lock)]
+  mCredentials <- attemptDecode (getPostParam credentialsParam)
+  -- todo: adjust logic
+  verified <- authenticate mCredentials [(quizPDNParam, mQuiz), (actionParam, Just lock)]
   let act =
         maybe
           (pure ())

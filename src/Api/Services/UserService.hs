@@ -13,15 +13,13 @@ import           Snap.Snaplet                  (Handler, SnapletInit, addRoutes,
                                                 makeSnaplet)
 
 import           Api.Services.HashCheck        (authenticate,
-                                                authenticateWithCredentials,
                                                 failIfUnverified)
 import           Api.Services.SavedUserHandler (Status (..), mkAndSaveUser)
 import           Api.Services.SnapUtil         (attemptDecode)
 import           Constants                     (credentialsParam, newUserParam,
-                                                passwordParam, signatureParam,
-                                                userParam, userPath)
-import           General.Types                 (Password, UserName, unwrap,
-                                                wrap)
+                                                passwordParam, userParam,
+                                                userPath)
+import           General.Types                 (Password, UserName, unwrap)
 import           Utils                         ((+>))
 
 data UserService =
@@ -43,7 +41,7 @@ createUser = do
   mCredentials <- attemptDecode (getPostParam credentialsParam)
   mNewPass <- attemptDecode (getPostParam passwordParam) :: Handler b UserService (Maybe Password)
   verified <-
-    authenticateWithCredentials mCredentials [(newUserParam, unwrap mNewUser), (passwordParam, unwrap mNewPass)]
+    authenticate mCredentials [(newUserParam, unwrap mNewUser), (passwordParam, unwrap mNewPass)]
   failIfUnverified verified $
     case (mNewUser, mNewPass) of
       (Just user, Just pass) -> do
