@@ -30,10 +30,13 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbQuiz, mkDbRoundReachable,
                                               mkDbRoundReached,
                                               mkDbTeamNameCode, mkFilter,
-                                              runSql)
-import           Db.DbConversion             (QuizPDN (date, name, place),
-                                              Ratings, SavedUser, ratingsFromDb,
-                                              userHash, userName, userSalt, dbUserToSavedUser, savedUserToDbUser)
+                                              runSql, DbQuiz)
+import           Db.DbConversion             (QuizInfo,
+                                              QuizPDN (date, name, place),
+                                              Ratings, SavedUser,
+                                              dbUserToSavedUser, ratingsFromDb,
+                                              savedUserToDbUser, userHash,
+                                              userName, userSalt, mkQuizInfo)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -113,11 +116,11 @@ lockQuiz p d n = runSql (lockQuizStatement p d n)
 lockQuizStatement :: MonadIO m => Place -> QuizDate -> QuizName -> Statement m (Key DbQuiz)
 lockQuizStatement p d n = repsertQuiz (mkDbQuiz p d n Inactive)
 
-findAllActiveQuizzes :: IO [Entity DbQuiz]
+findAllActiveQuizzes :: IO [QuizInfo]
 findAllActiveQuizzes = runSql findAllActiveQuizzesStatement
 
-findAllActiveQuizzesStatement :: MonadIO m => Statement m [Entity DbQuiz]
-findAllActiveQuizzesStatement = selectList [DbQuizActive ==. True] []
+findAllActiveQuizzesStatement :: MonadIO m => Statement m [QuizInfo]
+findAllActiveQuizzesStatement = fmap (fmap mkQuizInfo) (selectList [DbQuizActive ==. True] [])
 
 findRatings :: DbQuizId -> IO Ratings
 findRatings = runSql . findRatingsStatement
@@ -139,7 +142,8 @@ findUser :: UserName -> IO (Maybe SavedUser)
 findUser = runSql . findUserStatement
 
 findUserStatement :: MonadIO m => UserName -> Statement m (Maybe SavedUser)
-findUserStatement userName = fmap (fmap (dbUserToSavedUser . entityVal)) (selectFirst [DbUserUserName ==. unwrap userName] [])
+findUserStatement userName =
+  fmap (fmap (dbUserToSavedUser . entityVal)) (selectFirst [DbUserUserName ==. unwrap userName] [])
 
 findSessionKey :: UserName -> IO (Maybe UserHash)
 findSessionKey = runSql . findSessionKeyStatement
@@ -147,6 +151,12 @@ findSessionKey = runSql . findSessionKeyStatement
 findSessionKeyStatement :: MonadIO m => UserName -> Statement m (Maybe UserHash)
 findSessionKeyStatement un =
   fmap (fmap (wrap . dbSessionKeyUserHash . entityVal)) (selectFirst [DbSessionKeyUserName ==. unwrap un] [])
+
+findQuizInfo :: DbQuizId -> IO (Maybe QuizInfo)
+findQuizInfo = runSql . findQuizInfoStatement
+
+findQuizInfoStatement :: MonadIO m => DbQuizId -> Statement m (Maybe QuizInfo)
+findQuizInfoStatement qid = fmap (fmap mkQuizInfo) (selectFirst [DbQuizId ==. qid] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
