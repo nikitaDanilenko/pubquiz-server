@@ -2,27 +2,28 @@
 
 module Db.DbConversion where
 
-import           Control.Arrow    ((&&&))
-import           Data.Aeson.TH    (defaultOptions, deriveJSON)
-import           Data.Function    (on)
-import           Data.List        (groupBy, sortOn)
-import           Data.Map         (fromList, intersectionWith, toList)
-import           Data.Text        (pack)
-import qualified Data.Text        as T
-import           Database.Persist (Entity, entityKey, entityVal)
-import           Db.Connection    (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
-                                   DbQuizId,
-                                   DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
-                                   DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
-                                   DbTeamNameCode (DbTeamNameCode, dbTeamNameCodeActive, dbTeamNameCodeQuizId, dbTeamNameCodeTeamCode, dbTeamNameCodeTeamName, dbTeamNameCodeTeamNumber),
-                                   DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
-                                   dbQuizActive)
-import           General.Labels   (Labels, fallbackLabels)
-import           General.Types    (Activity, Code, Place, QuizDate, QuizName,
-                                   RoundNumber (RoundNumber), TeamName,
-                                   TeamNumber (TeamNumber), UserHash, UserName,
-                                   UserSalt, unwrap, wrap)
-import           GHC.Natural      (Natural)
+import           Control.Arrow      ((&&&))
+import           Data.Aeson.TH      (defaultOptions, deriveJSON)
+import           Data.Function      (on)
+import           Data.List          (groupBy, sortOn)
+import           Data.Map           (fromList, intersectionWith, toList)
+import           Data.Text          (pack)
+import qualified Data.Text          as T
+import           Data.Time.Calendar (Day)
+import           Database.Persist   (Entity, entityKey, entityVal)
+import           Db.Connection      (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
+                                     DbQuizId,
+                                     DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
+                                     DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
+                                     DbTeamNameCode (DbTeamNameCode, dbTeamNameCodeActive, dbTeamNameCodeQuizId, dbTeamNameCodeTeamCode, dbTeamNameCodeTeamName, dbTeamNameCodeTeamNumber),
+                                     DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
+                                     dbQuizActive)
+import           General.Labels     (Labels, fallbackLabels)
+import           General.Types      (Activity, Code, Place, QuizDate, QuizName,
+                                     RoundNumber (RoundNumber), TeamName,
+                                     TeamNumber (TeamNumber), UserHash,
+                                     UserName, UserSalt, unwrap, wrap)
+import           GHC.Natural        (Natural)
 
 data TeamRating =
   TeamRating
@@ -70,7 +71,9 @@ teamInfoToDbTeamNameCode qid ti =
 deriveJSON defaultOptions ''TeamInfo
 
 newtype Header =
-  Header { teamInfos :: [TeamInfo] }
+  Header
+    { teamInfos :: [TeamInfo]
+    }
 
 deriveJSON defaultOptions ''Header
 
@@ -144,6 +147,14 @@ mkQuizInfo eq =
     }
   where
     q = entityVal eq
+
+fullQuizName :: QuizPDN -> T.Text
+fullQuizName pdn =
+  T.unwords
+    [ T.concat [T.pack (show (unwrap (date pdn) :: Day)), T.pack ":"]
+    , unwrap (name pdn)
+    , T.concat [T.pack "(", unwrap (place pdn), T.pack ")"]
+    ]
 
 data SavedUser =
   SavedUser
