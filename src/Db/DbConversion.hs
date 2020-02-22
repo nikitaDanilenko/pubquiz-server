@@ -17,7 +17,7 @@ import           Db.Connection    (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
 import           General.Labels   (Labels, fallbackLabels)
 import           General.Types    (Place, QuizDate, QuizName,
                                    RoundNumber (RoundNumber),
-                                   TeamNumber (TeamNumber), wrap)
+                                   TeamNumber (TeamNumber), wrap, UserName, UserSalt, UserHash)
 import           GHC.Natural      (Natural)
 
 data TeamRating =
@@ -104,3 +104,9 @@ mkQuizInfo eq =
     }
   where
     q = entityVal eq
+
+data SavedUser = SavedUser { 
+    userName :: UserName, 
+    userSalt :: UserSalt, 
+    userHash :: UserHash
+}
