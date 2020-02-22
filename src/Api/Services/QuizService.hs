@@ -40,7 +40,7 @@ import           Constants                 (actionParam, addSeparator,
                                             ownPageParam, ownPointsParam,
                                             placeParam, placementParam,
                                             pointsParam, prefix,
-                                            progressionParam, quizInfoParam,
+                                            progressionParam, quizPDNParam,
                                             quizPath, quizSettingsParam,
                                             quizzesFolderIO, roundParam,
                                             roundWinnerParam, rounds,
@@ -106,7 +106,7 @@ sendAvailableActive = do
 -- todo: remove or adjust
 getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
 getSingleWithData fetchAction =
-  getQueryParam quizInfoParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
+  getQueryParam quizPDNParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
 
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = getSingleWithData perQuiz
@@ -128,7 +128,7 @@ getSingleQuizLabelsLegacy = getSingleWithData perQuiz
 
 getSingleWithDataJSON :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
 getSingleWithDataJSON fetchAction =
-  getQueryParam quizInfoParam >>= maybe (modifyResponse (setResponseCodeJSON 400)) fetchAction
+  getQueryParam quizPDNParam >>= maybe (modifyResponse (setResponseCodeJSON 400)) fetchAction
 
 getSingleQuizLabels :: Handler b QuizService ()
 getSingleQuizLabels = getSingleWithDataJSON perQuiz
@@ -150,13 +150,13 @@ data QUS =
     }
 
 getQUS :: Handler b QuizService QUS
-getQUS = liftA3 QUS (getPostParam quizInfoParam) (getPostParam userParam) (getPostParam signatureParam)
+getQUS = liftA3 QUS (getPostParam quizPDNParam) (getPostParam userParam) (getPostParam signatureParam)
 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
   mNewContent <- getPostParam rounds
   QUS mQuiz mUser mSignature <- getQUS
-  verified <- authenticate mUser mSignature [(quizInfoParam, mQuiz), (rounds, mNewContent)]
+  verified <- authenticate mUser mSignature [(quizPDNParam, mQuiz), (rounds, mNewContent)]
   failIfUnverified verified (updateQuizData mQuiz mNewContent)
 
 updateQuizData :: Maybe B.ByteString -> Maybe B.ByteString -> Handler b QuizService ()
@@ -166,7 +166,7 @@ updateQuizData mQuiz mNewContent =
       writeBS
         (B.concat
            [ "Malfolmed request:\n"
-           , quizInfoParam
+           , quizPDNParam
            , "="
            , B.pack (show mQuiz)
            , "\n"
@@ -186,7 +186,7 @@ updateQuizSettings = do
     authenticate
       mUser
       mSignature
-      [ (quizInfoParam, mQuiz)
+      [ (quizPDNParam, mQuiz)
       , (roundsNumberParam, mRounds)
       , (numberOfTeamsParam, mNumberOfTeams)
       , (actionParam, Just labelUpdate)
@@ -236,7 +236,7 @@ newQuizLegacy = do
   QUS mQuiz mUser mSignature <- getQUS
   mRounds <- getPostParam roundsNumberParam
   mNumberOfTeams <- getPostParam numberOfTeamsParam
-  verified <- authenticate mUser mSignature [(quizInfoParam, mQuiz), (actionParam, Just createQuiz)]
+  verified <- authenticate mUser mSignature [(quizPDNParam, mQuiz), (actionParam, Just createQuiz)]
   failIfUnverified verified $
     case mQuiz of
       Nothing -> writeBS "No name given." >> modifyResponse (setResponseCodePlain 406)
@@ -264,15 +264,15 @@ attemptDecode = fmap (>>= decode . L.fromStrict)
 
 newQuiz :: Handler b QuizService ()
 newQuiz = do
-  mQuizInfoRaw <- getPostParam quizInfoParam
-  let Identity mQuizInfo = attemptDecode (Identity mQuizInfoRaw)
+  mQuizPDNRaw <- getPostParam quizPDNParam
+  let Identity mQuizPDN = attemptDecode (Identity mQuizPDNRaw)
   mCredentials <- attemptDecode (getPostParam credentialsParam)
   mSettings <- attemptDecode (getPostParam quizSettingsParam)
-  verified <- authenticateWithCredentials mCredentials [(quizInfoParam, mQuizInfoRaw), (actionParam, Just createQuiz)]
+  verified <- authenticateWithCredentials mCredentials [(quizPDNParam, mQuizPDNRaw), (actionParam, Just createQuiz)]
   failIfUnverified verified $
-    case mQuizInfo of
+    case mQuizPDN of
       Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
-      Just quizInfo -> do
+      Just quizPDN -> do
         let settings = fromMaybe fallbackSettings mSettings
             gs = numberOfTeams settings
         endings <- liftIO (randomDistinctAlphaNumeric (naturalToInt gs) teamCodeLength)
@@ -281,8 +281,8 @@ newQuiz = do
                 (\n e -> (TeamNumber n, Code e, TeamName (unwrap (teamLabel (D.labels settings)))))
                 [1 .. gs]
                 (map T.pack endings)
-        liftIO (S.createQuiz (identifier quizInfo))
-        liftIO (mapM (\(t, c, n) -> setTeam (quizId quizInfo) t c n Active) teamCodeNames)
+        quizId <- liftIO (S.createQuiz quizInfo)
+        liftIO (mapM (\(t, c, n) -> setTeam quizId t c n Active) teamCodeNames)
         pure ()
 
 defaultRounds :: [Int]
@@ -363,7 +363,7 @@ updateWholeQuiz quizLocation content = do
 lockQuiz :: Handler b QuizService ()
 lockQuiz = do
   QUS mQuiz mUser mSignature <- getQUS
-  verified <- authenticate mUser mSignature [(quizInfoParam, mQuiz), (actionParam, Just lock)]
+  verified <- authenticate mUser mSignature [(quizPDNParam, mQuiz), (actionParam, Just lock)]
   let act =
         maybe
           (pure ())
