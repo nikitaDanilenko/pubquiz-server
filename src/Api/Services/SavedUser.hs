@@ -1,61 +1,49 @@
-{-# Language OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Api.Services.SavedUser where
 
-import Control.Exception                    ( catch )
-import Control.Exception.Base               ( IOException )
-import qualified Data.ByteString.Char8 as B ( ByteString, pack, concat, unpack )
+import           Control.Exception      (catch)
+import           Control.Exception.Base (IOException)
+import qualified Data.ByteString.Char8  as B (ByteString, concat, pack, unpack)
+import qualified Data.Text              as T
+import qualified Data.Text.Encoding     as E
 
-import Constants                            ( userFileIO, saltSize )
-import Utils                                ( readOrCreateEmpty, randomStringIO, mkHashed, Hashed )
+import           Constants              (saltSize, userFileIO)
+import           Db.DbConversion        (SavedUser (SavedUser), userName)
+import           Db.Storage             (findUser, setUser)
+import           General.Types          (UserHash, UserName, UserSalt, unwrap,
+                                         wrap)
+import           Utils                  (Hashed, mkHashed, randomStringIO,
+                                         readOrCreateEmpty)
 
-type UserName = B.ByteString
-type Password = B.ByteString
-type Salt = B.ByteString
-type HashValue = B.ByteString
-
-data SavedUser = Saved { 
-    userName :: UserName, 
-    userSalt :: Salt, 
-    userHash :: HashValue
-} deriving (Show, Read)
-
-instance Eq SavedUser where
-    s1 == s2 = userName s1 == userName s2
+type Password = T.Text
 
 mkUser :: UserName -> Password -> IO SavedUser
 mkUser user pass = do
-    randomChars <- randomStringIO
-    let salt = B.pack (take saltSize randomChars)
-        hashValue = mkHash user pass salt
-        savedUser = Saved user salt hashValue
-    return savedUser
+  randomChars <- randomStringIO
+  let salt = wrap (T.pack (take saltSize randomChars))
+      hashValue = mkHash user pass salt
+      savedUser = SavedUser user salt hashValue
+  return savedUser
 
 mkAndSaveUser :: UserName -> Password -> IO Status
 mkAndSaveUser user pass = do
-    userFile <- userFileIO
-    text <- readOrCreateEmpty userFile
-    let ls = lines text
-        users = map (read :: String -> SavedUser) ls
-        exists = any (\u -> userName u == user) users
-    if exists 
-        then let u = B.unpack user
-             in do putStrLn (unwords ["User", u, "already exists.", "Nothing changed."])
-                   return (Exists user)
-        else do
-            newUser <- mkUser user pass
-            let newLs = show newUser : ls
-                newText = unlines newLs
-            (writeFile userFile newText >> return Success) `catch` handleWriteFailure
+  mDbUser <- findUser user
+  case mDbUser of
+    Just _ -> do
+      putStrLn (unwords ["User", T.unpack (unwrap user), "already exists.", "Nothing changed."])
+      pure (Exists user)
+    Nothing -> do
+      newUser <- mkUser user pass
+      setUser newUser
+      pure Success
 
-handleWriteFailure :: IOException -> IO Status
-handleWriteFailure _ = 
-    return (Failure "Something went wrong while writing to user file. Nothing changed.")
+data Status
+  = Success
+  | Exists UserName
 
-data Status = Success | Exists B.ByteString | Failure B.ByteString
+mkUserHashed :: UserName -> Password -> UserSalt -> Hashed
+mkUserHashed user pass salt = mkHashed (E.encodeUtf8 (T.concat [unwrap user, pass, unwrap salt]))
 
-mkUserHashed :: UserName -> Password -> Salt -> Hashed
-mkUserHashed user pass salt = mkHashed (B.concat [user, pass, salt])
-
-mkHash :: UserName -> Password -> Salt -> HashValue
-mkHash user pass salt = B.pack (show (mkUserHashed user pass salt))
+mkHash :: UserName -> Password -> UserSalt -> UserHash
+mkHash user pass salt = wrap (T.pack (show (mkUserHashed user pass salt)))
