@@ -3,10 +3,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module General.Types where
 
-import           Data.Aeson         (FromJSON, ToJSON)
+import           Data.Aeson.TH      (deriveJSON, defaultOptions)
 import           Data.Text          (Text)
 import qualified Data.Text          as T
 import           Data.Time.Calendar (Day)
@@ -243,110 +244,6 @@ instance Unwrappable UserHash Text where
   unwrap (UserHash s) = s
   wrap = UserHash
 
-instance ToJSON TeamNumber
-
-instance ToJSON RoundNumber
-
-instance ToJSON Code
-
-instance ToJSON TeamName
-
-instance ToJSON QuizName
-
-instance ToJSON Place
-
-instance ToJSON QuizDate
-
-instance ToJSON RoundLabel
-
-instance ToJSON TeamLabel
-
-instance ToJSON OwnPointsLabel
-
-instance ToJSON MaxReachedLabel
-
-instance ToJSON MaxReachableLabel
-
-instance ToJSON BackToChartViewLabel
-
-instance ToJSON MainLabel
-
-instance ToJSON OwnPageLabel
-
-instance ToJSON ViewPreviousLabel
-
-instance ToJSON CumulativeLabel
-
-instance ToJSON IndividualRoundsLabel
-
-instance ToJSON ProgressionLabel
-
-instance ToJSON PlacementLabel
-
-instance ToJSON PlaceLabel
-
-instance ToJSON PointsLabel
-
-instance ToJSON RoundWinnerLabel
-
-instance ToJSON UserName
-
-instance ToJSON UserSalt
-
-instance ToJSON UserHash
-
-instance FromJSON TeamNumber
-
-instance FromJSON RoundNumber
-
-instance FromJSON Code
-
-instance FromJSON TeamName
-
-instance FromJSON QuizName
-
-instance FromJSON Place
-
-instance FromJSON QuizDate
-
-instance FromJSON RoundLabel
-
-instance FromJSON TeamLabel
-
-instance FromJSON OwnPointsLabel
-
-instance FromJSON MaxReachedLabel
-
-instance FromJSON MaxReachableLabel
-
-instance FromJSON BackToChartViewLabel
-
-instance FromJSON MainLabel
-
-instance FromJSON OwnPageLabel
-
-instance FromJSON ViewPreviousLabel
-
-instance FromJSON CumulativeLabel
-
-instance FromJSON IndividualRoundsLabel
-
-instance FromJSON ProgressionLabel
-
-instance FromJSON PlacementLabel
-
-instance FromJSON PlaceLabel
-
-instance FromJSON PointsLabel
-
-instance FromJSON RoundWinnerLabel
-
-instance FromJSON UserName
-
-instance FromJSON UserSalt
-
-instance FromJSON UserHash
-
 instance Fallback RoundLabel where
   fallback = wrap (T.pack "Runde")
 
@@ -394,3 +291,55 @@ instance Fallback PointsLabel where
 
 instance Fallback RoundWinnerLabel where
   fallback = wrap (T.pack "Rundensieger")
+
+deriveJSON defaultOptions ''TeamNumber
+
+deriveJSON defaultOptions ''RoundNumber
+
+deriveJSON defaultOptions ''Code
+
+deriveJSON defaultOptions ''TeamName
+
+deriveJSON defaultOptions ''QuizName
+
+deriveJSON defaultOptions ''Place
+
+deriveJSON defaultOptions ''QuizDate
+
+deriveJSON defaultOptions ''RoundLabel
+
+deriveJSON defaultOptions ''TeamLabel
+
+deriveJSON defaultOptions ''OwnPointsLabel
+
+deriveJSON defaultOptions ''MaxReachedLabel
+
+deriveJSON defaultOptions ''MaxReachableLabel
+
+deriveJSON defaultOptions ''BackToChartViewLabel
+
+deriveJSON defaultOptions ''MainLabel
+
+deriveJSON defaultOptions ''OwnPageLabel
+
+deriveJSON defaultOptions ''ViewPreviousLabel
+
+deriveJSON defaultOptions ''CumulativeLabel
+
+deriveJSON defaultOptions ''IndividualRoundsLabel
+
+deriveJSON defaultOptions ''ProgressionLabel
+
+deriveJSON defaultOptions ''PlacementLabel
+
+deriveJSON defaultOptions ''PlaceLabel
+
+deriveJSON defaultOptions ''PointsLabel
+
+deriveJSON defaultOptions ''RoundWinnerLabel
+
+deriveJSON defaultOptions ''UserName
+
+deriveJSON defaultOptions ''UserSalt
+
+deriveJSON defaultOptions ''UserHash
