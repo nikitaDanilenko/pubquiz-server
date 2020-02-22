@@ -109,6 +109,12 @@ DbUser
   Primary userName
   UniqueDbUserUserName userName
   deriving Show
+DbSessionKey
+  userName String
+  userHash String
+  Primary userName
+  UniqueDbSessionKeyUserName userName
+  deriving Show
 |]
 
 mkDbQuiz :: Place -> QuizDate -> QuizName -> Activity -> DbQuiz
