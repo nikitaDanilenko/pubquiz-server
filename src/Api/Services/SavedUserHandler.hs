@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Api.Services.SavedUser where
+module Api.Services.SavedUserHandler (mkHash, mkAndSaveUser) where
 
 import           Control.Exception      (catch)
 import           Control.Exception.Base (IOException)
