@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d26823f8444dee481b7791f7b17baa35d88e031269f24ccdfafee69f1e1f315d
+-- hash: 0a1b616ec176ada8c78de2cc48e0912feebf2a72bedab466e209ad40e07af76a
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -43,7 +43,7 @@ library
       Db.DbConversion
       Db.Instances
       Db.Storage
-      General.ElmCodeGenerator
+      General.ElmBridge
       General.Labels
       General.Types
       Main
@@ -112,7 +112,7 @@ executable pubquiz-server-exe
       Db.DbConversion
       Db.Instances
       Db.Storage
-      General.ElmCodeGenerator
+      General.ElmBridge
       General.Labels
       General.Types
       Pages.Colours

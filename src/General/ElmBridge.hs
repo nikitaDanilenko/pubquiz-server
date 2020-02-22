@@ -1,4 +1,6 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module General.ElmBridge where
 
@@ -8,12 +10,19 @@ import           Elm.Module         (DefineElm (DefineElm), makeElmModule)
 import           Data.Proxy         (Proxy (Proxy))
 
 import           Data.Time.Calendar (Day)
+import           Db.Connection      (DbQuizId)
+import           Db.DbConversion    (Credentials, QuizInfo, QuizPDN,
+                                     QuizSettings, Ratings, RoundRating,
+                                     TeamRating)
 import           Elm.TyRep          (EAlias (EAlias), ETCon (ETCon),
-                                     EType (ETyCon), ETypeDef (ETypeAlias),
-                                     ETypeName (ETypeName), ETVar (ETVar),
+                                     ETVar (ETVar), EType (ETyCon),
+                                     ETypeDef (ETypeAlias, ETypePrimAlias),
+                                     EPrimAlias (EPrimAlias),
+                                     ETypeName (ETypeName),
                                      IsElmDefinition (compileElmDef), ea_fields,
                                      ea_name, ea_newtype, ea_omit_null,
-                                     ea_unwrap_unary)
+                                     ea_unwrap_unary, epa_name, epa_type)
+import           General.Labels     (Labels)
 import           General.Types      (BackToChartViewLabel, Code,
                                      CumulativeLabel, IndividualRoundsLabel,
                                      MainLabel, MaxReachableLabel,
@@ -77,6 +86,22 @@ deriveElmDef defaultOptions ''UserSalt
 
 deriveElmDef defaultOptions ''UserHash
 
+deriveElmDef defaultOptions ''TeamRating
+
+deriveElmDef defaultOptions ''RoundRating
+
+deriveElmDef defaultOptions ''Ratings
+
+deriveElmDef defaultOptions ''Credentials
+
+deriveElmDef defaultOptions ''QuizSettings
+
+deriveElmDef defaultOptions ''QuizPDN
+
+deriveElmDef defaultOptions ''QuizInfo
+
+deriveElmDef defaultOptions ''Labels
+
 instance IsElmDefinition Day where
   compileElmDef _ =
     ETypeAlias
@@ -87,6 +112,14 @@ instance IsElmDefinition Day where
          , ea_newtype = False
          , ea_unwrap_unary = True
          })
+
+instance IsElmDefinition DbQuizId where
+  compileElmDef _ =
+    ETypePrimAlias
+      (EPrimAlias {
+        epa_name = ETypeName "DbQuizId" [],
+        epa_type = ETyCon (ETCon "Int")
+        })
 
 main :: String -> IO ()
 main path =
@@ -120,4 +153,13 @@ main path =
     , DefineElm (Proxy :: Proxy UserSalt)
     , DefineElm (Proxy :: Proxy UserHash)
     , DefineElm (Proxy :: Proxy Day)
+    , DefineElm (Proxy :: Proxy TeamRating)
+    , DefineElm (Proxy :: Proxy RoundRating)
+    , DefineElm (Proxy :: Proxy Ratings)
+    , DefineElm (Proxy :: Proxy Credentials)
+    , DefineElm (Proxy :: Proxy QuizSettings)
+    , DefineElm (Proxy :: Proxy QuizPDN)
+    , DefineElm (Proxy :: Proxy QuizInfo)
+    , DefineElm (Proxy :: Proxy Labels)
+    , DefineElm (Proxy :: Proxy DbQuizId)
     ]
