@@ -20,25 +20,27 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                               DbSessionKey (DbSessionKey),
                                               DbTeamNameCode (dbTeamNameCodeQuizId, dbTeamNameCodeTeamNumber),
-                                              DbUser (dbUserUserName),
+                                              DbUser (DbUser, dbUserUserName),
                                               EntityField (..),
                                               dbLabelsToLabels,
                                               dbSessionKeyUserHash,
                                               dbSessionKeyUserName,
+                                              dbUserUserHash, dbUserUserSalt,
                                               insertOrReplace, labelsToDbLabels,
                                               mkDbQuiz, mkDbRoundReachable,
                                               mkDbRoundReached,
                                               mkDbTeamNameCode, mkFilter,
                                               runSql)
 import           Db.DbConversion             (QuizPDN (date, name, place),
-                                              Ratings, ratingsFromDb)
+                                              Ratings, SavedUser, ratingsFromDb,
+                                              userHash, userName, userSalt)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap),
-                                              UserHash, UserName)
+                                              UserHash, UserName, UserSalt)
 
 type Statement m k = ReaderT SqlBackend m k
 
@@ -73,6 +75,15 @@ setSessionKey un uh = runSql (setSessionKeyStatement un uh)
 
 setSessionKeyStatement :: MonadIO m => UserName -> UserHash -> Statement m (Key DbSessionKey)
 setSessionKeyStatement un uh = repsertSessionKey (DbSessionKey (unwrap un) (unwrap uh))
+
+setUser :: SavedUser -> IO (Key DbUser)
+setUser = runSql . setUserStatement
+
+setUserStatement :: MonadIO m => SavedUser -> Statement m (Key DbUser)
+setUserStatement u =
+  repsertUser $
+  DbUser
+    {dbUserUserName = unwrap (userName u), dbUserUserSalt = unwrap (userSalt u), dbUserUserHash = unwrap (userHash u)}
 
 createQuiz :: QuizPDN -> IO (Key DbQuiz)
 createQuiz = runSql . createQuizStatement
