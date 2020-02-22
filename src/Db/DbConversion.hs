@@ -39,17 +39,18 @@ data RoundRating =
 
 deriveJSON defaultOptions ''RoundRating
 
-data TeamCodeNameNumber =
-  TeamCodeNameNumber
-    { tcnCode   :: Code
-    , tcnName   :: TeamName
-    , tcnNumber :: TeamNumber
+data TeamInfo =
+  TeamInfo
+    { teamInfoCode     :: Code
+    , teamInfoName     :: TeamName
+    , teamInfoNumber   :: TeamNumber
+    , teamInfoActivity :: Activity
     }
 
-deriveJSON defaultOptions ''TeamCodeNameNumber
+deriveJSON defaultOptions ''TeamInfo
 
 newtype Header =
-  Header [TeamCodeNameNumber]
+  Header [TeamInfo]
 
 deriveJSON defaultOptions ''Header
 
