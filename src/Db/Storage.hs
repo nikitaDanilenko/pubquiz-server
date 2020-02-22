@@ -33,10 +33,12 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               runSql, DbQuiz)
 import           Db.DbConversion             (QuizInfo,
                                               QuizPDN (date, name, place),
-                                              Ratings, SavedUser,
+                                              Ratings (roundRatings), SavedUser,
                                               dbUserToSavedUser, ratingsFromDb,
                                               savedUserToDbUser, userHash,
-                                              userName, userSalt, mkQuizInfo)
+                                              userName, userSalt, mkQuizInfo, 
+                                              TeamRating (teamNumber, rating),
+                                              RoundRating (reachableInRound, points))
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -47,12 +49,12 @@ import           General.Types               (Activity (..), Code, Place,
 
 type Statement m k = ReaderT SqlBackend m k
 
-setTeamRoundPoints :: DbQuizId -> RoundNumber -> TeamNumber -> Double -> IO (Key DbRoundReached)
-setTeamRoundPoints qid rn tn p = runSql (setTeamRoundPointsStatement qid rn tn p)
+setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
+setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
 
-setTeamRoundPointsStatement ::
-     MonadIO m => DbQuizId -> RoundNumber -> TeamNumber -> Double -> Statement m (Key DbRoundReached)
-setTeamRoundPointsStatement qid rn tn p = repsertRoundReached (mkDbRoundReached qid rn tn p)
+setTeamRatingStatement ::
+     MonadIO m => DbQuizId -> RoundNumber -> TeamRating -> Statement m (Key DbRoundReached)
+setTeamRatingStatement qid rn tr = repsertRoundReached (mkDbRoundReached qid rn (teamNumber tr) (rating tr))
 
 setReachable :: DbQuizId -> RoundNumber -> Double -> IO (Key DbRoundReachable)
 setReachable qid rn p = runSql (setReachableStatement qid rn p)
@@ -84,6 +86,15 @@ setUser = runSql . setUserStatement
 
 setUserStatement :: MonadIO m => SavedUser -> Statement m (Key DbUser)
 setUserStatement = repsertUser . savedUserToDbUser
+
+setRatings :: DbQuizId -> Ratings -> IO ()
+setRatings qid rs = runSql (setRatingsStatement qid rs)
+
+setRatingsStatement :: MonadIO m => DbQuizId -> Ratings -> Statement m ()
+setRatingsStatement qid ratings = mapM_ (uncurry (setRoundRatingStatement qid)) (roundRatings ratings) where
+  setRoundRatingStatement qid rd rr = do
+    setReachableStatement qid rd (reachableInRound rr)
+    mapM_ (setTeamRatingStatement qid rd) (points rr)
 
 createQuiz :: QuizPDN -> IO (Key DbQuiz)
 createQuiz = runSql . createQuizStatement
