@@ -70,7 +70,7 @@ teamInfoToDbTeamNameCode qid ti =
 deriveJSON defaultOptions ''TeamInfo
 
 newtype Header =
-  Header [TeamInfo]
+  Header { teamInfos :: [TeamInfo] }
 
 deriveJSON defaultOptions ''Header
 
