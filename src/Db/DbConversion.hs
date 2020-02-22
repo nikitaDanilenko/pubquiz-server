@@ -98,10 +98,9 @@ ratingsFromDb reachables reacheds = Ratings (toList (intersectionWith RoundRatin
 
 data QuizPDN =
   QuizPDN
-    { place  :: Place
-    , date   :: QuizDate
-    , name   :: QuizName
-    , active :: Activity
+    { place :: Place
+    , date  :: QuizDate
+    , name  :: QuizName
     }
 
 deriveJSON defaultOptions ''QuizPDN
@@ -110,6 +109,7 @@ data QuizInfo =
   QuizInfo
     { quizId     :: DbQuizId
     , identifier :: QuizPDN
+    , active     :: Activity
     }
 
 deriveJSON defaultOptions ''QuizInfo
@@ -119,12 +119,8 @@ mkQuizInfo eq =
   QuizInfo
     { quizId = entityKey eq
     , identifier =
-        QuizPDN
-          { name = wrap (T.pack (dbQuizName q))
-          , date = wrap (dbQuizDate q)
-          , place = wrap (T.pack (dbQuizPlace q))
-          , active = wrap (dbQuizActive q)
-          }
+        QuizPDN {name = wrap (T.pack (dbQuizName q)), date = wrap (dbQuizDate q), place = wrap (T.pack (dbQuizPlace q))}
+    , active = wrap (dbQuizActive q)
     }
   where
     q = entityVal eq
