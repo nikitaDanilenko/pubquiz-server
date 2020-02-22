@@ -32,7 +32,7 @@ import           General.Types      (BackToChartViewLabel, Code,
                                      ProgressionLabel, QuizDate, QuizName,
                                      RoundLabel, RoundNumber, RoundWinnerLabel,
                                      TeamLabel, TeamName, TeamNumber, UserHash,
-                                     UserName, UserSalt, ViewPreviousLabel)
+                                     UserName, UserSalt, ViewPreviousLabel, Activity)
 
 deriveElmDef defaultOptions ''TeamNumber
 
@@ -108,6 +108,8 @@ deriveElmDef defaultOptions ''TeamCodeNameNumber
 
 deriveElmDef defaultOptions ''Header
 
+deriveElmDef defaultOptions ''Activity
+
 instance IsElmDefinition Day where
   compileElmDef _ =
     ETypeAlias
@@ -166,4 +168,5 @@ main path =
     , DefineElm (Proxy :: Proxy Password)
     , DefineElm (Proxy :: Proxy TeamCodeNameNumber)
     , DefineElm (Proxy :: Proxy Header)
+    , DefineElm (Proxy :: Proxy Activity)
     ]
