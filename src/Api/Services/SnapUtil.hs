@@ -17,7 +17,7 @@ setResponseCodeJSON code = setResponseCode code . setHeader (mkFromString "Conte
 
 mkFromString :: String -> CI B.ByteString
 mkFromString = mk . B.pack
-
+--todo : Check uses of this function and replace with getJSONPostParam
 attemptDecode :: (Functor f, FromJSON a) => f (Maybe B.ByteString) -> f (Maybe a)
 attemptDecode = fmap (>>= decode . L.fromStrict)
 
