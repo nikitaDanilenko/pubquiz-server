@@ -3,7 +3,7 @@
 module Db.DbConversion where
 
 import           Control.Arrow    ((&&&))
-import           Data.Aeson.TH    (deriveJSON, defaultOptions)
+import           Data.Aeson.TH    (defaultOptions, deriveJSON)
 import           Data.Function    (on)
 import           Data.List        (groupBy, sortOn)
 import           Data.Map         (fromList, intersectionWith, toList)
@@ -13,11 +13,13 @@ import           Database.Persist (Entity, entityKey, entityVal)
 import           Db.Connection    (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                    DbQuizId,
                                    DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
-                                   DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber))
+                                   DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
+                                   DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt))
 import           General.Labels   (Labels, fallbackLabels)
 import           General.Types    (Place, QuizDate, QuizName,
                                    RoundNumber (RoundNumber),
-                                   TeamNumber (TeamNumber), wrap, UserName, UserSalt, UserHash)
+                                   TeamNumber (TeamNumber), UserHash, UserName,
+                                   UserSalt, wrap, unwrap)
 import           GHC.Natural      (Natural)
 
 data TeamRating =
@@ -105,8 +107,24 @@ mkQuizInfo eq =
   where
     q = entityVal eq
 
-data SavedUser = SavedUser { 
-    userName :: UserName, 
-    userSalt :: UserSalt, 
-    userHash :: UserHash
+data SavedUser =
+  SavedUser
+    { userName :: UserName
+    , userSalt :: UserSalt
+    , userHash :: UserHash
+    }
+
+savedUserToDbUser :: SavedUser -> DbUser
+savedUserToDbUser savedUser =
+  DbUser
+    { dbUserUserName = unwrap (userName savedUser)
+    , dbUserUserSalt = unwrap (userSalt savedUser)
+    , dbUserUserHash = unwrap (userHash savedUser)
+    }
+
+dbUserToSavedUser :: DbUser -> SavedUser
+dbUserToSavedUser dbUser = SavedUser {
+  userName = wrap (dbUserUserName dbUser),
+  userSalt = wrap (dbUserUserSalt dbUser),
+  userHash = wrap (dbUserUserHash dbUser)
 }
