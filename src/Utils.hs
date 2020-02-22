@@ -21,6 +21,7 @@ import System.Random                        ( newStdGen, randomRs )
 readOrCreateEmpty :: FilePath -> IO String
 readOrCreateEmpty = readOrCreateEmptyWith "" writeFile readFile
 
+-- todo can be probably removed
 readOrCreateEmptyBS :: FilePath -> IO B.ByteString
 readOrCreateEmptyBS = readOrCreateEmptyWith B.empty B.writeFile B.readFile
 
