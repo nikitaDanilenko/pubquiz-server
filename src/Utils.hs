@@ -9,7 +9,7 @@ import "cryptonite" Crypto.Hash.Algorithms  ( SHA512 )
 import Data.Char                            ( chr )
 import qualified Data.ByteString.Char8 as B 
 import Data.Function                        ( on )
-import Data.List                            ( sortBy, groupBy, intercalate )
+import Data.List                            ( sortBy, groupBy, intercalate, sortOn )
 import Data.List.Extra                      ( linesBy )
 import Data.Ord                             ( comparing )
 import Snap.Snaplet                         ( Handler )
@@ -49,22 +49,22 @@ mkCORS = applyCORS defaultOptions
 randomStringIO :: IO String
 randomStringIO = fmap (map chr . randomRs (33, 126)) newStdGen
 
-alphaNumeric :: String
-alphaNumeric = ['0' .. '9'] ++ ['a' .. 'z']
+hexadecimal :: String
+hexadecimal = ['0' .. '9'] ++ ['a' .. 'f']
 
-alphaNumericAmount :: Int
-alphaNumericAmount = length alphaNumeric
+hexadecimalAmount :: Int
+hexadecimalAmount = length hexadecimal
 
-randomAlphaNumeric :: IO String
-randomAlphaNumeric = fmap (map (alphaNumeric !!) . randomRs (0, alphaNumericAmount - 1)) newStdGen
+randomHexadecimal :: IO String
+randomHexadecimal = fmap (map (hexadecimal !!) . randomRs (0, hexadecimalAmount - 1)) newStdGen
 
-randomDistinctAlphaNumeric :: Int -> Int -> IO [String]
-randomDistinctAlphaNumeric numberOfStrings size = 
+randomDistinctHexadecimal :: Int -> Int -> IO [String]
+randomDistinctHexadecimal numberOfStrings size =
     fmap disambiguate (randomNonDistinct numberOfStrings size)
 
 randomNonDistinct :: Int -> Int -> IO [String]
 randomNonDistinct numberOfStrings size = do
-    randomInfinite <- randomAlphaNumeric
+    randomInfinite <- randomHexadecimal
     let chunks = take numberOfStrings (chunk size randomInfinite)
     return chunks
 
@@ -80,13 +80,13 @@ chunk size xs | size <= 0 = [xs]
               | otherwise = h : chunk size t where (h, t) = splitAt size xs
 
 disambiguate :: [String] -> [String]
-disambiguate = 
-    map snd . 
-        sortBy (comparing fst) .
-        concatMap (uncurry zip . second disambiguateList . unzip) . 
-        groupBy ((==) `on` snd) . 
-        sortBy (comparing snd) . 
-        zip [(0 :: Int) ..]
+disambiguate =
+  map snd .
+  sortOn fst .
+  concatMap (uncurry zip . second disambiguateList . unzip) . 
+  groupBy ((==) `on` snd) . 
+  sortOn fst . 
+  zip [(0 :: Int) ..]
 
 disambiguateSingle :: Int -> String -> String
 disambiguateSingle = (++) . show
