@@ -14,6 +14,7 @@ import           Db.Connection    (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                    DbQuizId,
                                    DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
                                    DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
+                                   DbTeamNameCode (DbTeamNameCode, dbTeamNameCodeActive, dbTeamNameCodeQuizId, dbTeamNameCodeTeamCode, dbTeamNameCodeTeamName, dbTeamNameCodeTeamNumber),
                                    DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
                                    dbQuizActive)
 import           General.Labels   (Labels, fallbackLabels)
@@ -45,6 +46,25 @@ data TeamInfo =
     , teamInfoName     :: TeamName
     , teamInfoNumber   :: TeamNumber
     , teamInfoActivity :: Activity
+    }
+
+dbTeamNameCodeToTeamInfo :: DbTeamNameCode -> TeamInfo
+dbTeamNameCodeToTeamInfo db =
+  TeamInfo
+    { teamInfoCode = wrap (dbTeamNameCodeTeamCode db)
+    , teamInfoName = wrap (dbTeamNameCodeTeamName db)
+    , teamInfoNumber = wrap (dbTeamNameCodeTeamNumber db)
+    , teamInfoActivity = wrap (dbTeamNameCodeActive db)
+    }
+
+teamInfoToDbTeamNameCode :: DbQuizId -> TeamInfo -> DbTeamNameCode
+teamInfoToDbTeamNameCode qid ti =
+  DbTeamNameCode
+    { dbTeamNameCodeQuizId = qid
+    , dbTeamNameCodeTeamCode = unwrap (teamInfoCode ti)
+    , dbTeamNameCodeTeamName = unwrap (teamInfoName ti)
+    , dbTeamNameCodeTeamNumber = unwrap (teamInfoNumber ti)
+    , dbTeamNameCodeActive = unwrap (teamInfoActivity ti)
     }
 
 deriveJSON defaultOptions ''TeamInfo
