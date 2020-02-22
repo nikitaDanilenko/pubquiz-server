@@ -4,14 +4,17 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module General.Types where
 
-import           Data.Aeson.TH      (defaultOptions, deriveJSON)
-import           Data.Text          (Text)
-import qualified Data.Text          as T
-import           Data.Time.Calendar (Day)
-import           GHC.Natural        (Natural)
+import           Data.Aeson.TH         (defaultOptions, deriveJSON)
+import qualified Data.ByteString.Char8 as B
+import           Data.Text             (Text)
+import qualified Data.Text             as T
+import qualified Data.Text.Encoding    as E
+import           Data.Time.Calendar    (Day)
+import           GHC.Natural           (Natural)
 
 newtype TeamNumber =
   TeamNumber Natural
@@ -105,6 +108,14 @@ class Unwrappable t v where
 instance Unwrappable t Text => Unwrappable t String where
   unwrap = T.unpack . unwrap
   wrap = wrap . T.pack
+
+instance Unwrappable t Text => Unwrappable t B.ByteString where
+  unwrap = E.encodeUtf8 . unwrap
+  wrap = wrap . E.decodeUtf8
+
+instance Unwrappable t v => Unwrappable (Maybe t) (Maybe v) where
+  unwrap = fmap unwrap
+  wrap = fmap wrap
 
 class Fallback t where
   fallback :: t
