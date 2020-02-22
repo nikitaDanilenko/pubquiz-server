@@ -16,7 +16,7 @@ import           General.Types          (UserHash, UserName, UserSalt, unwrap,
 import           Utils                  (Hashed, mkHashed, randomStringIO,
                                          readOrCreateEmpty)
 
-type Password = T.Text
+type Password = B.ByteString
 
 mkUser :: UserName -> Password -> IO SavedUser
 mkUser user pass = do
@@ -43,7 +43,7 @@ data Status
   | Exists UserName
 
 mkUserHashed :: UserName -> Password -> UserSalt -> Hashed
-mkUserHashed user pass salt = mkHashed (E.encodeUtf8 (T.concat [unwrap user, pass, unwrap salt]))
+mkUserHashed user pass salt = mkHashed (E.encodeUtf8 (T.concat [unwrap user, E.decodeUtf8 pass, unwrap salt]))
 
 mkHash :: UserName -> Password -> UserSalt -> UserHash
 mkHash user pass salt = wrap (T.pack (show (mkUserHashed user pass salt)))
