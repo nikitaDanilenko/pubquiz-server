@@ -33,7 +33,7 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               runSql)
 import           Db.DbConversion             (QuizPDN (date, name, place),
                                               Ratings, SavedUser, ratingsFromDb,
-                                              userHash, userName, userSalt)
+                                              userHash, userName, userSalt, dbUserToSavedUser, savedUserToDbUser)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -80,10 +80,7 @@ setUser :: SavedUser -> IO (Key DbUser)
 setUser = runSql . setUserStatement
 
 setUserStatement :: MonadIO m => SavedUser -> Statement m (Key DbUser)
-setUserStatement u =
-  repsertUser $
-  DbUser
-    {dbUserUserName = unwrap (userName u), dbUserUserSalt = unwrap (userSalt u), dbUserUserHash = unwrap (userHash u)}
+setUserStatement = repsertUser . savedUserToDbUser
 
 createQuiz :: QuizPDN -> IO (Key DbQuiz)
 createQuiz = runSql . createQuizStatement
@@ -138,11 +135,11 @@ findLabelsStatement :: MonadIO m => DbQuizId -> Statement m Labels
 findLabelsStatement qid =
   fmap (maybe fallbackLabels (dbLabelsToLabels . entityVal)) (selectFirst [DbLabelsQuizId ==. qid] [])
 
-findUser :: UserName -> IO (Maybe DbUser)
+findUser :: UserName -> IO (Maybe SavedUser)
 findUser = runSql . findUserStatement
 
-findUserStatement :: MonadIO m => UserName -> Statement m (Maybe DbUser)
-findUserStatement userName = fmap (fmap entityVal) (selectFirst [DbUserUserName ==. unwrap userName] [])
+findUserStatement :: MonadIO m => UserName -> Statement m (Maybe SavedUser)
+findUserStatement userName = fmap (fmap (dbUserToSavedUser . entityVal)) (selectFirst [DbUserUserName ==. unwrap userName] [])
 
 findSessionKey :: UserName -> IO (Maybe UserHash)
 findSessionKey = runSql . findSessionKeyStatement
