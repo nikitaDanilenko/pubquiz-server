@@ -8,7 +8,7 @@ import           Control.Monad.Trans.Reader  (ReaderT)
 
 import           Database.Persist            (Entity, Key, checkUnique,
                                               entityVal, insert, selectFirst,
-                                              selectList, (==.))
+                                              selectList, (==.), update, (=.))
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Data.List                   (intercalate)
@@ -126,11 +126,15 @@ createQuizStatement ndp = do
         ]
     (p, d, n) = (place ndp, date ndp, name ndp)
 
-lockQuiz :: Place -> QuizDate -> QuizName -> IO (Key DbQuiz)
-lockQuiz p d n = runSql (lockQuizStatement p d n)
+lockQuiz :: DbQuizId -> IO ()
+lockQuiz = runSql . lockQuizStatement
 
-lockQuizStatement :: MonadIO m => Place -> QuizDate -> QuizName -> Statement m (Key DbQuiz)
-lockQuizStatement p d n = repsertQuiz (mkDbQuiz p d n Inactive)
+lockQuizStatement :: MonadIO m => DbQuizId -> Statement m ()
+lockQuizStatement qid = do
+  mQuiz <- selectFirst [DbQuizId ==. qid] []
+  case mQuiz of
+    Nothing -> pure ()
+    Just _ -> update qid [DbQuizActive =. False]
 
 findAllActiveQuizzes :: IO [QuizInfo]
 findAllActiveQuizzes = runSql findAllActiveQuizzesStatement
