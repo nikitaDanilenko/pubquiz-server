@@ -14,7 +14,8 @@ import           Db.Connection    (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                    DbQuizId,
                                    DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
                                    DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
-                                   DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt))
+                                   DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
+                                   dbQuizActive)
 import           General.Labels   (Labels, fallbackLabels)
 import           General.Types    (Activity, Code, Place, QuizDate, QuizName,
                                    RoundNumber (RoundNumber), TeamName,
@@ -47,7 +48,8 @@ data TeamCodeNameNumber =
 
 deriveJSON defaultOptions ''TeamCodeNameNumber
 
-newtype Header = Header [TeamCodeNameNumber]
+newtype Header =
+  Header [TeamCodeNameNumber]
 
 deriveJSON defaultOptions ''Header
 
@@ -116,7 +118,12 @@ mkQuizInfo eq =
   QuizInfo
     { quizId = entityKey eq
     , identifier =
-        QuizPDN {name = wrap (T.pack (dbQuizName q)), date = wrap (dbQuizDate q), place = wrap (T.pack (dbQuizPlace q))}
+        QuizPDN
+          { name = wrap (T.pack (dbQuizName q))
+          , date = wrap (dbQuizDate q)
+          , place = wrap (T.pack (dbQuizPlace q))
+          , active = wrap (dbQuizActive q)
+          }
     }
   where
     q = entityVal eq
