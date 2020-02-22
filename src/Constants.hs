@@ -45,6 +45,9 @@ readFromConfigFile param dft = do
   let path = fromMaybe dft (settings !? param)
   return path
 
+sheetsFolderIO :: IO String
+sheetsFolderIO = readFromConfigFile "sheetsFolder" (addSeparator [".", "sheets"])
+
 quizzesFolderIO :: IO String
 quizzesFolderIO = readFromConfigFile "quizzesFolder" (addSeparator [".", "quizzes"])
           

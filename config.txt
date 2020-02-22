@@ -1,4 +1,5 @@
 quizzesFolder=./quizzes
+sheetsFolder=./sheets
 serverRelativeQuizPath=quizzes
 database=./db
 databaseHost=
