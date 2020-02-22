@@ -16,10 +16,10 @@ import           Db.Connection    (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                    DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                    DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt))
 import           General.Labels   (Labels, fallbackLabels)
-import           General.Types    (Place, QuizDate, QuizName,
-                                   RoundNumber (RoundNumber),
+import           General.Types    (Activity, Code, Place, QuizDate, QuizName,
+                                   RoundNumber (RoundNumber), TeamName,
                                    TeamNumber (TeamNumber), UserHash, UserName,
-                                   UserSalt, wrap, unwrap)
+                                   UserSalt, unwrap, wrap)
 import           GHC.Natural      (Natural)
 
 data TeamRating =
@@ -37,6 +37,19 @@ data RoundRating =
     }
 
 deriveJSON defaultOptions ''RoundRating
+
+data TeamCodeNameNumber =
+  TeamCodeNameNumber
+    { tcnCode   :: Code
+    , tcnName   :: TeamName
+    , tcnNumber :: TeamNumber
+    }
+
+deriveJSON defaultOptions ''TeamCodeNameNumber
+
+newtype Header = Header [TeamCodeNameNumber]
+
+deriveJSON defaultOptions ''Header
 
 newtype Ratings =
   Ratings
@@ -82,9 +95,10 @@ ratingsFromDb reachables reacheds = Ratings (toList (intersectionWith RoundRatin
 
 data QuizPDN =
   QuizPDN
-    { place :: Place
-    , date  :: QuizDate
-    , name  :: QuizName
+    { place  :: Place
+    , date   :: QuizDate
+    , name   :: QuizName
+    , active :: Activity
     }
 
 deriveJSON defaultOptions ''QuizPDN
@@ -123,8 +137,9 @@ savedUserToDbUser savedUser =
     }
 
 dbUserToSavedUser :: DbUser -> SavedUser
-dbUserToSavedUser dbUser = SavedUser {
-  userName = wrap (dbUserUserName dbUser),
-  userSalt = wrap (dbUserUserSalt dbUser),
-  userHash = wrap (dbUserUserHash dbUser)
-}
+dbUserToSavedUser dbUser =
+  SavedUser
+    { userName = wrap (dbUserUserName dbUser)
+    , userSalt = wrap (dbUserUserSalt dbUser)
+    , userHash = wrap (dbUserUserHash dbUser)
+    }
