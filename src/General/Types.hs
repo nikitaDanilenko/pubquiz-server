@@ -95,6 +95,7 @@ newtype UserSalt =
 
 newtype UserHash =
   UserHash Text
+  deriving (Eq)
 
 class Unwrappable t v where
   unwrap :: t -> v
