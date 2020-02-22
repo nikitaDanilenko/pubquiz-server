@@ -47,8 +47,8 @@ deriveJSON defaultOptions ''Ratings
 
 data Credentials =
   Credentials
-    { user      :: T.Text
-    , signature :: T.Text
+    { user      :: UserName
+    , signature :: UserHash
     }
 
 deriveJSON defaultOptions ''Credentials
