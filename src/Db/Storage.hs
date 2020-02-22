@@ -18,12 +18,15 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               DbQuizId,
                                               DbRoundReachable (dbRoundReachableQuizId, dbRoundReachableRoundNumber),
                                               DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
+                                              DbSessionKey (DbSessionKey),
                                               DbTeamNameCode (dbTeamNameCodeQuizId, dbTeamNameCodeTeamNumber),
                                               DbUser (dbUserUserName),
                                               EntityField (..),
-                                              dbLabelsToLabels, insertOrReplace,
-                                              labelsToDbLabels, mkDbQuiz,
-                                              mkDbRoundReachable,
+                                              dbLabelsToLabels,
+                                              dbSessionKeyUserHash,
+                                              dbSessionKeyUserName,
+                                              insertOrReplace, labelsToDbLabels,
+                                              mkDbQuiz, mkDbRoundReachable,
                                               mkDbRoundReached,
                                               mkDbTeamNameCode, mkFilter,
                                               runSql)
@@ -34,7 +37,8 @@ import           General.Labels              (Labels (..), fallbackLabels,
 import           General.Types               (Activity (..), Code, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
-                                              Unwrappable (unwrap, wrap), UserName)
+                                              Unwrappable (unwrap, wrap),
+                                              UserHash, UserName)
 
 type Statement m k = ReaderT SqlBackend m k
 
@@ -63,6 +67,12 @@ setLabels qid lbls = runSql (setLabelsStatement qid lbls)
 
 setLabelsStatement :: MonadIO m => DbQuizId -> Labels -> Statement m (Key DbLabels)
 setLabelsStatement qid lbls = repsertLabels (labelsToDbLabels qid lbls)
+
+setSessionKey :: UserName -> UserHash -> IO (Key DbSessionKey)
+setSessionKey un uh = runSql (setSessionKeyStatement un uh)
+
+setSessionKeyStatement :: MonadIO m => UserName -> UserHash -> Statement m (Key DbSessionKey)
+setSessionKeyStatement un uh = repsertSessionKey (DbSessionKey (unwrap un) (unwrap uh))
 
 createQuiz :: QuizPDN -> IO (Key DbQuiz)
 createQuiz = runSql . createQuizStatement
@@ -123,6 +133,13 @@ findUser = runSql . findUserStatement
 findUserStatement :: MonadIO m => UserName -> Statement m (Maybe DbUser)
 findUserStatement userName = fmap (fmap entityVal) (selectFirst [DbUserUserName ==. unwrap userName] [])
 
+findSessionKey :: UserName -> IO (Maybe UserHash)
+findSessionKey = runSql . findSessionKeyStatement
+
+findSessionKeyStatement :: MonadIO m => UserName -> Statement m (Maybe UserHash)
+findSessionKeyStatement un =
+  fmap (fmap (wrap . dbSessionKeyUserHash . entityVal)) (selectFirst [DbSessionKeyUserName ==. unwrap un] [])
+
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
 repsertQuiz =
@@ -153,3 +170,6 @@ repsertRoundReached =
 
 repsertUser :: MonadIO m => DbUser -> Statement m (Key DbUser)
 repsertUser = insertOrReplace [mkFilter DbUserUserName dbUserUserName]
+
+repsertSessionKey :: MonadIO m => DbSessionKey -> Statement m (Key DbSessionKey)
+repsertSessionKey = insertOrReplace [mkFilter DbSessionKeyUserName dbSessionKeyUserName]
