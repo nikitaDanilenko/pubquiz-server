@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0a1b616ec176ada8c78de2cc48e0912feebf2a72bedab466e209ad40e07af76a
+-- hash: ed5e3a671c5a3021084f5d03fd2b6a636d71387bf2ec2952a608089bc9eb9929
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -33,7 +33,7 @@ library
       Api.Services.EstablishSecret
       Api.Services.HashCheck
       Api.Services.QuizService
-      Api.Services.SavedUser
+      Api.Services.SavedUserHandler
       Api.Services.SnapUtil
       Api.Services.UserService
       Application
@@ -102,7 +102,7 @@ executable pubquiz-server-exe
       Api.Services.EstablishSecret
       Api.Services.HashCheck
       Api.Services.QuizService
-      Api.Services.SavedUser
+      Api.Services.SavedUserHandler
       Api.Services.SnapUtil
       Api.Services.UserService
       Application

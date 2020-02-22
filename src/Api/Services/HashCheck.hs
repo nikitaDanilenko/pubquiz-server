@@ -16,10 +16,10 @@ import           Constants              (sessionKeysFileIO, userParam)
 import           Data.Aeson             (encode, object, (.=))
 import qualified Data.Text.Encoding     as E
 import           Db.Connection          (dbUserUserHash)
-import           Db.DbConversion        (Credentials, signature)
+import           Db.DbConversion        (Credentials, signature, userHash)
 import qualified Db.DbConversion        as D
 import           Db.Storage             (findUser)
-import           General.Types          (UserName (UserName))
+import           General.Types          (UserName (UserName), UserHash, unwrap)
 import           Utils                  (mkHashed, readOrCreateEmptyBS)
 
 -- todo fuse with the other attempt
@@ -47,8 +47,8 @@ verifyHash attempt sessionKey = mkHash (B.concat [sessionKey, bsArgs]) == claim 
     allArgs = (userParam, user attempt) : arguments attempt
     bsArgs = B.intercalate "&" (map (\(k, v) -> B.concat [k, "=", v]) allArgs)
 
-verifyHash2 :: Attempt2 -> B.ByteString -> Bool
-verifyHash2 attempt sessionKey = mkHash (B.concat [sessionKey, L.toStrict args]) == claim2 attempt
+verifyHash2 :: Attempt2 -> UserHash -> Bool
+verifyHash2 attempt sessionKey = mkHash (B.concat [unwrap sessionKey, L.toStrict args]) == claim2 attempt
   where
     args = encode (object (map (\(k, v) -> decodeUtf8 k .= decodeUtf8 v) (arguments2 attempt)))
 
@@ -84,7 +84,7 @@ mkAttemptWithMaybe2 mUser mSig kMvs =
 mkVerifiedRequest2 :: Maybe UserName -> Maybe B.ByteString -> [(B.ByteString, Maybe B.ByteString)] -> IO Bool
 mkVerifiedRequest2 mUserName mSig kMvs = do
   mUser <- findUser (user2 attempt)
-  return (maybe False (verifyHash2 attempt . B.pack . dbUserUserHash) mUser)
+  return (maybe False (verifyHash2 attempt . userHash) mUser)
   where
     attempt = mkAttemptWithMaybe2 mUserName mSig kMvs
 
