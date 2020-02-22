@@ -73,11 +73,14 @@ lock = "lock"
 prefix :: B.ByteString
 prefix = "prefix"
 
-rounds :: B.ByteString
-rounds = "rounds"
+roundsParam :: B.ByteString
+roundsParam = "rounds"
 
-labels :: B.ByteString
-labels = "labels"
+labelsParam :: B.ByteString
+labelsParam = "labels"
+
+headerParam :: B.ByteString
+headerParam = "header"
 
 actionParam :: B.ByteString
 actionParam = "action"
