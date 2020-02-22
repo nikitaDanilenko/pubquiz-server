@@ -4,7 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module General.Types where
 
@@ -99,6 +99,9 @@ newtype UserSalt =
 newtype UserHash =
   UserHash Text
   deriving (Eq)
+
+newtype Password =
+  Password Text
 
 class Unwrappable t v where
   unwrap :: t -> v
@@ -230,6 +233,10 @@ instance Unwrappable UserHash Text where
   unwrap (UserHash s) = s
   wrap = UserHash
 
+instance Unwrappable Password Text where
+  unwrap (Password p) = p
+  wrap = Password
+
 instance Fallback RoundLabel where
   fallback = wrap (T.pack "Runde")
 
@@ -329,3 +336,5 @@ deriveJSON defaultOptions ''UserName
 deriveJSON defaultOptions ''UserSalt
 
 deriveJSON defaultOptions ''UserHash
+
+deriveJSON defaultOptions ''Password

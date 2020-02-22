@@ -16,12 +16,10 @@ import qualified Data.Text.Encoding     as E
 import           Constants              (saltSize, userFileIO)
 import           Db.DbConversion        (SavedUser (SavedUser), userName)
 import           Db.Storage             (findUser, setUser)
-import           General.Types          (UserHash, UserName, UserSalt, unwrap,
-                                         wrap)
+import           General.Types          (Password, UserHash, UserName, UserSalt,
+                                         unwrap, wrap)
 import           Utils                  (Hashed, mkHashed, randomStringIO,
                                          readOrCreateEmpty)
-
-type Password = B.ByteString
 
 mkUser :: UserName -> Password -> IO SavedUser
 mkUser user pass = do
@@ -48,7 +46,7 @@ data Status
   | Exists UserName
 
 mkUserHashed :: UserName -> Password -> UserSalt -> Hashed
-mkUserHashed user pass salt = mkHashed (E.encodeUtf8 (T.concat [unwrap user, E.decodeUtf8 pass, unwrap salt]))
+mkUserHashed user pass salt = mkHashed (E.encodeUtf8 (T.concat [unwrap user, unwrap pass, unwrap salt]))
 
 mkHash :: UserName -> Password -> UserSalt -> UserHash
 mkHash user pass salt = wrap (T.pack (show (mkUserHashed user pass salt)))

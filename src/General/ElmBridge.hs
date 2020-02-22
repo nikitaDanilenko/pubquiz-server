@@ -14,10 +14,10 @@ import           Db.Connection      (DbQuizId)
 import           Db.DbConversion    (Credentials, QuizInfo, QuizPDN,
                                      QuizSettings, Ratings, RoundRating,
                                      TeamRating)
-import           Elm.TyRep          (EAlias (EAlias), ETCon (ETCon),
-                                     ETVar (ETVar), EType (ETyCon),
+import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
+                                     ETCon (ETCon), ETVar (ETVar),
+                                     EType (ETyCon),
                                      ETypeDef (ETypeAlias, ETypePrimAlias),
-                                     EPrimAlias (EPrimAlias),
                                      ETypeName (ETypeName),
                                      IsElmDefinition (compileElmDef), ea_fields,
                                      ea_name, ea_newtype, ea_omit_null,
@@ -27,8 +27,8 @@ import           General.Types      (BackToChartViewLabel, Code,
                                      CumulativeLabel, IndividualRoundsLabel,
                                      MainLabel, MaxReachableLabel,
                                      MaxReachedLabel, OwnPageLabel,
-                                     OwnPointsLabel, Place, PlaceLabel,
-                                     PlacementLabel, PointsLabel,
+                                     OwnPointsLabel, Password, Place,
+                                     PlaceLabel, PlacementLabel, PointsLabel,
                                      ProgressionLabel, QuizDate, QuizName,
                                      RoundLabel, RoundNumber, RoundWinnerLabel,
                                      TeamLabel, TeamName, TeamNumber, UserHash,
@@ -102,6 +102,8 @@ deriveElmDef defaultOptions ''QuizInfo
 
 deriveElmDef defaultOptions ''Labels
 
+deriveElmDef defaultOptions ''Password
+
 instance IsElmDefinition Day where
   compileElmDef _ =
     ETypeAlias
@@ -114,12 +116,7 @@ instance IsElmDefinition Day where
          })
 
 instance IsElmDefinition DbQuizId where
-  compileElmDef _ =
-    ETypePrimAlias
-      (EPrimAlias {
-        epa_name = ETypeName "DbQuizId" [],
-        epa_type = ETyCon (ETCon "Int")
-        })
+  compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "DbQuizId" [], epa_type = ETyCon (ETCon "Int")})
 
 main :: String -> IO ()
 main path =
@@ -162,4 +159,5 @@ main path =
     , DefineElm (Proxy :: Proxy QuizInfo)
     , DefineElm (Proxy :: Proxy Labels)
     , DefineElm (Proxy :: Proxy DbQuizId)
+    , DefineElm (Proxy :: Proxy Password)
     ]

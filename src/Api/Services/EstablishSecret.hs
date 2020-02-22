@@ -25,7 +25,8 @@ import           Data.Aeson                    (encode)
 import           Db.DbConversion               (SavedUser, userHash, userName,
                                                 userSalt)
 import           Db.Storage                    (findUser, setSessionKey)
-import           General.Types                 (UserHash, UserName, wrap)
+import           General.Types                 (UserHash, UserName, unwrap,
+                                                wrap)
 import           Utils                         (randomStringIO,
                                                 readOrCreateEmptyBS, (+>))
 
@@ -38,7 +39,10 @@ secretRoutes = ["/" +> method POST createSecret]
 createSecret :: Handler b SecretService ()
 createSecret = do
   mUser <- attemptDecode (getPostParam userParam)
-  mPass <- getPostParam passwordParam
+  mPass <- attemptDecode (getPostParam passwordParam)
+  -- todo remove unwrap
+  liftIO (print (unwrap mUser :: Maybe String))
+  liftIO (print (unwrap mPass :: Maybe String))
   valid <- liftIO $ fromMaybe (pure False) (liftA2 verifyUser mUser mPass)
   if valid
     then do

@@ -29,7 +29,7 @@ import           Api.Services.HashCheck    (authenticate,
                                             authenticateWithCredentials,
                                             failIfUnverified)
 import           Api.Services.SnapUtil     (setResponseCodeJSON,
-                                            setResponseCodePlain)
+                                            setResponseCodePlain, attemptDecode)
 import           Constants                 (actionParam, addSeparator,
                                             backToChartViewParam, createQuiz,
                                             credentialsParam, cumulativeParam,
@@ -259,9 +259,6 @@ newQuizLegacy = do
             writeBS (B.unwords ["Quiz", name, "already exists or its labels contain invalid symbols"])
             modifyResponse (setResponseCodePlain 406)
 
-attemptDecode :: (Functor f, FromJSON a) => f (Maybe B.ByteString) -> f (Maybe a)
-attemptDecode = fmap (>>= decode . L.fromStrict)
-
 newQuiz :: Handler b QuizService ()
 newQuiz = do
   mQuizPDNRaw <- getPostParam quizPDNParam
@@ -281,7 +278,7 @@ newQuiz = do
                 (\n e -> (TeamNumber n, Code e, TeamName (unwrap (teamLabel (D.labels settings)))))
                 [1 .. gs]
                 (map T.pack endings)
-        quizId <- liftIO (S.createQuiz quizInfo)
+        quizId <- liftIO (S.createQuiz quizPDN)
         liftIO (mapM (\(t, c, n) -> setTeam quizId t c n Active) teamCodeNames)
         pure ()
 

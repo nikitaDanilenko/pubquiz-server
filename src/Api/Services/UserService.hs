@@ -5,21 +5,24 @@ module Api.Services.UserService where
 
 import           Control.Monad.IO.Class        (liftIO)
 import qualified Data.ByteString.Char8         as B
-import qualified Data.Text.Encoding as E
+import qualified Data.Text.Encoding            as E
 import           Snap.Core                     (Method (POST), getPostParam,
                                                 method, modifyResponse,
                                                 setResponseCode, writeBS)
 import           Snap.Snaplet                  (Handler, SnapletInit, addRoutes,
                                                 makeSnaplet)
 
-import           Api.Services.HashCheck        (authenticate, failIfUnverified, authenticateWithCredentials)
+import           Api.Services.HashCheck        (authenticate,
+                                                authenticateWithCredentials,
+                                                failIfUnverified)
 import           Api.Services.SavedUserHandler (Status (..), mkAndSaveUser)
-import           Constants                     (newUserParam, passwordParam,
-                                                signatureParam, userParam,
-                                                userPath, credentialsParam)
+import           Api.Services.SnapUtil         (attemptDecode)
+import           Constants                     (credentialsParam, newUserParam,
+                                                passwordParam, signatureParam,
+                                                userParam, userPath)
+import           General.Types                 (Password, UserName, unwrap,
+                                                wrap)
 import           Utils                         ((+>))
-import General.Types (UserName, wrap, unwrap)
-import Api.Services.SnapUtil (attemptDecode)
 
 data UserService =
   UserService
@@ -38,8 +41,9 @@ createUser = do
   mUser <- attemptDecode (getPostParam userParam) :: Handler b UserService (Maybe UserName)
   mNewUser <- attemptDecode (getPostParam newUserParam) :: Handler b UserService (Maybe UserName)
   mCredentials <- attemptDecode (getPostParam credentialsParam)
-  mNewPass <- getPostParam passwordParam
-  verified <- authenticateWithCredentials mCredentials [(newUserParam, unwrap mNewUser), (passwordParam, mNewPass)]
+  mNewPass <- attemptDecode (getPostParam passwordParam) :: Handler b UserService (Maybe Password)
+  verified <-
+    authenticateWithCredentials mCredentials [(newUserParam, unwrap mNewUser), (passwordParam, unwrap mNewPass)]
   failIfUnverified verified $
     case (mNewUser, mNewPass) of
       (Just user, Just pass) -> do
