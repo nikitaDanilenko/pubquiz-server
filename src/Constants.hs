@@ -91,6 +91,9 @@ labelUpdate = "labelUpdate"
 roundsNumberParam :: B.ByteString
 roundsNumberParam = "roundsNumber"
 
+quizIdParam :: B.ByteString
+quizIdParam = "quizId"
+
 quizPDNParam :: B.ByteString
 quizPDNParam = "quizPDN"
 
