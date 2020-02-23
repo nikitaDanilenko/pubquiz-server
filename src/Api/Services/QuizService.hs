@@ -85,7 +85,7 @@ quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
   [ "all" +> method GET sendAvailableActive
   , "getQuizData" +> method GET getSingleQuizData
-  , "getQuizLabels" +> method GET getSingleQuizLabelsLegacy
+  , "getQuizLabels" +> method GET getSingleQuizLabels
   , "updateQuizSettings" +> method POST updateQuizSettings
   , "update" +> method POST updateQuiz
   , "lock" +> method POST lockQuizHandler
@@ -115,31 +115,15 @@ getSingleQuizData = getSingleWithData perQuiz
       liftIO (readQuizFile q) >>=
       maybe (modifyResponse (setResponseCodePlain 404)) (\c -> writeBS c >> modifyResponse (setResponseCodePlain 200))
 
-getSingleQuizLabelsLegacy :: Handler b QuizService ()
-getSingleQuizLabelsLegacy = getSingleWithData perQuiz
-  where
-    perQuiz :: B.ByteString -> Handler b QuizService ()
-    perQuiz q = do
-      lbls <- liftIO (readLabelsFile q)
-      let response = B.intercalate "\n" (map B.pack (parameters lbls))
-      writeBS response
-      modifyResponse (setResponseCodePlain 200)
-
-getSingleWithDataJSON :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
-getSingleWithDataJSON fetchAction =
-  getQueryParam quizPDNParam >>= maybe (modifyResponse (setResponseCodeJSON 400)) fetchAction
-
 getSingleQuizLabels :: Handler b QuizService ()
-getSingleQuizLabels = getSingleWithDataJSON perQuiz
-  where
-    perQuiz :: B.ByteString -> Handler b QuizService ()
-    perQuiz q =
-      case decode (L.fromStrict q) of
-        Nothing -> writeBS (B.unwords [B.pack "Invalid quiz id:", q]) >> modifyResponse (setResponseCodeJSON 400)
-        Just qid -> do
-          lbls <- liftIO (findLabels qid)
-          writeLBS (encode lbls)
-          modifyResponse (setResponseCodeJSON 200)
+getSingleQuizLabels = do
+  mQuizId <- getJSONPostParam quizIdParam
+  case mQuizId of
+    Nothing -> writeBS (B.pack "Invalid quiz id") >> modifyResponse (setResponseCodeJSON 400)
+    Just qid -> do
+      lbls <- liftIO (findLabels qid)
+      writeLBS (encode lbls)
+      modifyResponse (setResponseCodeJSON 200)
 
 data QUS =
   QUS
