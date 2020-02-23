@@ -17,9 +17,9 @@ import qualified Data.ByteString.Lazy   as L
 import           Data.Maybe             (fromMaybe, maybe)
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as E
-import           Snap.Core              (Method (GET, POST), getPostParam,
-                                         getQueryParam, method, modifyResponse,
-                                         writeBS, writeLBS, getParams)
+import           Snap.Core              (Method (GET, POST), getParams,
+                                         getPostParam, getQueryParam, method,
+                                         modifyResponse, writeBS, writeLBS)
 import           Snap.Snaplet           (Handler, SnapletInit, addRoutes,
                                          makeSnaplet)
 
@@ -31,7 +31,7 @@ import           Api.Services.SnapUtil  (attemptDecode, encodeOrEmpty,
                                          getJSONPostParam,
                                          getJSONPostParamWithPure,
                                          setResponseCodeJSON,
-                                         setResponseCodePlain, strictEncode)
+                                         setResponseCodePlain, strictEncodeF)
 import           Constants              (actionParam, addSeparator,
                                          backToChartViewParam, credentialsParam,
                                          cumulativeParam, headerParam,
@@ -69,7 +69,7 @@ import           Db.Storage             (createQuiz, findAllActiveQuizzes,
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
-import           General.Types          (Action (CreateQuizA, UpdateSettingsA, LockA),
+import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
                                          Code (Code), RoundNumber,
                                          TeamName (TeamName),
@@ -89,8 +89,8 @@ data QuizService =
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
   [ "all" +> method GET sendAvailableActive
-  , "getQuizData" +> method GET getSingleQuizData
-  , "getQuizLabels" +> method GET getSingleQuizLabels
+  , "getQuizRating" +> method GET getSingleQuizData
+  , "getQuizInfo" +> method GET getSingleQuizInfo
   , "updateQuizSettings" +> method POST updateQuizSettings
   , "update" +> method POST updateQuiz
   , "lock" +> method POST lockQuizHandler
@@ -108,24 +108,27 @@ sendAvailableActive = do
 
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = do
-  mQuizId <- getJSONPostParamWithPure quizIdParam
+  mQuizId <- getJSONPostParam quizIdParam
   case mQuizId of
     Nothing -> modifyResponse (setResponseCodeJSON 400)
-    Just (_, qid) -> do
+    Just qid -> do
       header <- liftIO (findHeader qid)
       ratings <- liftIO (findRatings qid)
       writeLBS (encode (object [E.decodeUtf8 headerParam .= header, E.decodeUtf8 ratingsParam .= ratings]))
       modifyResponse (setResponseCodeJSON 200)
 
-getSingleQuizLabels :: Handler b QuizService ()
-getSingleQuizLabels = do
+getSingleQuizInfo :: Handler b QuizService ()
+getSingleQuizInfo = do
   mQuizId <- getJSONPostParam quizIdParam
   case mQuizId of
     Nothing -> writeBS (B.pack "Invalid quiz id") >> modifyResponse (setResponseCodeJSON 400)
     Just qid -> do
-      lbls <- liftIO (findLabels qid)
-      writeLBS (encode lbls)
-      modifyResponse (setResponseCodeJSON 200)
+      mQuizInfo <- liftIO (findQuizInfo qid)
+      case mQuizInfo of
+        Nothing ->
+          writeBS (B.unwords [B.pack "No info for quiz id", L.toStrict (encode qid)]) >>
+          modifyResponse (setResponseCodeJSON 400)
+        Just quizInfo -> writeLBS (encode quizInfo) >> modifyResponse (setResponseCodeJSON 200)
 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
@@ -178,7 +181,7 @@ updateQuizSettings = do
       , (roundsNumberParam, fKey mRounds)
       , (numberOfTeamsParam, fKey mNumberOfTeams)
       , (labelsParam, fKey mLabels)
-      , (actionParam, strictEncode (Just UpdateSettingsA))
+      , (actionParam, strictEncodeF (Just UpdateSettingsA))
       ]
   failIfUnverified verified $
     liftIO
@@ -211,7 +214,7 @@ newQuiz = do
       mCredentials
       [ (quizPDNParam, fKey mQuizPDN)
       , (quizSettingsParam, fKey mSettings)
-      , (actionParam, strictEncode (Just CreateQuizA))
+      , (actionParam, strictEncodeF (Just CreateQuizA))
       ]
   failIfUnverified verified $
     case mQuizPDN of
@@ -263,7 +266,7 @@ lockQuizHandler :: Handler b QuizService ()
 lockQuizHandler = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
-  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, strictEncode (Just LockA))]
+  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, strictEncodeF (Just LockA))]
   failIfUnverified verified $ do
     liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") (fValue mQuizId)))
     modifyResponse (setResponseCodePlain 201)
