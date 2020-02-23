@@ -11,6 +11,7 @@ import           Database.Persist            (Entity, Key, checkUnique,
                                               selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
+import           Control.Applicative         (liftA2)
 import           Data.List                   (intercalate)
 import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
@@ -33,6 +34,7 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
 import           Db.DbConversion             (Header (Header, teamInfos),
                                               QuizInfo,
                                               QuizPDN (date, name, place),
+                                              QuizRatings (QuizRatings, header, ratings),
                                               Ratings (roundRatings),
                                               RoundRating (points, reachableInRound),
                                               SavedUser, TeamInfo,
@@ -103,6 +105,14 @@ setHeader qid header = runSql (setHeaderStatement qid header)
 
 setHeaderStatement :: MonadIO m => DbQuizId -> Header -> Statement m ()
 setHeaderStatement qid header = mapM_ (setTeamInfoStatement qid) (teamInfos header)
+
+setQuizRatings :: DbQuizId -> QuizRatings -> IO ()
+setQuizRatings qid quizRatings = runSql (setQuizRatingsStatement qid quizRatings)
+
+setQuizRatingsStatement :: MonadIO m => DbQuizId -> QuizRatings -> Statement m ()
+setQuizRatingsStatement qid quizRatings = do
+  setHeaderStatement qid (header quizRatings)
+  setRatingsStatement qid (ratings quizRatings)
 
 createQuiz :: QuizPDN -> IO (Key DbQuiz)
 createQuiz = runSql . createQuizStatement
@@ -180,6 +190,12 @@ findQuizInfo = runSql . findQuizInfoStatement
 
 findQuizInfoStatement :: MonadIO m => DbQuizId -> Statement m (Maybe QuizInfo)
 findQuizInfoStatement qid = fmap (fmap mkQuizInfo) (selectFirst [DbQuizId ==. qid] [])
+
+findQuizRatings :: DbQuizId -> IO QuizRatings
+findQuizRatings = runSql . findQuizRatingsStatement
+
+findQuizRatingsStatement :: MonadIO m => DbQuizId -> Statement m QuizRatings
+findQuizRatingsStatement qid = liftA2 QuizRatings (findHeaderStatement qid) (findRatingsStatement qid)
 
 findHeader :: DbQuizId -> IO Header
 findHeader = runSql . findHeaderStatement
