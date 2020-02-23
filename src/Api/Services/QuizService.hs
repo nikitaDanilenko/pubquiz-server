@@ -27,9 +27,9 @@ import           System.Directory       (createDirectory, doesDirectoryExist,
                                          doesFileExist, getDirectoryContents)
 
 import           Api.Services.HashCheck (authenticate, failIfUnverified)
-import           Api.Services.SnapUtil  (attemptDecode, getJSONPostParam,
+import           Api.Services.SnapUtil  (attemptDecode, getJSONPostParamWithPure,
                                          setResponseCodeJSON,
-                                         setResponseCodePlain)
+                                         setResponseCodePlain, getJSONPostParam, encodeOrEmpty)
 import           Constants              (actionParam, addSeparator,
                                          backToChartViewParam, createQuizAction,
                                          credentialsParam, cumulativeParam,
@@ -55,7 +55,7 @@ import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId)
 import           Db.DbConversion        (Credentials,
                                          Header (Header, teamInfos), QuizInfo,
-                                         QuizSettings, Ratings,
+                                         QuizSettings, Ratings, QuizPDN,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
                                          active, fallbackSettings, fullQuizName,
                                          identifier, mkQuizInfo, numberOfTeams,
@@ -106,10 +106,10 @@ sendAvailableActive = do
 
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = do
-  mQuizId <- getJSONPostParam quizIdParam
+  mQuizId <- getJSONPostParamWithPure quizIdParam
   case mQuizId of
     Nothing -> modifyResponse (setResponseCodeJSON 400)
-    Just qid -> do
+    Just (_, qid) -> do
       header <- liftIO (findHeader qid)
       ratings <- liftIO (findRatings qid)
       writeLBS (encode (object [E.decodeUtf8 headerParam .= header, E.decodeUtf8 ratingsParam .= ratings]))
@@ -125,24 +125,20 @@ getSingleQuizLabels = do
       writeLBS (encode lbls)
       modifyResponse (setResponseCodeJSON 200)
 
-data QUS =
-  QUS
-    { quizIdCandidate    :: Maybe DbQuizId
-    , userCandidate      :: Maybe UserName
-    , signatureCandidate :: Maybe UserHash
-    }
-
-getQUS :: Handler b QuizService QUS
-getQUS = liftA3 QUS (getJSONPostParam quizIdParam) (getJSONPostParam userParam) (getJSONPostParam signatureParam)
-
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
-  mNewHeader <- getJSONPostParam headerParam
-  mNewContent <- getJSONPostParam ratingsParam
-  mQuizId <- getJSONPostParam quizIdParam
+  mNewHeader <- getJSONPostParamWithPure headerParam
+  mNewContent <- getJSONPostParamWithPure ratingsParam
+  mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
-  verified <- authenticate mCredentials [(quizIdParam, strictEncode mQuizId), (ratingsParam, strictEncode mNewContent)]
-  failIfUnverified verified (updateQuizDataLifted mQuizId mNewHeader mNewContent)
+  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (ratingsParam, fKey mNewContent)]
+  failIfUnverified verified (updateQuizDataLifted (fValue mQuizId) (fValue mNewHeader) (fValue mNewContent))
+
+fKey :: Functor f => f (a, b) -> f a
+fKey = fmap fst
+
+fValue :: Functor f => f (a, b) -> f b
+fValue = fmap snd
 
 updateQuizDataLifted :: Maybe DbQuizId -> Maybe Header -> Maybe Ratings -> Handler b QuizService ()
 updateQuizDataLifted mQid mHeader mRatings =
@@ -168,28 +164,22 @@ updateQuizData qid header ratings =
 
 updateQuizSettings :: Handler b QuizService ()
 updateQuizSettings = do
-  mQuizId <- getJSONPostParam quizIdParam
-  mRounds <- getJSONPostParam roundsNumberParam
-  mNumberOfTeams <- getJSONPostParam numberOfTeamsParam
-  mLabels <- getJSONPostParam labelsParam
+  mQuizId <- getJSONPostParamWithPure quizIdParam
+  mRounds <- getJSONPostParamWithPure roundsNumberParam
+  mNumberOfTeams <- getJSONPostParamWithPure numberOfTeamsParam
+  mLabels <- getJSONPostParamWithPure labelsParam
   mCredentials <- getJSONPostParam credentialsParam
   verified <-
     authenticate
       mCredentials
-      [ (quizIdParam, strictEncode mQuizId)
-      , (roundsNumberParam, strictEncode mRounds)
-      , (numberOfTeamsParam, strictEncode mNumberOfTeams)
-      , (labelsParam, strictEncode mLabels)
+      [ (quizIdParam, fKey mQuizId)
+      , (roundsNumberParam, fKey mRounds)
+      , (numberOfTeamsParam, fKey mNumberOfTeams)
+      , (labelsParam, fKey mLabels)
       , (actionParam, Just labelUpdateAction)
       ]
   failIfUnverified verified $
-    liftIO (fromMaybe (pure ()) (pure updateLabelsAndSettings <*> mQuizId <*> mLabels <*> mNumberOfTeams <*> mRounds))
-
-strictEncode :: (Functor f, ToJSON a) => f a -> f B.ByteString
-strictEncode = fmap (L.toStrict . encode)
-
-encodeOrEmpty :: ToJSON a => Maybe a -> B.ByteString
-encodeOrEmpty = fromMaybe "" . strictEncode
+    liftIO (fromMaybe (pure ()) (pure updateLabelsAndSettings <*> fValue mQuizId <*> fValue mLabels <*> fValue mNumberOfTeams <*> fValue mRounds))
 
 mkActualTeamNumber :: Maybe B.ByteString -> Int
 mkActualTeamNumber = maybe 20 (read . B.unpack)
@@ -207,16 +197,17 @@ teamCodeLength = 6
 
 newQuiz :: Handler b QuizService ()
 newQuiz = do
-  mQuizPDNRaw <- getPostParam quizPDNParam
-  let Identity mQuizPDN = attemptDecode (Identity mQuizPDNRaw)
-  mCredentials <- attemptDecode (getPostParam credentialsParam)
-  mSettings <- attemptDecode (getPostParam quizSettingsParam)
-  verified <- authenticate mCredentials [(quizPDNParam, mQuizPDNRaw), (actionParam, Just createQuizAction)]
+  mQuizPDN <- getJSONPostParamWithPure quizPDNParam
+  mCredentials <- getJSONPostParam credentialsParam
+  mSettings <- getJSONPostParamWithPure quizSettingsParam
+  verified <- authenticate mCredentials [(quizPDNParam, fKey mQuizPDN),
+                                         (quizSettingsParam, fKey mSettings),
+                                         (actionParam, Just createQuizAction)]
   failIfUnverified verified $
     case mQuizPDN of
       Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
-      Just quizPDN -> do
-        let settings = fromMaybe fallbackSettings mSettings
+      Just (_, quizPDN) -> do
+        let settings = fromMaybe fallbackSettings (fValue mSettings)
             gs = numberOfTeams settings
         endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
         let header =
@@ -233,6 +224,8 @@ newQuiz = do
                    (map T.pack endings))
         quizId <- liftIO (createQuiz quizPDN)
         liftIO (setHeader quizId header)
+        writeLBS (encode quizId)
+        modifyResponse (setResponseCodeJSON 200)
 
 updateLabelsAndSettings :: DbQuizId -> Labels -> TeamNumber -> [RoundNumber] -> IO ()
 updateLabelsAndSettings qid lbls tn rns =
@@ -258,11 +251,11 @@ ifActiveDo qid dft action = findQuizInfo qid >>= maybe dft checkActive
 
 lockQuizHandler :: Handler b QuizService ()
 lockQuizHandler = do
-  mQuizId <- getJSONPostParam quizIdParam
+  mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
-  verified <- authenticate mCredentials [(quizIdParam, strictEncode mQuizId), (actionParam, Just lockAction)]
+  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, Just lockAction)]
   failIfUnverified verified $ do
-    liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") mQuizId))
+    liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") (fValue mQuizId)))
     modifyResponse (setResponseCodePlain 201)
 
 quizServiceInit :: SnapletInit b QuizService
