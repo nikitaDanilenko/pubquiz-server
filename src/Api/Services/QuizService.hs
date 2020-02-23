@@ -34,17 +34,16 @@ import           Api.Services.SnapUtil  (attemptDecode, encodeOrEmpty,
                                          setResponseCodePlain, strictEncodeF)
 import           Constants              (actionParam, addSeparator,
                                          backToChartViewParam, credentialsParam,
-                                         cumulativeParam, headerParam,
-                                         individualParam, labelsFile,
-                                         labelsParam, locked, mainParam,
-                                         maxReachableParam, maxReachedParam,
-                                         numberOfTeamsParam, ownPageParam,
-                                         ownPointsParam, placeParam,
-                                         placementParam, pointsParam, prefix,
-                                         progressionParam, quizIdParam,
-                                         quizPDNParam, quizPath,
-                                         quizSettingsParam, quizzesFolderIO,
-                                         ratingsParam, roundParam,
+                                         cumulativeParam, individualParam,
+                                         labelsFile, labelsParam, locked,
+                                         mainParam, maxReachableParam,
+                                         maxReachedParam, numberOfTeamsParam,
+                                         ownPageParam, ownPointsParam,
+                                         placeParam, placementParam,
+                                         pointsParam, prefix, progressionParam,
+                                         quizIdParam, quizPDNParam, quizPath,
+                                         quizRatingsParam, quizSettingsParam,
+                                         quizzesFolderIO, roundParam,
                                          roundWinnerParam, roundsFile,
                                          roundsNumberParam, server,
                                          serverQuizPathIO, signatureParam,
@@ -56,7 +55,8 @@ import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId)
 import           Db.DbConversion        (Credentials,
                                          Header (Header, teamInfos), QuizInfo,
-                                         QuizPDN, QuizSettings, Ratings,
+                                         QuizPDN, QuizRatings, QuizSettings,
+                                         Ratings,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
                                          active, fallbackSettings, fullQuizName,
                                          identifier, mkQuizInfo, numberOfTeams,
@@ -64,8 +64,9 @@ import           Db.DbConversion        (Credentials,
 import qualified Db.DbConversion        as D
 import           Db.Storage             (createQuiz, findAllActiveQuizzes,
                                          findHeader, findLabels, findQuizInfo,
-                                         findRatings, lockQuiz, setHeader,
-                                         setLabels, setRatings, setTeamInfo)
+                                         findQuizRatings, findRatings, lockQuiz,
+                                         setHeader, setLabels, setQuizRatings,
+                                         setRatings, setTeamInfo)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -89,7 +90,7 @@ data QuizService =
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
   [ "all" +> method GET sendAvailableActive
-  , "getQuizRating" +> method GET getSingleQuizData
+  , "getQuizRating" +> method GET getSingleQuizRatings
   , "getQuizInfo" +> method GET getSingleQuizInfo
   , "updateQuizSettings" +> method POST updateQuizSettings
   , "update" +> method POST updateQuiz
@@ -106,15 +107,14 @@ sendAvailableActive = do
   writeLBS (encode active)
   modifyResponse (setResponseCodeJSON 200)
 
-getSingleQuizData :: Handler b QuizService ()
-getSingleQuizData = do
+getSingleQuizRatings :: Handler b QuizService ()
+getSingleQuizRatings = do
   mQuizId <- getJSONPostParam quizIdParam
   case mQuizId of
     Nothing -> modifyResponse (setResponseCodeJSON 400)
     Just qid -> do
-      header <- liftIO (findHeader qid)
-      ratings <- liftIO (findRatings qid)
-      writeLBS (encode (object [E.decodeUtf8 headerParam .= header, E.decodeUtf8 ratingsParam .= ratings]))
+      quizRatings <- liftIO (findQuizRatings qid)
+      writeLBS (encode quizRatings)
       modifyResponse (setResponseCodeJSON 200)
 
 getSingleQuizInfo :: Handler b QuizService ()
@@ -132,12 +132,11 @@ getSingleQuizInfo = do
 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
-  mNewHeader <- getJSONPostParamWithPure headerParam
-  mNewContent <- getJSONPostParamWithPure ratingsParam
+  mQuizRatings <- getJSONPostParamWithPure quizRatingsParam
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
-  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (ratingsParam, fKey mNewContent)]
-  failIfUnverified verified (updateQuizDataLifted (fValue mQuizId) (fValue mNewHeader) (fValue mNewContent))
+  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (quizRatingsParam, fKey mQuizRatings)]
+  failIfUnverified verified (updateQuizDataLifted (fValue mQuizId) (fValue mQuizRatings))
 
 fKey :: Functor f => f (a, b) -> f a
 fKey = fmap fst
@@ -145,27 +144,24 @@ fKey = fmap fst
 fValue :: Functor f => f (a, b) -> f b
 fValue = fmap snd
 
-updateQuizDataLifted :: Maybe DbQuizId -> Maybe Header -> Maybe Ratings -> Handler b QuizService ()
-updateQuizDataLifted mQid mHeader mRatings =
+updateQuizDataLifted :: Maybe DbQuizId -> Maybe QuizRatings -> Handler b QuizService ()
+updateQuizDataLifted mQid mQuizRatings =
   maybe
-    (do writeBS (mkUpdateErrorMessage mQid mHeader mRatings)
+    (do writeBS (mkUpdateErrorMessage mQid mQuizRatings)
         modifyResponse (setResponseCodePlain 406))
     liftIO
-    (liftA3 updateQuizData mQid mHeader mRatings)
+    (liftA2 updateQuizData mQid mQuizRatings)
 
-mkUpdateErrorMessage :: Maybe DbQuizId -> Maybe Header -> Maybe Ratings -> B.ByteString
-mkUpdateErrorMessage mQid mHeader mRatings =
+mkUpdateErrorMessage :: Maybe DbQuizId -> Maybe QuizRatings -> B.ByteString
+mkUpdateErrorMessage mQid mQuizRatings =
   B.unlines
     ("Malfolmed request:" :
      map
        (\(k, v) -> B.intercalate "=" [k, v])
-       [(quizIdParam, encodeOrEmpty mQid), (headerParam, encodeOrEmpty mHeader), (ratingsParam, encodeOrEmpty mRatings)])
+       [(quizIdParam, encodeOrEmpty mQid), (quizRatingsParam, encodeOrEmpty mQuizRatings)])
 
-updateQuizData :: DbQuizId -> Header -> Ratings -> IO ()
-updateQuizData qid header ratings =
-  ifActiveDo qid (pure ()) $ \quizInfo -> do
-    setHeader qid header
-    setRatings qid ratings
+updateQuizData :: DbQuizId -> QuizRatings -> IO ()
+updateQuizData qid quizRatings = ifActiveDo qid (pure ()) (\_ -> setQuizRatings qid quizRatings)
 
 updateQuizSettings :: Handler b QuizService ()
 updateQuizSettings = do
