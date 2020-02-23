@@ -3,10 +3,10 @@ module Pages.RoundsParser ( parseCodesWithMaybeNames ) where
 import Control.Applicative           ( (<|>) )
 import Text.Parsec.Prim              ( parse )
 import Text.ParserCombinators.Parsec ( Parser, many1, oneOf, spaces, char, sepBy, noneOf )
-import Utils                         ( alphaNumeric )
+import Utils                         ( hexadecimal )
 
 codeParser :: Parser String
-codeParser = many1 (oneOf alphaNumeric)
+codeParser = many1 (oneOf hexadecimal)
 
 codeWithNameParser :: Parser (String, Maybe String)
 codeWithNameParser = do
