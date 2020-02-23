@@ -92,7 +92,7 @@ quizRoutes =
   , "updateQuizSettings" +> method POST updateQuizSettings
   , "update" +> method POST updateQuiz
   , "lock" +> method POST lockQuizHandler
-  , "new" +> method POST newQuizLegacy
+  , "new" +> method POST newQuiz
   ]
 
 -- todo: switch all writeBS uses to writeLBS
@@ -191,11 +191,6 @@ strictEncode = fmap (L.toStrict . encode)
 encodeOrEmpty :: ToJSON a => Maybe a -> B.ByteString
 encodeOrEmpty = fromMaybe "" . strictEncode
 
-readCurrentEndings :: B.ByteString -> Handler b QuizService [Ending]
-readCurrentEndings name = do
-  mText <- liftIO (readQuizFile name)
-  return (maybe [] (concatMap (words . B.unpack) . take 1 . B.lines) mText)
-
 mkActualTeamNumber :: Maybe B.ByteString -> Int
 mkActualTeamNumber = maybe 20 (read . B.unpack)
 
@@ -209,17 +204,6 @@ adjustEndings es n =
 
 teamCodeLength :: Int
 teamCodeLength = 6
-
-respondToUpdate :: IO Bool -> Handler b QuizService ()
-respondToUpdate io = do
-  isOpen <- liftIO io
-  if isOpen
-    then modifyResponse (setResponseCodePlain 200)
-    else modifyResponse (setResponseCodePlain 406) >>
-         writeBS "Requested quiz is locked or the update contains invalid symbols."
-
-newQuizLegacy :: Handler b QuizService ()
-newQuizLegacy = undefined
 
 newQuiz :: Handler b QuizService ()
 newQuiz = do
@@ -249,9 +233,6 @@ newQuiz = do
                    (map T.pack endings))
         quizId <- liftIO (createQuiz quizPDN)
         liftIO (setHeader quizId header)
-
-defaultRounds :: [Int]
-defaultRounds = replicate 4 8
 
 updateLabelsAndSettings :: DbQuizId -> Labels -> TeamNumber -> [RoundNumber] -> IO ()
 updateLabelsAndSettings qid lbls tn rns =
@@ -283,68 +264,6 @@ lockQuizHandler = do
   failIfUnverified verified $ do
     liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") mQuizId))
     modifyResponse (setResponseCodePlain 201)
-
-readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
-readQuizFile quizLocation =
-  (do filePath <- filePathIO
-      file <- B.readFile filePath
-      return (Just file)) `catch`
-  handle
-  where
-    handle :: IOException -> IO (Maybe B.ByteString)
-    handle _ = filePathIO >>= \filePath -> putStrLn (filePath ++ " does not exist.") >> return Nothing
-    filePathIO :: IO String
-    filePathIO = mkFullPathIO quizLocation roundsFile
-
-readLabelsFile :: B.ByteString -> IO Labels
-readLabelsFile quizLocation = do
-  filePath <- filePathIO
-  exists <- doesFileExist filePath
-  if exists
-    then do
-      file <- B.readFile filePath
-      let lbls = read (B.unpack file)
-      return lbls `catch` handle
-    else return defaultLabels
-  where
-    handle :: IOException -> IO Labels
-    handle _ = do
-      path <- filePathIO
-      putStrLn
-        (unwords [path, "does not exist or its contents cannot be parsed as labels.", "Returning default labels."])
-      return defaultLabels
-    filePathIO :: IO String
-    filePathIO = mkFullPathIO quizLocation labelsFile
-
-mkFullPathIO :: B.ByteString -> FilePath -> IO String
-mkFullPathIO quizLocation filePath = do
-  quizzesFolder <- quizzesFolderIO
-  return (addSeparator [quizzesFolder, B.unpack quizLocation, filePath])
-
-createOrFail :: B.ByteString -> [Ending] -> IO Bool
-createOrFail path endings = do
-  quizzesFolder <- quizzesFolderIO
-  let fullPath = addSeparator [quizzesFolder, B.unpack path]
-  b <- doesDirectoryExist fullPath
-  if b || not (isValidTextWith validInternalQuizNameChars path)
-    then return False
-    else do
-      createDirectory fullPath
-      B.writeFile (addSeparator [fullPath, roundsFile]) (B.pack (unwords endings))
-      return True
-
-writeEndings :: String -> [Ending] -> IO ()
-writeEndings path endings = do
-  ls <- fmap B.lines (B.readFile path)
-  let remainder = drop 1 ls
-      es = B.pack (unwords endings)
-  B.writeFile path (B.unlines (es : ls))
-
-validInternalQuizNameChars :: String
-validInternalQuizNameChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ "-_"
-
-isValidTextWith :: String -> B.ByteString -> Bool
-isValidTextWith vcs = B.all (`elem` vcs)
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit =
