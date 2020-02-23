@@ -23,16 +23,17 @@ import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ea_name, ea_newtype, ea_omit_null,
                                      ea_unwrap_unary, epa_name, epa_type)
 import           General.Labels     (Labels)
-import           General.Types      (Activity, BackToChartViewLabel, Code,
-                                     CumulativeLabel, IndividualRoundsLabel,
-                                     MainLabel, MaxReachableLabel,
-                                     MaxReachedLabel, OwnPageLabel,
-                                     OwnPointsLabel, Password, Place,
-                                     PlaceLabel, PlacementLabel, PointsLabel,
-                                     ProgressionLabel, QuizDate, QuizName,
-                                     RoundLabel, RoundNumber, RoundWinnerLabel,
-                                     TeamLabel, TeamName, TeamNumber, UserHash,
-                                     UserName, UserSalt, ViewPreviousLabel)
+import           General.Types      (Action, Activity, BackToChartViewLabel,
+                                     Code, CumulativeLabel,
+                                     IndividualRoundsLabel, MainLabel,
+                                     MaxReachableLabel, MaxReachedLabel,
+                                     OwnPageLabel, OwnPointsLabel, Password,
+                                     Place, PlaceLabel, PlacementLabel,
+                                     PointsLabel, ProgressionLabel, QuizDate,
+                                     QuizName, RoundLabel, RoundNumber,
+                                     RoundWinnerLabel, TeamLabel, TeamName,
+                                     TeamNumber, UserHash, UserName, UserSalt,
+                                     ViewPreviousLabel)
 
 deriveElmDef defaultOptions ''TeamNumber
 
@@ -110,6 +111,8 @@ deriveElmDef defaultOptions ''Header
 
 deriveElmDef defaultOptions ''Activity
 
+deriveElmDef defaultOptions ''Action
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -161,4 +164,5 @@ main path =
     , DefineElm (Proxy :: Proxy TeamInfo)
     , DefineElm (Proxy :: Proxy Header)
     , DefineElm (Proxy :: Proxy Activity)
+    , DefineElm (Proxy :: Proxy Action)
     ]
