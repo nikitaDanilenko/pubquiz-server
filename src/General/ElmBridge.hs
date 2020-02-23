@@ -11,9 +11,9 @@ import           Data.Proxy         (Proxy (Proxy))
 
 import           Data.Time.Calendar (Day)
 import           Db.Connection      (DbQuizId)
-import           Db.DbConversion    (Credentials, QuizInfo, QuizPDN,
+import           Db.DbConversion    (Credentials, Header, QuizInfo, QuizPDN,
                                      QuizSettings, Ratings, RoundRating,
-                                     TeamRating, TeamInfo, Header)
+                                     TeamInfo, TeamRating)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ETCon (ETCon), ETVar (ETVar),
                                      EType (ETyCon),
@@ -23,7 +23,7 @@ import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ea_name, ea_newtype, ea_omit_null,
                                      ea_unwrap_unary, epa_name, epa_type)
 import           General.Labels     (Labels)
-import           General.Types      (BackToChartViewLabel, Code,
+import           General.Types      (Activity, BackToChartViewLabel, Code,
                                      CumulativeLabel, IndividualRoundsLabel,
                                      MainLabel, MaxReachableLabel,
                                      MaxReachedLabel, OwnPageLabel,
@@ -32,7 +32,7 @@ import           General.Types      (BackToChartViewLabel, Code,
                                      ProgressionLabel, QuizDate, QuizName,
                                      RoundLabel, RoundNumber, RoundWinnerLabel,
                                      TeamLabel, TeamName, TeamNumber, UserHash,
-                                     UserName, UserSalt, ViewPreviousLabel, Activity)
+                                     UserName, UserSalt, ViewPreviousLabel)
 
 deriveElmDef defaultOptions ''TeamNumber
 
@@ -111,15 +111,7 @@ deriveElmDef defaultOptions ''Header
 deriveElmDef defaultOptions ''Activity
 
 instance IsElmDefinition Day where
-  compileElmDef _ =
-    ETypeAlias
-      (EAlias
-         { ea_name = ETypeName "Day" []
-         , ea_fields = [("year", ETyCon (ETCon "Int")), ("month", ETyCon (ETCon "Int")), ("day", ETyCon (ETCon "Int"))]
-         , ea_omit_null = True
-         , ea_newtype = False
-         , ea_unwrap_unary = True
-         })
+  compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
 instance IsElmDefinition DbQuizId where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "DbQuizId" [], epa_type = ETyCon (ETCon "Int")})
