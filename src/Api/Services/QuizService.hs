@@ -31,7 +31,7 @@ import           Api.Services.SnapUtil  (attemptDecode, encodeOrEmpty,
                                          getJSONPostParam,
                                          getJSONPostParamWithPure,
                                          setResponseCodeJSON,
-                                         setResponseCodePlain, strictEncodeF)
+                                         setResponseCodePlain, strictEncodeF, getJSONParam)
 import           Constants              (actionParam, addSeparator,
                                          backToChartViewParam, credentialsParam,
                                          cumulativeParam, individualParam,
@@ -109,7 +109,7 @@ sendAvailableActive = do
 
 getSingleQuizRatings :: Handler b QuizService ()
 getSingleQuizRatings = do
-  mQuizId <- getJSONPostParam quizIdParam
+  mQuizId <- getJSONParam quizIdParam
   case mQuizId of
     Nothing -> modifyResponse (setResponseCodeJSON 400)
     Just qid -> do
