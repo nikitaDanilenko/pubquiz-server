@@ -29,11 +29,14 @@ maybeDecode = (>>= strictDecode)
 strictDecode :: FromJSON a => B.ByteString -> Maybe a
 strictDecode = decode . L.fromStrict
 
-strictEncode :: (Functor f, ToJSON a) => f a -> f B.ByteString
-strictEncode = fmap (L.toStrict . encode)
+strictEncode :: ToJSON a => a -> B.ByteString
+strictEncode = L.toStrict . encode
+
+strictEncodeF :: (Functor f, ToJSON a) => f a -> f B.ByteString
+strictEncodeF = fmap strictEncode
 
 encodeOrEmpty :: ToJSON a => Maybe a -> B.ByteString
-encodeOrEmpty = fromMaybe (B.pack "") . strictEncode
+encodeOrEmpty = fromMaybe (B.pack "") . strictEncodeF
 
 getJSONPostParamWithPure :: FromJSON a => B.ByteString -> Handler b service (Maybe (B.ByteString, a))
 getJSONPostParamWithPure = fmap (\mValue -> maybeDecode mValue >>= \v -> fmap (, v) mValue) . getPostParam
