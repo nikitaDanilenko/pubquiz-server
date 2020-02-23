@@ -7,7 +7,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy  as L
 import           Data.CaseInsensitive  (CI, mk)
 import           Snap.Core             (Response, setContentType, setHeader,
-                                        setResponseCode, getPostParam)
+                                        setResponseCode, getPostParam, getParam)
 import Snap (Handler)
 import Data.Maybe (fromMaybe)
 
@@ -38,8 +38,23 @@ strictEncodeF = fmap strictEncode
 encodeOrEmpty :: ToJSON a => Maybe a -> B.ByteString
 encodeOrEmpty = fromMaybe (B.pack "") . strictEncodeF
 
+processJSONWithPure :: (FromJSON a, Functor f) => f (Maybe B.ByteString) -> f (Maybe (B.ByteString, a))
+processJSONWithPure = processJSONWith (\mbs a -> fmap (, a) mbs)
+
+processJSON :: (FromJSON a, Functor f) => f (Maybe B.ByteString) -> f (Maybe a)
+processJSON = processJSONWith (const pure)
+
+processJSONWith :: (FromJSON a, Functor f) => (Maybe B.ByteString -> a -> Maybe b) -> f (Maybe B.ByteString) -> f (Maybe b)
+processJSONWith f = fmap (\mValue -> maybeDecode mValue >>= f mValue)
+
 getJSONPostParamWithPure :: FromJSON a => B.ByteString -> Handler b service (Maybe (B.ByteString, a))
-getJSONPostParamWithPure = fmap (\mValue -> maybeDecode mValue >>= \v -> fmap (, v) mValue) . getPostParam
+getJSONPostParamWithPure = processJSONWithPure . getPostParam
 
 getJSONPostParam :: FromJSON a => B.ByteString -> Handler b service (Maybe a)
-getJSONPostParam = fmap (fmap snd) . getJSONPostParamWithPure
+getJSONPostParam = processJSON . getPostParam
+
+getJSONParamWithPure :: FromJSON a => B.ByteString -> Handler b service (Maybe (B.ByteString, a))
+getJSONParamWithPure = processJSONWithPure . getParam
+
+getJSONParam :: FromJSON a => B.ByteString -> Handler b service (Maybe a)
+getJSONParam = processJSON . getParam
