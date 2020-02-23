@@ -47,7 +47,7 @@ import           Constants              (actionParam, addSeparator,
                                          roundWinnerParam, roundsFile,
                                          roundsNumberParam, server,
                                          serverQuizPathIO, signatureParam,
-                                         teamParam, userParam, viewQuizzesParam)
+                                         teamParam, userParam, viewQuizzesParam, allApi, getQuizRatingApi, getLabelsApi, updateQuizSettingsApi, updateApi, lockApi, newApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
@@ -89,13 +89,13 @@ data QuizService =
 
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
-  [ "all" +> method GET sendAvailableActive
-  , "getQuizRating" +> method GET getSingleQuizRatings
-  , "getQuizInfo" +> method GET getSingleQuizInfo
-  , "updateQuizSettings" +> method POST updateQuizSettings
-  , "update" +> method POST updateQuiz
-  , "lock" +> method POST lockQuizHandler
-  , "new" +> method POST newQuiz
+  [ allApi +> method GET sendAvailableActive
+  , getQuizRatingApi +> method GET getSingleQuizRatings
+  , getLabelsApi +> method GET getSingleLabels
+  , updateQuizSettingsApi +> method POST updateQuizSettings
+  , updateApi +> method POST updateQuiz
+  , lockApi +> method POST lockQuizHandler
+  , newApi +> method POST newQuiz
   ]
 
 -- todo: switch all writeBS uses to writeLBS
@@ -117,18 +117,15 @@ getSingleQuizRatings = do
       writeLBS (encode quizRatings)
       modifyResponse (setResponseCodeJSON 200)
 
-getSingleQuizInfo :: Handler b QuizService ()
-getSingleQuizInfo = do
+getSingleLabels :: Handler b QuizService ()
+getSingleLabels = do
   mQuizId <- getJSONPostParam quizIdParam
   case mQuizId of
     Nothing -> writeBS (B.pack "Invalid quiz id") >> modifyResponse (setResponseCodeJSON 400)
     Just qid -> do
-      mQuizInfo <- liftIO (findQuizInfo qid)
-      case mQuizInfo of
-        Nothing ->
-          writeBS (B.unwords [B.pack "No info for quiz id", L.toStrict (encode qid)]) >>
-          modifyResponse (setResponseCodeJSON 400)
-        Just quizInfo -> writeLBS (encode quizInfo) >> modifyResponse (setResponseCodeJSON 200)
+      labels <- liftIO (findLabels qid)
+      writeLBS (encode labels)
+      modifyResponse (setResponseCodeJSON 200)
 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do

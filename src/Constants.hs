@@ -1,18 +1,19 @@
-{-# Language OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Constants where
 
-import Control.Exception                    ( catch )
-import Control.Exception.Base               ( IOException )
-import Data.List                            ( intercalate )
-import Data.Maybe                           ( fromMaybe )
-import qualified Data.ByteString.Char8 as B
-import Data.Map                             ( Map )
-import Data.Map.Lazy                        ( (!?) )
-import qualified Data.Map as M              ( fromList )
-import qualified Data.Text as T             ( Text )
-import System.FilePath                      ( pathSeparator )
-import System.Directory                     ( doesDirectoryExist, createDirectoryIfMissing )
+import           Control.Exception      (catch)
+import           Control.Exception.Base (IOException)
+import qualified Data.ByteString.Char8  as B
+import           Data.List              (intercalate)
+import           Data.Map               (Map)
+import qualified Data.Map               as M (fromList)
+import           Data.Map.Lazy          ((!?))
+import           Data.Maybe             (fromMaybe)
+import qualified Data.Text              as T (Text)
+import           System.Directory       (createDirectoryIfMissing,
+                                         doesDirectoryExist)
+import           System.FilePath        (pathSeparator)
 
 dbFolderIO :: IO String
 dbFolderIO = readFromConfigFile "database" (addSeparator [".", "db"])
@@ -50,16 +51,17 @@ sheetsFolderIO = readFromConfigFile "sheetsFolder" (addSeparator [".", "sheets"]
 
 quizzesFolderIO :: IO String
 quizzesFolderIO = readFromConfigFile "quizzesFolder" (addSeparator [".", "quizzes"])
-          
+
 noConfigFile :: IOException -> IO String
-noConfigFile _ = do 
+noConfigFile _ = do
   putStrLn "No config file found. This should not happen. Created an empty one."
   writeFile configFile ""
   return ""
 
 splitOnSetter :: String -> (String, String)
-splitOnSetter str = (key, drop 1 preValue) where
-  (key, preValue) = span ('=' /=) str
+splitOnSetter str = (key, drop 1 preValue)
+  where
+    (key, preValue) = span ('=' /=) str
 
 addSeparator :: [String] -> String
 addSeparator = intercalate [pathSeparator]
@@ -198,6 +200,27 @@ databasePassword = "databasePassword"
 
 databasePort :: String
 databasePort = "databasePort"
+
+allApi :: B.ByteString
+allApi = "all"
+
+getQuizRatingApi :: B.ByteString
+getQuizRatingApi = "getQuizRating"
+
+getLabelsApi :: B.ByteString
+getLabelsApi = "getLabels"
+
+updateQuizSettingsApi :: B.ByteString
+updateQuizSettingsApi = "updateQuizSettings"
+
+updateApi :: B.ByteString
+updateApi = "update"
+
+lockApi :: B.ByteString
+lockApi = "lock"
+
+newApi :: B.ByteString
+newApi = "new"
 
 publicExponent :: Integer
 publicExponent = 103787
