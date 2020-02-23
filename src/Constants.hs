@@ -76,8 +76,8 @@ lockAction = "lock"
 prefix :: B.ByteString
 prefix = "prefix"
 
-roundsParam :: B.ByteString
-roundsParam = "rounds"
+ratingsParam :: B.ByteString
+ratingsParam = "ratings"
 
 labelsParam :: B.ByteString
 labelsParam = "labels"
