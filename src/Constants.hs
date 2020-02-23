@@ -73,14 +73,11 @@ locked = ".locked"
 prefix :: B.ByteString
 prefix = "prefix"
 
-ratingsParam :: B.ByteString
-ratingsParam = "ratings"
+quizRatingsParam :: B.ByteString
+quizRatingsParam = "quizRatings"
 
 labelsParam :: B.ByteString
 labelsParam = "labels"
-
-headerParam :: B.ByteString
-headerParam = "header"
 
 actionParam :: B.ByteString
 actionParam = "action"
