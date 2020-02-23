@@ -84,6 +84,13 @@ newtype Ratings =
 
 deriveJSON defaultOptions ''Ratings
 
+data QuizRatings = QuizRatings {
+  header :: Header,
+  ratings :: Ratings
+}
+
+deriveJSON defaultOptions ''QuizRatings
+
 data Credentials =
   Credentials
     { user      :: UserName
