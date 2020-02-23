@@ -103,11 +103,6 @@ sendAvailableActive = do
   writeLBS (encode active)
   modifyResponse (setResponseCodeJSON 200)
 
--- todo: remove or adjust
-getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b QuizService ()
-getSingleWithData fetchAction =
-  getQueryParam quizPDNParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
-
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = do
   mQuizId <- getJSONPostParam quizIdParam
