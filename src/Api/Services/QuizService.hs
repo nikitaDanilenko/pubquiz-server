@@ -43,18 +43,19 @@ import           Constants              (actionParam, addSeparator,
                                          pointsParam, prefix, progressionParam,
                                          quizIdParam, quizPDNParam, quizPath,
                                          quizSettingsParam, quizzesFolderIO,
-                                         roundParam, roundWinnerParam,
-                                         roundsFile, roundsNumberParam,
-                                         ratingsParam, server, serverQuizPathIO,
-                                         signatureParam, teamParam, userParam,
-                                         viewQuizzesParam)
+                                         ratingsParam, roundParam,
+                                         roundWinnerParam, roundsFile,
+                                         roundsNumberParam, server,
+                                         serverQuizPathIO, signatureParam,
+                                         teamParam, userParam, viewQuizzesParam)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
 import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId)
-import           Db.DbConversion        (Credentials, Header (teamInfos),
-                                         QuizInfo, QuizSettings, Ratings,
+import           Db.DbConversion        (Credentials,
+                                         Header (Header, teamInfos), QuizInfo,
+                                         QuizSettings, Ratings,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
                                          active, fallbackSettings, fullQuizName,
                                          identifier, mkQuizInfo, numberOfTeams,
@@ -234,19 +235,20 @@ newQuiz = do
         let settings = fromMaybe fallbackSettings mSettings
             gs = numberOfTeams settings
         endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
-        let teamInfos =
-              zipWith
-                (\n e ->
-                   TeamInfo
-                     { teamInfoCode = wrap e
-                     , teamInfoName = wrap (unwrap (teamLabel (D.labels settings)) :: T.Text)
-                     , teamInfoNumber = wrap n
-                     , teamInfoActivity = Active
-                     })
-                [1 .. gs]
-                (map T.pack endings)
+        let header =
+              Header
+                (zipWith
+                   (\n e ->
+                      TeamInfo
+                        { teamInfoCode = wrap e
+                        , teamInfoName = wrap (unwrap (teamLabel (D.labels settings)) :: T.Text)
+                        , teamInfoNumber = wrap n
+                        , teamInfoActivity = Active
+                        })
+                   [1 .. gs]
+                   (map T.pack endings))
         quizId <- liftIO (createQuiz quizPDN)
-        liftIO (mapM_ (setTeamInfo quizId) teamInfos)
+        liftIO (setHeader quizId header)
 
 defaultRounds :: [Int]
 defaultRounds = replicate 4 8
