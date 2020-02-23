@@ -98,7 +98,7 @@ quizRoutes =
 
 sendAvailableActive :: Handler b QuizService ()
 sendAvailableActive = do
-  active <- liftIO getActiveQuizzes
+  active <- liftIO findAllActiveQuizzes
   writeLBS (encode active)
   modifyResponse (setResponseCodeJSON 200)
 
@@ -107,6 +107,7 @@ getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b Qui
 getSingleWithData fetchAction =
   getQueryParam quizPDNParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
 
+--todo adjust
 getSingleQuizData :: Handler b QuizService ()
 getSingleQuizData = getSingleWithData perQuiz
   where
@@ -185,7 +186,6 @@ updateQuizData qid header ratings =
 updateQuizSettings :: Handler b QuizService ()
 updateQuizSettings = do
   mQuizId <- getJSONPostParam quizIdParam
-  -- todo: logic is wrong
   mRounds <- getJSONPostParam roundsNumberParam
   mNumberOfTeams <- getJSONPostParam numberOfTeamsParam
   mLabels <- getJSONPostParam labelsParam
@@ -295,30 +295,10 @@ lockQuizHandler :: Handler b QuizService ()
 lockQuizHandler = do
   mQuizId <- getJSONPostParam quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
-  -- todo: adjust handling of the quizId parameter
-  verified <- authenticate mCredentials [(quizIdParam, fmap (B.pack . show) mQuizId), (actionParam, Just lockAction)]
+  verified <- authenticate mCredentials [(quizIdParam, strictEncode mQuizId), (actionParam, Just lockAction)]
   failIfUnverified verified $ do
     liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") mQuizId))
     modifyResponse (setResponseCodePlain 201)
-
-getNonLockedQuizzesLegacy :: IO [String]
-getNonLockedQuizzesLegacy = do
-  quizzesFolder <- liftIO quizzesFolderIO
-  quizzes <- getDirectoryContents quizzesFolder
-  let withFull = map (\q -> (q, addSeparator [quizzesFolder, q])) quizzes
-  qs <- filterM (\ff -> liftA2 (&&) (areLabelsPresent (snd ff)) (isQuizOpen (snd ff))) withFull
-  return (map fst qs)
-
-getActiveQuizzes :: IO [QuizInfo]
-getActiveQuizzes = findAllActiveQuizzes
-
--- todo: remove this function
-areLabelsPresent :: String -> IO Bool
-areLabelsPresent folder = doesFileExist (addSeparator [folder, labelsFile])
-
--- todo: remove this function
-isQuizOpen :: String -> IO Bool
-isQuizOpen folder = fmap not (doesFileExist (addSeparator [folder, locked]))
 
 readQuizFile :: B.ByteString -> IO (Maybe B.ByteString)
 readQuizFile quizLocation =
