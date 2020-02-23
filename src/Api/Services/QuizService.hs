@@ -83,8 +83,7 @@ data QuizService =
 
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
-  [ "all" +> method GET sendAvailableLegacy
-  , "allNew" +> method GET sendAvailableActive
+  [ "all" +> method GET sendAvailableActive
   , "getQuizData" +> method GET getSingleQuizData
   , "getQuizLabels" +> method GET getSingleQuizLabelsLegacy
   , "updateQuizSettings" +> method POST updateQuizSettings
@@ -96,12 +95,6 @@ quizRoutes =
 -- todo: switch all writeBS uses to writeLBS
 -- todo: adjust routes after legacy removal
 -- todo: remove all legacy functions
--- Finds the list of unlocked quizzes and returns it in bulk.
-sendAvailableLegacy :: Handler b QuizService ()
-sendAvailableLegacy = do
-  nonLockedQuizzes <- liftIO getNonLockedQuizzesLegacy
-  writeBS (B.pack (unlines nonLockedQuizzes))
-  modifyResponse (setResponseCodePlain 200)
 
 sendAvailableActive :: Handler b QuizService ()
 sendAvailableActive = do
