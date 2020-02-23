@@ -103,6 +103,8 @@ newtype UserHash =
 newtype Password =
   Password Text
 
+data Action = CreateQuizA | LockA | UpdateSettingsA
+
 class Unwrappable t v where
   unwrap :: t -> v
   wrap :: v -> t
@@ -340,3 +342,5 @@ deriveJSON defaultOptions ''UserHash
 deriveJSON defaultOptions ''Password
 
 deriveJSON defaultOptions ''Activity
+
+deriveJSON defaultOptions ''Action
