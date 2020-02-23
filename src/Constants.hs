@@ -204,8 +204,8 @@ databasePort = "databasePort"
 allApi :: B.ByteString
 allApi = "all"
 
-getQuizRatingApi :: B.ByteString
-getQuizRatingApi = "getQuizRating"
+getQuizRatingsApi :: B.ByteString
+getQuizRatingsApi = "getQuizRatings"
 
 getLabelsApi :: B.ByteString
 getLabelsApi = "getLabels"

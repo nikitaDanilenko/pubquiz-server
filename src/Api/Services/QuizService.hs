@@ -47,7 +47,7 @@ import           Constants              (actionParam, addSeparator,
                                          roundWinnerParam, roundsFile,
                                          roundsNumberParam, server,
                                          serverQuizPathIO, signatureParam,
-                                         teamParam, userParam, viewQuizzesParam, allApi, getQuizRatingApi, getLabelsApi, updateQuizSettingsApi, updateApi, lockApi, newApi)
+                                         teamParam, userParam, viewQuizzesParam, allApi, getQuizRatingsApi, getLabelsApi, updateQuizSettingsApi, updateApi, lockApi, newApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
@@ -90,7 +90,7 @@ data QuizService =
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
   [ allApi +> method GET sendAvailableActive
-  , getQuizRatingApi +> method GET getSingleQuizRatings
+  , getQuizRatingsApi +> method GET getSingleQuizRatings
   , getLabelsApi +> method GET getSingleLabels
   , updateQuizSettingsApi +> method POST updateQuizSettings
   , updateApi +> method POST updateQuiz
