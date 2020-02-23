@@ -19,7 +19,7 @@ import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as E
 import           Snap.Core              (Method (GET, POST), getPostParam,
                                          getQueryParam, method, modifyResponse,
-                                         writeBS, writeLBS)
+                                         writeBS, writeLBS, getParams)
 import           Snap.Snaplet           (Handler, SnapletInit, addRoutes,
                                          makeSnaplet)
 
@@ -27,21 +27,22 @@ import           System.Directory       (createDirectory, doesDirectoryExist,
                                          doesFileExist, getDirectoryContents)
 
 import           Api.Services.HashCheck (authenticate, failIfUnverified)
-import           Api.Services.SnapUtil  (attemptDecode, getJSONPostParamWithPure,
+import           Api.Services.SnapUtil  (attemptDecode, encodeOrEmpty,
+                                         getJSONPostParam,
+                                         getJSONPostParamWithPure,
                                          setResponseCodeJSON,
-                                         setResponseCodePlain, getJSONPostParam, encodeOrEmpty)
+                                         setResponseCodePlain, strictEncode)
 import           Constants              (actionParam, addSeparator,
-                                         backToChartViewParam, createQuizAction,
-                                         credentialsParam, cumulativeParam,
-                                         headerParam, individualParam,
-                                         labelUpdateAction, labelsFile,
-                                         labelsParam, lockAction, locked,
-                                         mainParam, maxReachableParam,
-                                         maxReachedParam, numberOfTeamsParam,
-                                         ownPageParam, ownPointsParam,
-                                         placeParam, placementParam,
-                                         pointsParam, prefix, progressionParam,
-                                         quizIdParam, quizPDNParam, quizPath,
+                                         backToChartViewParam, credentialsParam,
+                                         cumulativeParam, headerParam,
+                                         individualParam, labelsFile,
+                                         labelsParam, locked, mainParam,
+                                         maxReachableParam, maxReachedParam,
+                                         numberOfTeamsParam, ownPageParam,
+                                         ownPointsParam, placeParam,
+                                         placementParam, pointsParam, prefix,
+                                         progressionParam, quizIdParam,
+                                         quizPDNParam, quizPath,
                                          quizSettingsParam, quizzesFolderIO,
                                          ratingsParam, roundParam,
                                          roundWinnerParam, roundsFile,
@@ -55,7 +56,7 @@ import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId)
 import           Db.DbConversion        (Credentials,
                                          Header (Header, teamInfos), QuizInfo,
-                                         QuizSettings, Ratings, QuizPDN,
+                                         QuizPDN, QuizSettings, Ratings,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
                                          active, fallbackSettings, fullQuizName,
                                          identifier, mkQuizInfo, numberOfTeams,
@@ -68,7 +69,8 @@ import           Db.Storage             (createQuiz, findAllActiveQuizzes,
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
-import           General.Types          (Activity (Active, Inactive),
+import           General.Types          (Action (CreateQuizA, UpdateSettingsA, LockA),
+                                         Activity (Active, Inactive),
                                          Code (Code), RoundNumber,
                                          TeamName (TeamName),
                                          TeamNumber (TeamNumber),
@@ -176,10 +178,14 @@ updateQuizSettings = do
       , (roundsNumberParam, fKey mRounds)
       , (numberOfTeamsParam, fKey mNumberOfTeams)
       , (labelsParam, fKey mLabels)
-      , (actionParam, Just labelUpdateAction)
+      , (actionParam, strictEncode (Just UpdateSettingsA))
       ]
   failIfUnverified verified $
-    liftIO (fromMaybe (pure ()) (pure updateLabelsAndSettings <*> fValue mQuizId <*> fValue mLabels <*> fValue mNumberOfTeams <*> fValue mRounds))
+    liftIO
+      (fromMaybe
+         (pure ())
+         (pure updateLabelsAndSettings <*> fValue mQuizId <*> fValue mLabels <*> fValue mNumberOfTeams <*>
+          fValue mRounds))
 
 mkActualTeamNumber :: Maybe B.ByteString -> Int
 mkActualTeamNumber = maybe 20 (read . B.unpack)
@@ -200,9 +206,13 @@ newQuiz = do
   mQuizPDN <- getJSONPostParamWithPure quizPDNParam
   mCredentials <- getJSONPostParam credentialsParam
   mSettings <- getJSONPostParamWithPure quizSettingsParam
-  verified <- authenticate mCredentials [(quizPDNParam, fKey mQuizPDN),
-                                         (quizSettingsParam, fKey mSettings),
-                                         (actionParam, Just createQuizAction)]
+  verified <-
+    authenticate
+      mCredentials
+      [ (quizPDNParam, fKey mQuizPDN)
+      , (quizSettingsParam, fKey mSettings)
+      , (actionParam, strictEncode (Just CreateQuizA))
+      ]
   failIfUnverified verified $
     case mQuizPDN of
       Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
@@ -253,7 +263,7 @@ lockQuizHandler :: Handler b QuizService ()
 lockQuizHandler = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
-  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, Just lockAction)]
+  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, strictEncode (Just LockA))]
   failIfUnverified verified $ do
     liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") (fValue mQuizId)))
     modifyResponse (setResponseCodePlain 201)
