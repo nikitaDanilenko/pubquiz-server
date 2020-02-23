@@ -33,14 +33,14 @@ import           Constants              (actionParam, addSeparator,
                                          backToChartViewParam, createQuizAction,
                                          credentialsParam, cumulativeParam,
                                          headerParam, individualParam,
-                                         labelUpdateAction, labelsFile, labelsParam,
-                                         lockAction, locked, mainParam,
-                                         maxReachableParam, maxReachedParam,
-                                         numberOfTeamsParam, ownPageParam,
-                                         ownPointsParam, placeParam,
-                                         placementParam, pointsParam, prefix,
-                                         progressionParam, quizIdParam,
-                                         quizPDNParam, quizPath,
+                                         labelUpdateAction, labelsFile,
+                                         labelsParam, lockAction, locked,
+                                         mainParam, maxReachableParam,
+                                         maxReachedParam, numberOfTeamsParam,
+                                         ownPageParam, ownPointsParam,
+                                         placeParam, placementParam,
+                                         pointsParam, prefix, progressionParam,
+                                         quizIdParam, quizPDNParam, quizPath,
                                          quizSettingsParam, quizzesFolderIO,
                                          roundParam, roundWinnerParam,
                                          roundsFile, roundsNumberParam,
@@ -51,17 +51,17 @@ import           Data.Aeson             (FromJSON, ToJSON, decode, encode)
 import           Data.Functor           (void)
 import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId)
-import           Db.DbConversion        (Credentials, Header, QuizInfo,
-                                         QuizSettings, Ratings,
+import           Db.DbConversion        (Credentials, Header (teamInfos),
+                                         QuizInfo, QuizSettings, Ratings,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
                                          active, fallbackSettings, fullQuizName,
                                          identifier, mkQuizInfo, numberOfTeams,
                                          quizId, user)
 import qualified Db.DbConversion        as D
-import           Db.Storage             (findAllActiveQuizzes, findLabels,
-                                         findQuizInfo, findTeamInfos, lockQuiz,
-                                         setHeader, setLabels, setRatings,
-                                         setTeamInfo, createQuiz)
+import           Db.Storage             (createQuiz, findAllActiveQuizzes,
+                                         findHeader, findLabels, findQuizInfo,
+                                         lockQuiz, setHeader, setLabels,
+                                         setRatings, setTeamInfo)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -95,7 +95,6 @@ quizRoutes =
 -- todo: switch all writeBS uses to writeLBS
 -- todo: adjust routes after legacy removal
 -- todo: remove all legacy functions
-
 sendAvailableActive :: Handler b QuizService ()
 sendAvailableActive = do
   active <- liftIO findAllActiveQuizzes
@@ -273,7 +272,7 @@ updateLabelsAndSettings :: DbQuizId -> Labels -> TeamNumber -> [RoundNumber] -> 
 updateLabelsAndSettings qid lbls tn rns =
   ifActiveDo qid (pure ()) $ \quizInfo -> do
     setLabels qid lbls
-    endings <- fmap (fmap (unwrap . teamInfoCode)) (findTeamInfos qid)
+    endings <- fmap (fmap (unwrap . teamInfoCode) . teamInfos) (findHeader qid)
     adjustedEndings <- adjustEndings endings (naturalToInt (unwrap tn))
     serverPath <- serverQuizPathIO
     createSheetWith

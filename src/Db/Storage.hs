@@ -8,14 +8,14 @@ import           Control.Monad.Trans.Reader  (ReaderT)
 
 import           Database.Persist            (Entity, Key, checkUnique,
                                               entityVal, insert, selectFirst,
-                                              selectList, (==.), update, (=.))
+                                              selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Data.List                   (intercalate)
 import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
-                                              DbQuizId,
+                                              DbQuiz, DbQuizId,
                                               DbRoundReachable (dbRoundReachableQuizId, dbRoundReachableRoundNumber),
                                               DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                               DbSessionKey (DbSessionKey),
@@ -29,16 +29,19 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               insertOrReplace, labelsToDbLabels,
                                               mkDbQuiz, mkDbRoundReachable,
                                               mkDbRoundReached, mkFilter,
-                                              runSql, DbQuiz)
-import           Db.DbConversion             (QuizInfo,
+                                              runSql)
+import           Db.DbConversion             (Header (Header, teamInfos),
+                                              QuizInfo,
                                               QuizPDN (date, name, place),
-                                              Ratings (roundRatings), SavedUser,
-                                              dbUserToSavedUser, ratingsFromDb,
-                                              savedUserToDbUser, userHash,
-                                              userName, userSalt, mkQuizInfo,
-                                              TeamRating (teamNumber, rating),
-                                              RoundRating (reachableInRound, points), Header (teamInfos),
-                                              TeamInfo, teamInfoToDbTeamNameCode, dbTeamNameCodeToTeamInfo)
+                                              Ratings (roundRatings),
+                                              RoundRating (points, reachableInRound),
+                                              SavedUser, TeamInfo,
+                                              TeamRating (rating, teamNumber),
+                                              dbTeamNameCodeToTeamInfo,
+                                              dbUserToSavedUser, mkQuizInfo,
+                                              ratingsFromDb, savedUserToDbUser,
+                                              teamInfoToDbTeamNameCode,
+                                              userHash, userName, userSalt)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -52,8 +55,7 @@ type Statement m k = ReaderT SqlBackend m k
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
 setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
 
-setTeamRatingStatement ::
-     MonadIO m => DbQuizId -> RoundNumber -> TeamRating -> Statement m (Key DbRoundReached)
+setTeamRatingStatement :: MonadIO m => DbQuizId -> RoundNumber -> TeamRating -> Statement m (Key DbRoundReached)
 setTeamRatingStatement qid rn tr = repsertRoundReached (mkDbRoundReached qid rn (teamNumber tr) (rating tr))
 
 setReachable :: DbQuizId -> RoundNumber -> Double -> IO (Key DbRoundReachable)
@@ -90,10 +92,11 @@ setRatings :: DbQuizId -> Ratings -> IO ()
 setRatings qid rs = runSql (setRatingsStatement qid rs)
 
 setRatingsStatement :: MonadIO m => DbQuizId -> Ratings -> Statement m ()
-setRatingsStatement qid ratings = mapM_ (uncurry (setRoundRatingStatement qid)) (roundRatings ratings) where
-  setRoundRatingStatement qid rd rr = do
-    setReachableStatement qid rd (reachableInRound rr)
-    mapM_ (setTeamRatingStatement qid rd) (points rr)
+setRatingsStatement qid ratings = mapM_ (uncurry (setRoundRatingStatement qid)) (roundRatings ratings)
+  where
+    setRoundRatingStatement qid rd rr = do
+      setReachableStatement qid rd (reachableInRound rr)
+      mapM_ (setTeamRatingStatement qid rd) (points rr)
 
 setHeader :: DbQuizId -> Header -> IO ()
 setHeader qid header = runSql (setHeaderStatement qid header)
@@ -134,7 +137,7 @@ lockQuizStatement qid = do
   mQuiz <- selectFirst [DbQuizId ==. qid] []
   case mQuiz of
     Nothing -> pure ()
-    Just _ -> update qid [DbQuizActive =. False]
+    Just _  -> update qid [DbQuizActive =. False]
 
 findAllActiveQuizzes :: IO [QuizInfo]
 findAllActiveQuizzes = runSql findAllActiveQuizzesStatement
@@ -178,11 +181,12 @@ findQuizInfo = runSql . findQuizInfoStatement
 findQuizInfoStatement :: MonadIO m => DbQuizId -> Statement m (Maybe QuizInfo)
 findQuizInfoStatement qid = fmap (fmap mkQuizInfo) (selectFirst [DbQuizId ==. qid] [])
 
-findTeamInfos :: DbQuizId -> IO [TeamInfo]
-findTeamInfos = runSql . findTeamInfosStatement
+findHeader :: DbQuizId -> IO Header
+findHeader = runSql . findHeaderStatement
 
-findTeamInfosStatement :: MonadIO m => DbQuizId -> Statement m [TeamInfo]
-findTeamInfosStatement qid = fmap (fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] [])
+findHeaderStatement :: MonadIO m => DbQuizId -> Statement m Header
+findHeaderStatement qid =
+  fmap (Header . fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)
