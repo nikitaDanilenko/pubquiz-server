@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ed5e3a671c5a3021084f5d03fd2b6a636d71387bf2ec2952a608089bc9eb9929
+-- hash: f810eb8c228059f403b69354846a4c866e521bc35e3f09e39e00920a76da4d7a
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -75,6 +75,7 @@ library
     , elm-bridge
     , extra >=1 && <2
     , filepath >=1.4 && <2.0
+    , http-types
     , lens >=4.17 && <4.18
     , monad-logger
     , parsec >=3.1 && <4
@@ -143,6 +144,7 @@ executable pubquiz-server-exe
     , elm-bridge
     , extra >=1 && <2
     , filepath >=1.4 && <2.0
+    , http-types
     , lens >=4.17 && <4.18
     , monad-logger
     , parsec >=3.1 && <4

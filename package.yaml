@@ -50,6 +50,7 @@ dependencies:
 - aeson
 - case-insensitive
 - elm-bridge
+- http-types
 
 
 library:
