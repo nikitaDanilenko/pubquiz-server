@@ -70,8 +70,8 @@ addSeparatorBS = B.intercalate (B.pack [pathSeparator])
 locked :: String
 locked = ".locked"
 
-lock :: B.ByteString
-lock = "lock"
+lockAction :: B.ByteString
+lockAction = "lock"
 
 prefix :: B.ByteString
 prefix = "prefix"
@@ -88,11 +88,11 @@ headerParam = "header"
 actionParam :: B.ByteString
 actionParam = "action"
 
-createQuiz :: B.ByteString
-createQuiz = "createQuiz"
+createQuizAction :: B.ByteString
+createQuizAction = "createQuiz"
 
-labelUpdate :: B.ByteString
-labelUpdate = "labelUpdate"
+labelUpdateAction :: B.ByteString
+labelUpdateAction = "labelUpdate"
 
 roundsNumberParam :: B.ByteString
 roundsNumberParam = "roundsNumber"
