@@ -16,6 +16,7 @@ import qualified Data.ByteString.Char8  as B
 import qualified Data.ByteString.Lazy   as L
 import           Data.Maybe             (fromMaybe, maybe)
 import qualified Data.Text              as T
+import qualified Data.Text.Encoding     as E
 import           Snap.Core              (Method (GET, POST), getPostParam,
                                          getQueryParam, method, modifyResponse,
                                          writeBS, writeLBS)
@@ -44,10 +45,11 @@ import           Constants              (actionParam, addSeparator,
                                          quizSettingsParam, quizzesFolderIO,
                                          roundParam, roundWinnerParam,
                                          roundsFile, roundsNumberParam,
-                                         roundsParam, server, serverQuizPathIO,
+                                         ratingsParam, server, serverQuizPathIO,
                                          signatureParam, teamParam, userParam,
                                          viewQuizzesParam)
-import           Data.Aeson             (FromJSON, ToJSON, decode, encode)
+import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
+                                         object, (.=))
 import           Data.Functor           (void)
 import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId)
@@ -60,8 +62,8 @@ import           Db.DbConversion        (Credentials, Header (teamInfos),
 import qualified Db.DbConversion        as D
 import           Db.Storage             (createQuiz, findAllActiveQuizzes,
                                          findHeader, findLabels, findQuizInfo,
-                                         lockQuiz, setHeader, setLabels,
-                                         setRatings, setTeamInfo)
+                                         findRatings, lockQuiz, setHeader,
+                                         setLabels, setRatings, setTeamInfo)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -106,14 +108,16 @@ getSingleWithData :: (B.ByteString -> Handler b QuizService ()) -> Handler b Qui
 getSingleWithData fetchAction =
   getQueryParam quizPDNParam >>= maybe (modifyResponse (setResponseCodePlain 400)) fetchAction
 
---todo adjust
 getSingleQuizData :: Handler b QuizService ()
-getSingleQuizData = getSingleWithData perQuiz
-  where
-    perQuiz :: B.ByteString -> Handler b QuizService ()
-    perQuiz q =
-      liftIO (readQuizFile q) >>=
-      maybe (modifyResponse (setResponseCodePlain 404)) (\c -> writeBS c >> modifyResponse (setResponseCodePlain 200))
+getSingleQuizData = do
+  mQuizId <- getJSONPostParam quizIdParam
+  case mQuizId of
+    Nothing -> modifyResponse (setResponseCodeJSON 400)
+    Just qid -> do
+      header <- liftIO (findHeader qid)
+      ratings <- liftIO (findRatings qid)
+      writeLBS (encode (object [E.decodeUtf8 headerParam .= header, E.decodeUtf8 ratingsParam .= ratings]))
+      modifyResponse (setResponseCodeJSON 200)
 
 getSingleQuizLabels :: Handler b QuizService ()
 getSingleQuizLabels = do
@@ -138,10 +142,10 @@ getQUS = liftA3 QUS (getJSONPostParam quizIdParam) (getJSONPostParam userParam) 
 updateQuiz :: Handler b QuizService ()
 updateQuiz = do
   mNewHeader <- getJSONPostParam headerParam
-  mNewContent <- getJSONPostParam roundsParam
+  mNewContent <- getJSONPostParam ratingsParam
   mQuizId <- getJSONPostParam quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
-  verified <- authenticate mCredentials [(quizIdParam, strictEncode mQuizId), (roundsParam, strictEncode mNewContent)]
+  verified <- authenticate mCredentials [(quizIdParam, strictEncode mQuizId), (ratingsParam, strictEncode mNewContent)]
   failIfUnverified verified (updateQuizDataLifted mQuizId mNewHeader mNewContent)
 
 updateQuizDataLifted :: Maybe DbQuizId -> Maybe Header -> Maybe Ratings -> Handler b QuizService ()
@@ -158,7 +162,7 @@ mkUpdateErrorMessage mQid mHeader mRatings =
     ("Malfolmed request:" :
      map
        (\(k, v) -> B.intercalate "=" [k, v])
-       [(quizIdParam, encodeOrEmpty mQid), (headerParam, encodeOrEmpty mHeader), (roundsParam, encodeOrEmpty mRatings)])
+       [(quizIdParam, encodeOrEmpty mQid), (headerParam, encodeOrEmpty mHeader), (ratingsParam, encodeOrEmpty mRatings)])
 
 updateQuizData :: DbQuizId -> Header -> Ratings -> IO ()
 updateQuizData qid header ratings =
