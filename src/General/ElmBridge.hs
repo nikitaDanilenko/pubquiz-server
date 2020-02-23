@@ -12,8 +12,8 @@ import           Data.Proxy         (Proxy (Proxy))
 import           Data.Time.Calendar (Day)
 import           Db.Connection      (DbQuizId)
 import           Db.DbConversion    (Credentials, Header, QuizInfo, QuizPDN,
-                                     QuizSettings, Ratings, RoundRating,
-                                     TeamInfo, TeamRating)
+                                     QuizRatings, QuizSettings, Ratings,
+                                     RoundRating, TeamInfo, TeamRating)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ETCon (ETCon), ETVar (ETVar),
                                      EType (ETyCon),
@@ -113,6 +113,8 @@ deriveElmDef defaultOptions ''Activity
 
 deriveElmDef defaultOptions ''Action
 
+deriveElmDef defaultOptions ''QuizRatings
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -165,4 +167,5 @@ main path =
     , DefineElm (Proxy :: Proxy Header)
     , DefineElm (Proxy :: Proxy Activity)
     , DefineElm (Proxy :: Proxy Action)
+    , DefineElm (Proxy :: Proxy QuizRatings)
     ]
