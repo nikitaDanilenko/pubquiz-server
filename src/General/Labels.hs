@@ -59,6 +59,7 @@ newtype SafeLabels =
 
 -- todo: remove fallbacks, parsers, otherwise unused functions
 -- todo: remove show instance
+-- todo: remove main label - it is obsolete, since we now use quizPDN (where n is the name)
 data Labels =
   Labels
     { roundLabel            :: RoundLabel
