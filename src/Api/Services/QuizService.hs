@@ -54,7 +54,7 @@ import           Data.Functor           (void)
 import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId)
 import           Db.DbConversion        (Credentials,
-                                         Header (Header, teamInfos), QuizInfo,
+                                         Header, QuizInfo,
                                          QuizPDN, QuizRatings, QuizSettings,
                                          Ratings,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
@@ -217,7 +217,7 @@ newQuiz = do
             gs = numberOfTeams settings
         endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
         let header =
-              Header
+              wrap
                 (zipWith
                    (\n e ->
                       TeamInfo
@@ -237,7 +237,7 @@ updateLabelsAndSettings :: DbQuizId -> Labels -> TeamNumber -> [RoundNumber] -> 
 updateLabelsAndSettings qid lbls tn rns =
   ifActiveDo qid (pure ()) $ \quizInfo -> do
     setLabels qid lbls
-    endings <- fmap (fmap (unwrap . teamInfoCode) . teamInfos) (findHeader qid)
+    endings <- fmap (fmap (unwrap . teamInfoCode) . unwrap) (findHeader qid)
     adjustedEndings <- adjustEndings endings (naturalToInt (unwrap tn))
     serverPath <- serverQuizPathIO
     createSheetWith
