@@ -55,11 +55,11 @@ import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials,
                                          Header, QuizInfo,
-                                         QuizPDN, QuizRatings, QuizSettings,
+                                         QuizIdentifier, QuizRatings, QuizSettings,
                                          Ratings,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
                                          active, fallbackSettings, fullQuizName,
-                                         identifier, mkQuizInfo, numberOfTeams,
+                                         quizIdentifier, mkQuizInfo, numberOfTeams,
                                          quizId, user)
 import qualified Db.DbConversion        as D
 import           Db.Storage             (createQuiz, findAllActiveQuizzes,
@@ -119,7 +119,7 @@ getSingleQuizRatings = do
 
 getSingleLabels :: Handler b QuizService ()
 getSingleLabels = do
-  mQuizId <- getJSONPostParam quizIdParam
+  mQuizId <- getJSONParam quizIdParam
   case mQuizId of
     Nothing -> writeBS (B.pack "Invalid quiz id") >> modifyResponse (setResponseCodeJSON 400)
     Just qid -> do
@@ -245,7 +245,7 @@ updateLabelsAndSettings qid lbls tn rns =
     createSheetWith
       (unwrap (teamLabel lbls))
       (map (naturalToInt . unwrap) rns)
-      (T.unpack (fullQuizName (identifier quizInfo)))
+      (T.unpack (fullQuizName (quizIdentifier quizInfo)))
       serverPath
       adjustedEndings
 
