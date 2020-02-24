@@ -164,11 +164,11 @@ mkQuizInfo eq =
     q = entityVal eq
 
 fullQuizName :: QuizIdentifier -> T.Text
-fullQuizName pdn =
+fullQuizName identifier =
   T.unwords
-    [ T.concat [T.pack (show (unwrap (date pdn) :: Day)), T.pack ":"]
-    , unwrap (name pdn)
-    , T.concat [T.pack "(", unwrap (place pdn), T.pack ")"]
+    [ T.concat [T.pack (show (unwrap (date identifier) :: Day)), T.pack ":"]
+    , unwrap (name identifier)
+    , T.concat [T.pack "(", unwrap (place identifier), T.pack ")"]
     ]
 
 data SavedUser =
