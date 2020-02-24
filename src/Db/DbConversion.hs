@@ -133,20 +133,20 @@ ratingsFromDb reachables reacheds = Ratings (toList (intersectionWith RoundRatin
             map (uncurry TeamRating . ((TeamNumber . dbRoundReachedTeamNumber) &&& dbRoundReachedPoints)))
            (groupBy ((==) `on` dbRoundReachedRoundNumber) (sortOn dbRoundReachedRoundNumber reacheds)))
 
-data QuizPDN =
-  QuizPDN
+data QuizIdentifier =
+  QuizIdentifier
     { place :: Place
     , date  :: QuizDate
     , name  :: QuizName
     }
 
-deriveJSON defaultOptions ''QuizPDN
+deriveJSON defaultOptions ''QuizIdentifier
 
 data QuizInfo =
   QuizInfo
-    { quizId     :: DbQuizId
-    , identifier :: QuizPDN
-    , active     :: Activity
+    { quizId         :: DbQuizId
+    , quizIdentifier :: QuizIdentifier
+    , active         :: Activity
     }
 
 deriveJSON defaultOptions ''QuizInfo
@@ -155,14 +155,15 @@ mkQuizInfo :: Entity DbQuiz -> QuizInfo
 mkQuizInfo eq =
   QuizInfo
     { quizId = entityKey eq
-    , identifier =
-        QuizPDN {name = wrap (T.pack (dbQuizName q)), date = wrap (dbQuizDate q), place = wrap (T.pack (dbQuizPlace q))}
+    , quizIdentifier =
+        QuizIdentifier
+          {name = wrap (T.pack (dbQuizName q)), date = wrap (dbQuizDate q), place = wrap (T.pack (dbQuizPlace q))}
     , active = wrap (dbQuizActive q)
     }
   where
     q = entityVal eq
 
-fullQuizName :: QuizPDN -> T.Text
+fullQuizName :: QuizIdentifier -> T.Text
 fullQuizName pdn =
   T.unwords
     [ T.concat [T.pack (show (unwrap (date pdn) :: Day)), T.pack ":"]

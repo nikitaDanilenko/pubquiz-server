@@ -32,7 +32,7 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbRoundReached, mkFilter,
                                               runSql)
 import           Db.DbConversion             (Header, QuizInfo,
-                                              QuizPDN (date, name, place),
+                                              QuizIdentifier (date, name, place),
                                               QuizRatings (QuizRatings, header, ratings),
                                               Ratings,
                                               RoundRating (points, reachableInRound),
@@ -112,13 +112,13 @@ setQuizRatingsStatement qid quizRatings = do
   setHeaderStatement qid (header quizRatings)
   setRatingsStatement qid (ratings quizRatings)
 
-createQuiz :: QuizPDN -> IO (Key DbQuiz)
+createQuiz :: QuizIdentifier -> IO (Key DbQuiz)
 createQuiz = runSql . createQuizStatement
 
 -- | Creates a statement for the creation of a new, hence active, quiz.
 --   If a quiz with the same place, date, and time exists,
 --   an exception is raised.
-createQuizStatement :: MonadIO m => QuizPDN -> Statement m (Key DbQuiz)
+createQuizStatement :: MonadIO m => QuizIdentifier -> Statement m (Key DbQuiz)
 createQuizStatement ndp = do
   isUnique <- checkUnique newQuiz
   maybe (insert newQuiz) (const (error errorMsg)) isUnique

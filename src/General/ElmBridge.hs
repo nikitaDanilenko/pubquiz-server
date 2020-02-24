@@ -11,7 +11,7 @@ import           Data.Proxy         (Proxy (Proxy))
 
 import           Data.Time.Calendar (Day)
 import           Db.Connection      (DbQuizId)
-import           Db.DbConversion    (Credentials, Header, QuizInfo, QuizPDN,
+import           Db.DbConversion    (Credentials, Header, QuizInfo, QuizIdentifier,
                                      QuizRatings, QuizSettings, Ratings,
                                      RoundRating, TeamInfo, TeamRating)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
@@ -98,7 +98,7 @@ deriveElmDef elmOptions ''Credentials
 
 deriveElmDef elmOptions ''QuizSettings
 
-deriveElmDef elmOptions ''QuizPDN
+deriveElmDef elmOptions ''QuizIdentifier
 
 deriveElmDef elmOptions ''QuizInfo
 
@@ -159,7 +159,7 @@ main path =
     , DefineElm (Proxy :: Proxy Ratings)
     , DefineElm (Proxy :: Proxy Credentials)
     , DefineElm (Proxy :: Proxy QuizSettings)
-    , DefineElm (Proxy :: Proxy QuizPDN)
+    , DefineElm (Proxy :: Proxy QuizIdentifier)
     , DefineElm (Proxy :: Proxy QuizInfo)
     , DefineElm (Proxy :: Proxy Labels)
     , DefineElm (Proxy :: Proxy DbQuizId)
