@@ -41,7 +41,7 @@ import           Constants              (actionParam, addSeparator,
                                          ownPageParam, ownPointsParam,
                                          placeParam, placementParam,
                                          pointsParam, prefix, progressionParam,
-                                         quizIdParam, quizPDNParam, quizPath,
+                                         quizIdParam, quizIdentifierParam, quizPath,
                                          quizRatingsParam, quizSettingsParam,
                                          quizzesFolderIO, roundParam,
                                          roundWinnerParam, roundsFile,
@@ -199,20 +199,20 @@ teamCodeLength = 6
 
 newQuiz :: Handler b QuizService ()
 newQuiz = do
-  mQuizPDN <- getJSONPostParamWithPure quizPDNParam
+  mQuizIdentifier <- getJSONPostParamWithPure quizIdentifierParam
   mCredentials <- getJSONPostParam credentialsParam
   mSettings <- getJSONPostParamWithPure quizSettingsParam
   verified <-
     authenticate
       mCredentials
-      [ (quizPDNParam, fKey mQuizPDN)
+      [ (quizIdentifierParam, fKey mQuizIdentifier)
       , (quizSettingsParam, fKey mSettings)
       , (actionParam, strictEncodeF (Just CreateQuizA))
       ]
   failIfUnverified verified $
-    case mQuizPDN of
+    case mQuizIdentifier of
       Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
-      Just (_, quizPDN) -> do
+      Just (_, quizIdentifier) -> do
         let settings = fromMaybe fallbackSettings (fValue mSettings)
             gs = numberOfTeams settings
         endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
@@ -222,14 +222,14 @@ newQuiz = do
                    (\n e ->
                       TeamInfo
                         { teamInfoCode = wrap e
-                        , teamInfoName = wrap (unwrap (teamLabel (D.labels settings)) :: T.Text)
+                        , teamInfoName = wrap (T.unwords [unwrap (teamLabel (D.labels settings)), T.pack (show n)])
                         , teamInfoNumber = wrap n
                         , teamInfoActivity = Active
                         })
                    [1 .. gs]
                    (map T.pack endings))
         quizId <- liftIO $ runSql $ do
-          qid <- createQuizStatement quizPDN
+          qid <- createQuizStatement quizIdentifier
           setHeaderStatement qid header
           pure qid
         writeLBS (encode quizId)
