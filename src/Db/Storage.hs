@@ -31,11 +31,10 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbQuiz, mkDbRoundReachable,
                                               mkDbRoundReached, mkFilter,
                                               runSql)
-import           Db.DbConversion             (Header (Header, teamInfos),
-                                              QuizInfo,
+import           Db.DbConversion             (Header, QuizInfo,
                                               QuizPDN (date, name, place),
                                               QuizRatings (QuizRatings, header, ratings),
-                                              Ratings (roundRatings),
+                                              Ratings,
                                               RoundRating (points, reachableInRound),
                                               SavedUser, TeamInfo,
                                               TeamRating (rating, teamNumber),
@@ -94,7 +93,7 @@ setRatings :: DbQuizId -> Ratings -> IO ()
 setRatings qid rs = runSql (setRatingsStatement qid rs)
 
 setRatingsStatement :: MonadIO m => DbQuizId -> Ratings -> Statement m ()
-setRatingsStatement qid ratings = mapM_ (uncurry (setRoundRatingStatement qid)) (roundRatings ratings)
+setRatingsStatement qid ratings = mapM_ (uncurry (setRoundRatingStatement qid)) (unwrap ratings :: [(RoundNumber, RoundRating)])
   where
     setRoundRatingStatement qid rd rr = do
       setReachableStatement qid rd (reachableInRound rr)
@@ -104,7 +103,7 @@ setHeader :: DbQuizId -> Header -> IO ()
 setHeader qid header = runSql (setHeaderStatement qid header)
 
 setHeaderStatement :: MonadIO m => DbQuizId -> Header -> Statement m ()
-setHeaderStatement qid header = mapM_ (setTeamInfoStatement qid) (teamInfos header)
+setHeaderStatement qid header = mapM_ (setTeamInfoStatement qid) (unwrap header :: [TeamInfo])
 
 setQuizRatings :: DbQuizId -> QuizRatings -> IO ()
 setQuizRatings qid quizRatings = runSql (setQuizRatingsStatement qid quizRatings)
@@ -202,7 +201,7 @@ findHeader = runSql . findHeaderStatement
 
 findHeaderStatement :: MonadIO m => DbQuizId -> Statement m Header
 findHeaderStatement qid =
-  fmap (Header . fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] [])
+  fmap (wrap . fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)

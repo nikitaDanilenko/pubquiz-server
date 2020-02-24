@@ -1,4 +1,6 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module Db.DbConversion where
 
@@ -21,8 +23,8 @@ import           Db.Connection      (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace
 import           General.Labels     (Labels, fallbackLabels)
 import           General.Types      (Activity, Code, Place, QuizDate, QuizName,
                                      RoundNumber (RoundNumber), TeamName,
-                                     TeamNumber (TeamNumber), UserHash,
-                                     UserName, UserSalt, unwrap, wrap)
+                                     TeamNumber (TeamNumber), Unwrappable,
+                                     UserHash, UserName, UserSalt, unwrap, wrap)
 import           GHC.Natural        (Natural)
 
 data TeamRating =
@@ -71,23 +73,28 @@ teamInfoToDbTeamNameCode qid ti =
 deriveJSON defaultOptions ''TeamInfo
 
 newtype Header =
-  Header
-    { teamInfos :: [TeamInfo]
-    }
+  Header [TeamInfo]
 
 deriveJSON defaultOptions ''Header
 
+instance Unwrappable Header [TeamInfo] where
+  wrap = Header
+  unwrap (Header tis) = tis
+
 newtype Ratings =
-  Ratings
-    { roundRatings :: [(RoundNumber, RoundRating)]
-    }
+  Ratings [(RoundNumber, RoundRating)]
 
 deriveJSON defaultOptions ''Ratings
 
-data QuizRatings = QuizRatings {
-  header :: Header,
-  ratings :: Ratings
-}
+instance Unwrappable Ratings [(RoundNumber, RoundRating)] where
+  wrap = Ratings
+  unwrap (Ratings rs) = rs
+
+data QuizRatings =
+  QuizRatings
+    { header  :: Header
+    , ratings :: Ratings
+    }
 
 deriveJSON defaultOptions ''QuizRatings
 
