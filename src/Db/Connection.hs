@@ -19,11 +19,29 @@ import           Control.Monad.Logger                  (NoLoggingT,
 import           Control.Monad.Trans.Reader            (ReaderT)
 import           Control.Monad.Trans.Resource.Internal (ResourceT)
 import           Data.Time.Calendar                    (Day)
-import           Database.Persist
-import           Database.Persist.Postgresql
-import           Database.Persist.TH
+import           Database.Persist.Postgresql           (BaseBackend,
+                                                        EntityField, Filter,
+                                                        Key, PersistEntity,
+                                                        PersistEntityBackend,
+                                                        PersistField,
+                                                        PersistQueryRead,
+                                                        PersistStoreWrite,
+                                                        SqlBackend, entityKey,
+                                                        insert, repsert,
+                                                        runMigration,
+                                                        runSqlPersistMPool,
+                                                        selectFirst,
+                                                        withPostgresqlPool,
+                                                        (==.))
+
+import           Database.Persist.TH                   (mkMigrate, mkPersist,
+                                                        persistLowerCase, share,
+                                                        sqlSettings)
 import           Db.Configuration                      (readConfiguration,
                                                         toConnection)
+import           Db.Instances
+import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, mainLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
+                                                        mkLabels)
 import           General.Types                         (Activity,
                                                         BackToChartViewLabel,
                                                         Code, CumulativeLabel,
@@ -46,10 +64,7 @@ import           General.Types                         (Activity,
                                                         UserHash, UserName,
                                                         UserSalt,
                                                         ViewPreviousLabel)
-import           Db.Instances
 import           GHC.Natural                           (Natural)
-import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, mainLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
-                                                        mkLabels)
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
@@ -209,8 +224,13 @@ labelsToDbLabels qid lbls =
     (placeLabel lbls)
     (pointsLabel lbls)
     (roundWinnerLabel lbls)
+
 -- todo: either remove logging or pipe it directly into a log file
-runSql :: ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> IO a
+type Statement m k = ReaderT SqlBackend m k
+
+type ResourceMonad = NoLoggingT (ResourceT IO)
+
+runSql :: Statement ResourceMonad a -> IO a
 runSql action =
   readConfiguration >>= \config ->
     runStderrLoggingT $ withPostgresqlPool (toConnection config) 10 $ liftIO . runSqlPersistMPool action

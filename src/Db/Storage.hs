@@ -43,6 +43,7 @@ import           Db.DbConversion             (Header, QuizInfo,
                                               ratingsFromDb, savedUserToDbUser,
                                               teamInfoToDbTeamNameCode,
                                               userHash, userName, userSalt)
+import           Db.Storage                  (Statement)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -50,8 +51,6 @@ import           General.Types               (Activity (..), Code, Place,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap),
                                               UserHash, UserName, UserSalt)
-
-type Statement m k = ReaderT SqlBackend m k
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
 setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
@@ -93,7 +92,8 @@ setRatings :: DbQuizId -> Ratings -> IO ()
 setRatings qid rs = runSql (setRatingsStatement qid rs)
 
 setRatingsStatement :: MonadIO m => DbQuizId -> Ratings -> Statement m ()
-setRatingsStatement qid ratings = mapM_ (uncurry (setRoundRatingStatement qid)) (unwrap ratings :: [(RoundNumber, RoundRating)])
+setRatingsStatement qid ratings =
+  mapM_ (uncurry (setRoundRatingStatement qid)) (unwrap ratings :: [(RoundNumber, RoundRating)])
   where
     setRoundRatingStatement qid rd rr = do
       setReachableStatement qid rd (reachableInRound rr)
