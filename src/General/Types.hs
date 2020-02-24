@@ -8,13 +8,14 @@
 
 module General.Types where
 
-import           Data.Aeson.TH         (defaultOptions, deriveJSON, Options, unwrapUnaryRecords)
+import           Data.Aeson.TH         (deriveJSON)
 import qualified Data.ByteString.Char8 as B
 import           Data.Text             (Text)
 import qualified Data.Text             as T
 import qualified Data.Text.Encoding    as E
 import           Data.Time.Calendar    (Day)
 import           GHC.Natural           (Natural)
+import           Utils                 (elmOptions)
 
 newtype TeamNumber =
   TeamNumber Natural
@@ -103,7 +104,10 @@ newtype UserHash =
 newtype Password =
   Password Text
 
-data Action = CreateQuizA | LockA | UpdateSettingsA
+data Action
+  = CreateQuizA
+  | LockA
+  | UpdateSettingsA
 
 class Unwrappable t v where
   unwrap :: t -> v
@@ -287,65 +291,60 @@ instance Fallback PointsLabel where
 instance Fallback RoundWinnerLabel where
   fallback = wrap (T.pack "Rundensieger")
 
-elmOptions :: Options
-elmOptions = defaultOptions {
-  unwrapUnaryRecords = False
-}
+deriveJSON elmOptions ''TeamNumber
 
-deriveJSON defaultOptions ''TeamNumber
+deriveJSON elmOptions ''RoundNumber
 
-deriveJSON defaultOptions ''RoundNumber
+deriveJSON elmOptions ''Code
 
-deriveJSON defaultOptions ''Code
+deriveJSON elmOptions ''TeamName
 
-deriveJSON defaultOptions ''TeamName
+deriveJSON elmOptions ''QuizName
 
-deriveJSON defaultOptions ''QuizName
+deriveJSON elmOptions ''Place
 
-deriveJSON defaultOptions ''Place
+deriveJSON elmOptions ''QuizDate
 
-deriveJSON defaultOptions ''QuizDate
+deriveJSON elmOptions ''RoundLabel
 
-deriveJSON defaultOptions ''RoundLabel
+deriveJSON elmOptions ''TeamLabel
 
-deriveJSON defaultOptions ''TeamLabel
+deriveJSON elmOptions ''OwnPointsLabel
 
-deriveJSON defaultOptions ''OwnPointsLabel
+deriveJSON elmOptions ''MaxReachedLabel
 
-deriveJSON defaultOptions ''MaxReachedLabel
+deriveJSON elmOptions ''MaxReachableLabel
 
-deriveJSON defaultOptions ''MaxReachableLabel
+deriveJSON elmOptions ''BackToChartViewLabel
 
-deriveJSON defaultOptions ''BackToChartViewLabel
+deriveJSON elmOptions ''MainLabel
 
-deriveJSON defaultOptions ''MainLabel
+deriveJSON elmOptions ''OwnPageLabel
 
-deriveJSON defaultOptions ''OwnPageLabel
+deriveJSON elmOptions ''ViewPreviousLabel
 
-deriveJSON defaultOptions ''ViewPreviousLabel
+deriveJSON elmOptions ''CumulativeLabel
 
-deriveJSON defaultOptions ''CumulativeLabel
+deriveJSON elmOptions ''IndividualRoundsLabel
 
-deriveJSON defaultOptions ''IndividualRoundsLabel
+deriveJSON elmOptions ''ProgressionLabel
 
-deriveJSON defaultOptions ''ProgressionLabel
+deriveJSON elmOptions ''PlacementLabel
 
-deriveJSON defaultOptions ''PlacementLabel
+deriveJSON elmOptions ''PlaceLabel
 
-deriveJSON defaultOptions ''PlaceLabel
+deriveJSON elmOptions ''PointsLabel
 
-deriveJSON defaultOptions ''PointsLabel
+deriveJSON elmOptions ''RoundWinnerLabel
 
-deriveJSON defaultOptions ''RoundWinnerLabel
+deriveJSON elmOptions ''UserName
 
-deriveJSON defaultOptions ''UserName
+deriveJSON elmOptions ''UserSalt
 
-deriveJSON defaultOptions ''UserSalt
+deriveJSON elmOptions ''UserHash
 
-deriveJSON defaultOptions ''UserHash
+deriveJSON elmOptions ''Password
 
-deriveJSON defaultOptions ''Password
+deriveJSON elmOptions ''Activity
 
-deriveJSON defaultOptions ''Activity
-
-deriveJSON defaultOptions ''Action
+deriveJSON elmOptions ''Action

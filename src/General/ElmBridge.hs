@@ -4,7 +4,7 @@
 
 module General.ElmBridge where
 
-import           Elm.Derive         (defaultOptions, deriveElmDef)
+import           Elm.Derive         (deriveElmDef)
 import           Elm.Module         (DefineElm (DefineElm), makeElmModule)
 
 import           Data.Proxy         (Proxy (Proxy))
@@ -33,7 +33,8 @@ import           General.Types      (Action, Activity, BackToChartViewLabel,
                                      QuizName, RoundLabel, RoundNumber,
                                      RoundWinnerLabel, TeamLabel, TeamName,
                                      TeamNumber, UserHash, UserName, UserSalt,
-                                     ViewPreviousLabel, elmOptions)
+                                     ViewPreviousLabel)
+import           Utils              (elmOptions)
 
 deriveElmDef elmOptions ''TeamNumber
 
