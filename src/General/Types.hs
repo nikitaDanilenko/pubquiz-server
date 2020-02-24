@@ -8,7 +8,7 @@
 
 module General.Types where
 
-import           Data.Aeson.TH         (defaultOptions, deriveJSON)
+import           Data.Aeson.TH         (defaultOptions, deriveJSON, Options, unwrapUnaryRecords)
 import qualified Data.ByteString.Char8 as B
 import           Data.Text             (Text)
 import qualified Data.Text             as T
@@ -286,6 +286,11 @@ instance Fallback PointsLabel where
 
 instance Fallback RoundWinnerLabel where
   fallback = wrap (T.pack "Rundensieger")
+
+elmOptions :: Options
+elmOptions = defaultOptions {
+  unwrapUnaryRecords = False
+}
 
 deriveJSON defaultOptions ''TeamNumber
 

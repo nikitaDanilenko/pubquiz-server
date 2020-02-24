@@ -33,87 +33,87 @@ import           General.Types      (Action, Activity, BackToChartViewLabel,
                                      QuizName, RoundLabel, RoundNumber,
                                      RoundWinnerLabel, TeamLabel, TeamName,
                                      TeamNumber, UserHash, UserName, UserSalt,
-                                     ViewPreviousLabel)
+                                     ViewPreviousLabel, elmOptions)
 
-deriveElmDef defaultOptions ''TeamNumber
+deriveElmDef elmOptions ''TeamNumber
 
-deriveElmDef defaultOptions ''RoundNumber
+deriveElmDef elmOptions ''RoundNumber
 
-deriveElmDef defaultOptions ''Code
+deriveElmDef elmOptions ''Code
 
-deriveElmDef defaultOptions ''TeamName
+deriveElmDef elmOptions ''TeamName
 
-deriveElmDef defaultOptions ''QuizName
+deriveElmDef elmOptions ''QuizName
 
-deriveElmDef defaultOptions ''Place
+deriveElmDef elmOptions ''Place
 
-deriveElmDef defaultOptions ''QuizDate
+deriveElmDef elmOptions ''QuizDate
 
-deriveElmDef defaultOptions ''RoundLabel
+deriveElmDef elmOptions ''RoundLabel
 
-deriveElmDef defaultOptions ''TeamLabel
+deriveElmDef elmOptions ''TeamLabel
 
-deriveElmDef defaultOptions ''OwnPointsLabel
+deriveElmDef elmOptions ''OwnPointsLabel
 
-deriveElmDef defaultOptions ''MaxReachedLabel
+deriveElmDef elmOptions ''MaxReachedLabel
 
-deriveElmDef defaultOptions ''MaxReachableLabel
+deriveElmDef elmOptions ''MaxReachableLabel
 
-deriveElmDef defaultOptions ''BackToChartViewLabel
+deriveElmDef elmOptions ''BackToChartViewLabel
 
-deriveElmDef defaultOptions ''MainLabel
+deriveElmDef elmOptions ''MainLabel
 
-deriveElmDef defaultOptions ''OwnPageLabel
+deriveElmDef elmOptions ''OwnPageLabel
 
-deriveElmDef defaultOptions ''ViewPreviousLabel
+deriveElmDef elmOptions ''ViewPreviousLabel
 
-deriveElmDef defaultOptions ''CumulativeLabel
+deriveElmDef elmOptions ''CumulativeLabel
 
-deriveElmDef defaultOptions ''IndividualRoundsLabel
+deriveElmDef elmOptions ''IndividualRoundsLabel
 
-deriveElmDef defaultOptions ''ProgressionLabel
+deriveElmDef elmOptions ''ProgressionLabel
 
-deriveElmDef defaultOptions ''PlacementLabel
+deriveElmDef elmOptions ''PlacementLabel
 
-deriveElmDef defaultOptions ''PlaceLabel
+deriveElmDef elmOptions ''PlaceLabel
 
-deriveElmDef defaultOptions ''PointsLabel
+deriveElmDef elmOptions ''PointsLabel
 
-deriveElmDef defaultOptions ''RoundWinnerLabel
+deriveElmDef elmOptions ''RoundWinnerLabel
 
-deriveElmDef defaultOptions ''UserName
+deriveElmDef elmOptions ''UserName
 
-deriveElmDef defaultOptions ''UserSalt
+deriveElmDef elmOptions ''UserSalt
 
-deriveElmDef defaultOptions ''UserHash
+deriveElmDef elmOptions ''UserHash
 
-deriveElmDef defaultOptions ''TeamRating
+deriveElmDef elmOptions ''TeamRating
 
-deriveElmDef defaultOptions ''RoundRating
+deriveElmDef elmOptions ''RoundRating
 
-deriveElmDef defaultOptions ''Ratings
+deriveElmDef elmOptions ''Ratings
 
-deriveElmDef defaultOptions ''Credentials
+deriveElmDef elmOptions ''Credentials
 
-deriveElmDef defaultOptions ''QuizSettings
+deriveElmDef elmOptions ''QuizSettings
 
-deriveElmDef defaultOptions ''QuizPDN
+deriveElmDef elmOptions ''QuizPDN
 
-deriveElmDef defaultOptions ''QuizInfo
+deriveElmDef elmOptions ''QuizInfo
 
-deriveElmDef defaultOptions ''Labels
+deriveElmDef elmOptions ''Labels
 
-deriveElmDef defaultOptions ''Password
+deriveElmDef elmOptions ''Password
 
-deriveElmDef defaultOptions ''TeamInfo
+deriveElmDef elmOptions ''TeamInfo
 
-deriveElmDef defaultOptions ''Header
+deriveElmDef elmOptions ''Header
 
-deriveElmDef defaultOptions ''Activity
+deriveElmDef elmOptions ''Activity
 
-deriveElmDef defaultOptions ''Action
+deriveElmDef elmOptions ''Action
 
-deriveElmDef defaultOptions ''QuizRatings
+deriveElmDef elmOptions ''QuizRatings
 
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
