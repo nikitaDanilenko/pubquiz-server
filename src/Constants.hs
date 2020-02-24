@@ -90,8 +90,8 @@ roundsNumberParam = "roundsNumber"
 quizIdParam :: B.ByteString
 quizIdParam = "quizId"
 
-quizPDNParam :: B.ByteString
-quizPDNParam = "quizPDN"
+quizIdentifierParam :: B.ByteString
+quizIdentifierParam = "quizIdentifier"
 
 quizSettingsParam :: B.ByteString
 quizSettingsParam = "quizSettings"
