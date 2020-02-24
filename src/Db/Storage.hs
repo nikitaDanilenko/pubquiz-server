@@ -22,7 +22,7 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               DbSessionKey (DbSessionKey),
                                               DbTeamNameCode (dbTeamNameCodeQuizId, dbTeamNameCodeTeamNumber),
                                               DbUser (DbUser, dbUserUserName),
-                                              EntityField (..),
+                                              EntityField (..), Statement,
                                               dbLabelsToLabels,
                                               dbSessionKeyUserHash,
                                               dbSessionKeyUserName,
@@ -43,7 +43,6 @@ import           Db.DbConversion             (Header, QuizInfo,
                                               ratingsFromDb, savedUserToDbUser,
                                               teamInfoToDbTeamNameCode,
                                               userHash, userName, userSalt)
-import           Db.Storage                  (Statement)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
