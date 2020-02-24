@@ -52,7 +52,7 @@ import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
 import           Data.Functor.Identity  (Identity (Identity))
-import           Db.Connection          (DbQuizId)
+import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials,
                                          Header, QuizInfo,
                                          QuizPDN, QuizRatings, QuizSettings,
@@ -66,7 +66,7 @@ import           Db.Storage             (createQuiz, findAllActiveQuizzes,
                                          findHeader, findLabels, findQuizInfo,
                                          findQuizRatings, findRatings, lockQuiz,
                                          setHeader, setLabels, setQuizRatings,
-                                         setRatings, setTeamInfo)
+                                         setRatings, setTeamInfo, createQuizStatement, setHeaderStatement)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -228,8 +228,10 @@ newQuiz = do
                         })
                    [1 .. gs]
                    (map T.pack endings))
-        quizId <- liftIO (createQuiz quizPDN)
-        liftIO (setHeader quizId header)
+        quizId <- liftIO $ runSql $ do
+          qid <- createQuizStatement quizPDN
+          setHeaderStatement qid header
+          pure qid
         writeLBS (encode quizId)
         modifyResponse (setResponseCodeJSON 200)
 
