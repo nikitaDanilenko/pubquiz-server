@@ -60,13 +60,13 @@ import           Db.DbConversion        (Credentials,
                                          TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
                                          active, fallbackSettings, fullQuizName,
                                          quizIdentifier, mkQuizInfo, numberOfTeams,
-                                         quizId, user)
+                                         quizId, user, labels, rounds, adjustHeaderToSize, mkDefaultTeamInfos)
 import qualified Db.DbConversion        as D
 import           Db.Storage             (createQuiz, findAllActiveQuizzes,
                                          findHeader, findLabels, findQuizInfo,
                                          findQuizRatings, findRatings, lockQuiz,
                                          setHeader, setLabels, setQuizRatings,
-                                         setRatings, setTeamInfo, createQuizStatement, setHeaderStatement)
+                                         setRatings, setTeamInfo, createQuizStatement, setHeaderStatement, setLabelsStatement, findHeaderStatement)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -81,8 +81,7 @@ import           GHC.Natural            (naturalToInt)
 import           Pages.GeneratePage     (createWith)
 import           Pages.QuizzesFrontpage (createFrontPage)
 import           Sheet.SheetMaker       (Ending, createSheetWith)
-import           Utils                  (randomDistinctHexadecimal,
-                                         randomDistinctWithAdditional, (+>))
+import           Utils                  (randomDistinctHexadecimal, (+>))
 
 data QuizService =
   QuizService
@@ -163,36 +162,23 @@ updateQuizData qid quizRatings = ifActiveDo qid (pure ()) (\_ -> setQuizRatings 
 updateQuizSettings :: Handler b QuizService ()
 updateQuizSettings = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
-  mRounds <- getJSONPostParamWithPure roundsNumberParam
-  mNumberOfTeams <- getJSONPostParamWithPure numberOfTeamsParam
-  mLabels <- getJSONPostParamWithPure labelsParam
+  mQuizSettings <- getJSONPostParamWithPure quizSettingsParam
   mCredentials <- getJSONPostParam credentialsParam
   verified <-
     authenticate
       mCredentials
       [ (quizIdParam, fKey mQuizId)
-      , (roundsNumberParam, fKey mRounds)
-      , (numberOfTeamsParam, fKey mNumberOfTeams)
-      , (labelsParam, fKey mLabels)
+      , (quizSettingsParam, fKey mQuizSettings)
       , (actionParam, strictEncodeF (Just UpdateSettingsA))
       ]
   failIfUnverified verified $
     liftIO
       (fromMaybe
          (pure ())
-         (pure updateLabelsAndSettings <*> fValue mQuizId <*> fValue mLabels <*> fValue mNumberOfTeams <*>
-          fValue mRounds))
+         (liftA2 updateLabelsAndSettings (fValue mQuizId) (fValue mQuizSettings)))
 
 mkActualTeamNumber :: Maybe B.ByteString -> Int
 mkActualTeamNumber = maybe 20 (read . B.unpack)
-
-adjustEndings :: [Ending] -> Int -> IO [Ending]
-adjustEndings es n =
-  if l >= n
-    then return (take n es)
-    else randomDistinctWithAdditional (n - l) teamCodeLength es
-  where
-    l = length es
 
 teamCodeLength :: Int
 teamCodeLength = 6
@@ -213,41 +199,38 @@ newQuiz = do
     case mQuizIdentifier of
       Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
       Just (_, quizIdentifier) -> do
-        let settings = fromMaybe fallbackSettings (fValue mSettings)
-            gs = numberOfTeams settings
+        let quizSettings = fromMaybe fallbackSettings (fValue mSettings)
+            gs = numberOfTeams quizSettings
         endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
-        let header =
-              wrap
-                (zipWith
-                   (\n e ->
-                      TeamInfo
-                        { teamInfoCode = wrap e
-                        , teamInfoName = wrap (T.unwords [unwrap (teamLabel (D.labels settings)), T.pack (show n)])
-                        , teamInfoNumber = wrap n
-                        , teamInfoActivity = Active
-                        })
-                   [1 .. gs]
-                   (map T.pack endings))
+        let header = wrap (mkDefaultTeamInfos 1 (teamLabel (labels quizSettings)) endings)
         quizId <- liftIO $ runSql $ do
           qid <- createQuizStatement quizIdentifier
           setHeaderStatement qid header
           pure qid
+        liftIO (createSheetWithSettings quizIdentifier quizSettings header)
         writeLBS (encode quizId)
         modifyResponse (setResponseCodeJSON 200)
 
-updateLabelsAndSettings :: DbQuizId -> Labels -> TeamNumber -> [RoundNumber] -> IO ()
-updateLabelsAndSettings qid lbls tn rns =
-  ifActiveDo qid (pure ()) $ \quizInfo -> do
-    setLabels qid lbls
-    endings <- fmap (fmap (unwrap . teamInfoCode) . unwrap) (findHeader qid)
-    adjustedEndings <- adjustEndings endings (naturalToInt (unwrap tn))
-    serverPath <- serverQuizPathIO
-    createSheetWith
-      (unwrap (teamLabel lbls))
-      (map (naturalToInt . unwrap) rns)
-      (T.unpack (fullQuizName (quizIdentifier quizInfo)))
-      serverPath
-      adjustedEndings
+updateLabelsAndSettings :: DbQuizId -> QuizSettings -> IO ()
+updateLabelsAndSettings qid quizSettings =
+  ifActiveDo qid (pure ()) $ \quizInfo ->
+    runSql $ do
+      let ls = labels quizSettings
+      header <- findHeaderStatement qid
+      setLabelsStatement qid ls
+      adjustedHeader <- liftIO (adjustHeaderToSize (numberOfTeams quizSettings) teamCodeLength (teamLabel ls) header)
+      setHeaderStatement qid adjustedHeader
+      liftIO (createSheetWithSettings (quizIdentifier quizInfo) quizSettings adjustedHeader)
+
+createSheetWithSettings :: QuizIdentifier -> QuizSettings -> Header -> IO ()
+createSheetWithSettings identifier quizSettings header = do
+  serverPath <- serverQuizPathIO
+  createSheetWith
+    (unwrap (teamLabel (labels quizSettings)))
+    (map naturalToInt (rounds quizSettings))
+    (T.unpack (fullQuizName identifier))
+    serverPath
+    (map (unwrap . teamInfoCode) (unwrap header))
 
 ifActiveDo :: DbQuizId -> IO a -> (QuizInfo -> IO a) -> IO a
 ifActiveDo qid dft action = findQuizInfo qid >>= maybe dft checkActive
