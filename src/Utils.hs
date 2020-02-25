@@ -66,16 +66,7 @@ randomDistinctHexadecimal :: Int -> Int -> IO [String]
 randomDistinctHexadecimal numberOfStrings size = fmap disambiguate (randomNonDistinct numberOfStrings size)
 
 randomNonDistinct :: Int -> Int -> IO [String]
-randomNonDistinct numberOfStrings size = do
-  randomInfinite <- randomHexadecimal
-  let chunks = take numberOfStrings (chunk size randomInfinite)
-  return chunks
-
-randomDistinctWithAdditional :: Int -> Int -> [String] -> IO [String]
-randomDistinctWithAdditional numberOfStrings size exs = do
-  chunks <- randomNonDistinct numberOfStrings size
-  let uniqueChunks = disambiguate (exs ++ chunks)
-  return uniqueChunks
+randomNonDistinct numberOfStrings size = fmap (take numberOfStrings . chunk size) randomHexadecimal
 
 chunk :: Int -> [a] -> [[a]]
 chunk size xs
