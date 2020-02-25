@@ -89,7 +89,7 @@ disambiguate :: [String] -> [String]
 disambiguate =
   map snd .
   sortOn fst .
-  concatMap (uncurry zip . second disambiguateList . unzip) . groupBy ((==) `on` snd) . sortOn fst . zip [(0 :: Int) ..]
+  concatMap (uncurry zip . second disambiguateList . unzip) . groupBy ((==) `on` snd) . sortOn snd . zip [(0 :: Int) ..]
 
 disambiguateSingle :: Int -> String -> String
 disambiguateSingle = (++) . show
