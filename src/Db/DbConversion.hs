@@ -21,11 +21,13 @@ import           Db.Connection      (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace
                                      DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
                                      dbQuizActive)
 import           General.Labels     (Labels, fallbackLabels)
-import           General.Types      (Activity, Code, Place, QuizDate, QuizName,
-                                     RoundNumber (RoundNumber), TeamName,
+import           General.Types      (Activity (Active), Code, Place, QuizDate,
+                                     QuizName, RoundNumber (RoundNumber),
+                                     TeamLabel, TeamName,
                                      TeamNumber (TeamNumber), Unwrappable,
                                      UserHash, UserName, UserSalt, unwrap, wrap)
-import           GHC.Natural        (Natural)
+import           GHC.Natural        (Natural, intToNatural, naturalToInt)
+import           Utils              (randomDistinctHexadecimal)
 
 data TeamRating =
   TeamRating
@@ -76,6 +78,32 @@ newtype Header =
   Header [TeamInfo]
 
 deriveJSON defaultOptions ''Header
+
+defaultTeamName :: TeamNumber -> TeamLabel -> TeamName
+defaultTeamName tn tl = wrap (T.unwords [unwrap tl, T.pack (show (unwrap tn :: Natural))])
+
+mkDefaultTeamInfos :: Natural -> TeamLabel -> [String] -> [TeamInfo]
+mkDefaultTeamInfos lowestTeamNumber teamLabel =
+  zipWith
+    (\n e ->
+       TeamInfo
+         { teamInfoCode = wrap e
+         , teamInfoName = defaultTeamName (wrap n) teamLabel
+         , teamInfoNumber = wrap n
+         , teamInfoActivity = Active
+         })
+    [lowestTeamNumber ..]
+
+adjustHeaderToSize :: Natural -> Int -> TeamLabel -> Header -> IO Header
+adjustHeaderToSize n codeSize teamLabel h
+  | n <= size = pure (wrap (take (naturalToInt n) ts))
+  | otherwise =
+    fmap
+      (wrap . (unwrap h ++) . mkDefaultTeamInfos (1 + size) teamLabel)
+      (randomDistinctHexadecimal (naturalToInt (n - size)) codeSize)
+  where
+    ts = unwrap h :: [TeamInfo]
+    size = intToNatural (length ts)
 
 instance Unwrappable Header [TeamInfo] where
   wrap = Header
