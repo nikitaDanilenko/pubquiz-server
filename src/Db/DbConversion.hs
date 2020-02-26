@@ -87,7 +87,7 @@ mkDefaultTeamInfos lowestTeamNumber teamLabel =
   zipWith
     (\n e ->
        TeamInfo
-         { teamInfoCode = wrap e
+         { teamInfoCode = wrap (show n ++ e)
          , teamInfoName = defaultTeamName (wrap n) teamLabel
          , teamInfoNumber = wrap n
          , teamInfoActivity = Active
