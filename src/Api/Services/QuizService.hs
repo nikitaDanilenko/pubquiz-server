@@ -7,7 +7,7 @@ module Api.Services.QuizService
   ) where
 
 import           Control.Applicative    (liftA2, liftA3)
-import           Control.Arrow          (first)
+import           Control.Arrow          (first, (&&&))
 import           Control.Exception      (catch)
 import           Control.Exception.Base (IOException)
 import           Control.Monad          (filterM)
@@ -27,46 +27,40 @@ import           System.Directory       (createDirectory, doesDirectoryExist,
                                          doesFileExist, getDirectoryContents)
 
 import           Api.Services.HashCheck (authenticate, failIfUnverified)
-import           Api.Services.SnapUtil  (attemptDecode, encodeOrEmpty,
-                                         getJSONPostParam,
+import           Api.Services.SnapUtil  (encodeOrEmpty,
+                                         getJSONParam, getJSONPostParam,
                                          getJSONPostParamWithPure,
-                                         setResponseCodeJSON,
-                                         setResponseCodePlain, strictEncodeF, getJSONParam)
-import           Constants              (actionParam, addSeparator,
-                                         backToChartViewParam, credentialsParam,
-                                         cumulativeParam, individualParam,
-                                         labelsFile, labelsParam, locked,
-                                         mainParam, maxReachableParam,
-                                         maxReachedParam, numberOfTeamsParam,
-                                         ownPageParam, ownPointsParam,
-                                         placeParam, placementParam,
-                                         pointsParam, prefix, progressionParam,
-                                         quizIdParam, quizIdentifierParam, quizPath,
+                                         setResponseCodeJSON, strictEncodeF)
+import           Constants              (actionParam, allApi, credentialsParam,
+                                         getLabelsApi, getQuizRatingsApi,
+                                         lockApi, newApi, quizIdParam,
+                                         quizIdentifierParam, quizPath,
                                          quizRatingsParam, quizSettingsParam,
-                                         quizzesFolderIO, roundParam,
-                                         roundWinnerParam, roundsFile,
-                                         roundsNumberParam, server,
-                                         serverQuizPathIO, signatureParam,
-                                         teamParam, userParam, viewQuizzesParam, allApi, getQuizRatingsApi, getLabelsApi, updateQuizSettingsApi, updateApi, lockApi, newApi)
+                                         serverQuizPathIO, updateApi,
+                                         updateQuizSettingsApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
 import           Data.Functor.Identity  (Identity (Identity))
 import           Db.Connection          (DbQuizId, runSql)
-import           Db.DbConversion        (Credentials,
-                                         Header, QuizInfo,
-                                         QuizIdentifier, QuizRatings, QuizSettings,
+import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
+                                         QuizInfo, QuizRatings, QuizSettings,
                                          Ratings,
-                                         TeamInfo (TeamInfo, teamInfoActivity, teamInfoCode, teamInfoName, teamInfoNumber),
-                                         active, fallbackSettings, fullQuizName,
-                                         quizIdentifier, mkQuizInfo, numberOfTeams,
-                                         quizId, user, labels, rounds, adjustHeaderToSize, mkDefaultTeamInfos)
+                                         TeamInfo (TeamInfo, teamInfoCode, teamInfoNumber),
+                                         active, adjustHeaderToSize,
+                                         fallbackSettings, fullQuizName, labels,
+                                         mkDefaultTeamInfos, numberOfTeams,
+                                         quizId, quizIdentifier, rounds,
+                                         teamNumber)
 import qualified Db.DbConversion        as D
-import           Db.Storage             (createQuiz, findAllActiveQuizzes,
-                                         findHeader, findLabels, findQuizInfo,
-                                         findQuizRatings, findRatings, lockQuiz,
-                                         setHeader, setLabels, setQuizRatings,
-                                         setRatings, setTeamInfo, createQuizStatement, setHeaderStatement, setLabelsStatement, findHeaderStatement)
+import           Db.Storage             (createQuiz, createQuizStatement,
+                                         findAllActiveQuizzes, findHeader,
+                                         findHeaderStatement, findLabels,
+                                         findQuizInfo, findQuizRatings,
+                                         findRatings, lockQuiz, setHeader,
+                                         setHeaderStatement, setLabels,
+                                         setLabelsStatement, setQuizRatings,
+                                         setRatings, setTeamInfo)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -144,7 +138,7 @@ updateQuizDataLifted :: Maybe DbQuizId -> Maybe QuizRatings -> Handler b QuizSer
 updateQuizDataLifted mQid mQuizRatings =
   maybe
     (do writeBS (mkUpdateErrorMessage mQid mQuizRatings)
-        modifyResponse (setResponseCodePlain 406))
+        modifyResponse (setResponseCodeJSON 406))
     liftIO
     (liftA2 updateQuizData mQid mQuizRatings)
 
@@ -172,10 +166,7 @@ updateQuizSettings = do
       , (actionParam, strictEncodeF (Just UpdateSettingsA))
       ]
   failIfUnverified verified $
-    liftIO
-      (fromMaybe
-         (pure ())
-         (liftA2 updateLabelsAndSettings (fValue mQuizId) (fValue mQuizSettings)))
+    liftIO (fromMaybe (pure ()) (liftA2 updateLabelsAndSettings (fValue mQuizId) (fValue mQuizSettings)))
 
 mkActualTeamNumber :: Maybe B.ByteString -> Int
 mkActualTeamNumber = maybe 20 (read . B.unpack)
@@ -203,10 +194,12 @@ newQuiz = do
             gs = numberOfTeams quizSettings
         endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
         let header = wrap (mkDefaultTeamInfos 1 (teamLabel (labels quizSettings)) endings)
-        quizId <- liftIO $ runSql $ do
-          qid <- createQuizStatement quizIdentifier
-          setHeaderStatement qid header
-          pure qid
+        quizId <-
+          liftIO $
+          runSql $ do
+            qid <- createQuizStatement quizIdentifier
+            setHeaderStatement qid header
+            pure qid
         liftIO (createSheetWithSettings quizIdentifier quizSettings header)
         writeLBS (encode quizId)
         modifyResponse (setResponseCodeJSON 200)
@@ -230,7 +223,7 @@ createSheetWithSettings identifier quizSettings header = do
     (map naturalToInt (rounds quizSettings))
     (T.unpack (fullQuizName identifier))
     serverPath
-    (map (unwrap . teamInfoCode) (unwrap header))
+    (map (teamInfoNumber &&& teamInfoCode) (unwrap header))
 
 ifActiveDo :: DbQuizId -> IO a -> (QuizInfo -> IO a) -> IO a
 ifActiveDo qid dft action = findQuizInfo qid >>= maybe dft checkActive
@@ -247,7 +240,7 @@ lockQuizHandler = do
   verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, strictEncodeF (Just LockA))]
   failIfUnverified verified $ do
     liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") (fValue mQuizId)))
-    modifyResponse (setResponseCodePlain 201)
+    modifyResponse (setResponseCodeJSON 201)
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit =
