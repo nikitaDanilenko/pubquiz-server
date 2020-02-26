@@ -19,6 +19,7 @@ import           Utils                 (elmOptions)
 
 newtype TeamNumber =
   TeamNumber Natural
+  deriving (Eq, Ord)
 
 newtype RoundNumber =
   RoundNumber Natural
