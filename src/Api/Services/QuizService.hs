@@ -194,14 +194,14 @@ newQuiz = do
             gs = numberOfTeams quizSettings
         endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
         let header = wrap (mkDefaultTeamInfos 1 (teamLabel (labels quizSettings)) endings)
-        quizId <-
+        quizInfo <-
           liftIO $
           runSql $ do
-            qid <- createQuizStatement quizIdentifier
-            setHeaderStatement qid header
-            pure qid
+            quizInfo <- createQuizStatement quizIdentifier
+            setHeaderStatement (quizId quizInfo) header
+            pure quizInfo
         liftIO (createSheetWithSettings quizIdentifier quizSettings header)
-        writeLBS (encode quizId)
+        writeLBS (encode quizInfo)
         modifyResponse (setResponseCodeJSON 200)
 
 updateLabelsAndSettings :: DbQuizId -> QuizSettings -> IO ()

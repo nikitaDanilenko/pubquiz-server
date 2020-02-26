@@ -6,7 +6,7 @@ module Db.Storage where
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.Trans.Reader  (ReaderT)
 
-import           Database.Persist            (Entity, Key, checkUnique,
+import           Database.Persist            (Entity (Entity), Key, checkUnique,
                                               entityVal, insert, selectFirst,
                                               selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
@@ -16,7 +16,7 @@ import           Data.List                   (intercalate)
 import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
-                                              DbQuiz, DbQuizId,
+                                              DbQuiz (DbQuiz), DbQuizId,
                                               DbRoundReachable (dbRoundReachableQuizId, dbRoundReachableRoundNumber),
                                               DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                               DbSessionKey (DbSessionKey),
@@ -112,17 +112,16 @@ setQuizRatingsStatement qid quizRatings = do
   setHeaderStatement qid (header quizRatings)
   setRatingsStatement qid (ratings quizRatings)
 
-createQuiz :: QuizIdentifier -> IO (Key DbQuiz)
+createQuiz :: QuizIdentifier -> IO QuizInfo
 createQuiz = runSql . createQuizStatement
 
 -- | Creates a statement for the creation of a new, hence active, quiz.
 --   If a quiz with the same place, date, and time exists,
 --   an exception is raised.
-createQuizStatement :: MonadIO m => QuizIdentifier -> Statement m (Key DbQuiz)
-createQuizStatement ndp = do
-  isUnique <- checkUnique newQuiz
-  maybe (insert newQuiz) (const (error errorMsg)) isUnique
+createQuizStatement :: MonadIO m => QuizIdentifier -> Statement m QuizInfo
+createQuizStatement identifier = checkUnique newQuiz >>= maybe success (const (error errorMsg))
   where
+    success = fmap (mkQuizInfo . flip Entity newQuiz) (insert newQuiz)
     newQuiz = mkDbQuiz p d n Active
     errorMsg =
       unwords
@@ -135,7 +134,7 @@ createQuizStatement ndp = do
                [T.unpack (unwrap p), show (unwrap d :: Day), T.unpack (unwrap n)])
         , "already exists."
         ]
-    (p, d, n) = (place ndp, date ndp, name ndp)
+    (p, d, n) = (place identifier, date identifier, name identifier)
 
 lockQuiz :: DbQuizId -> IO ()
 lockQuiz = runSql . lockQuizStatement
