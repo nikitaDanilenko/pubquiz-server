@@ -12,6 +12,8 @@ import           Data.List          (groupBy, sortOn)
 import           Data.Map           (fromList, intersectionWith, toList)
 import           Data.Text          (pack)
 import qualified Data.Text          as T
+import qualified Data.Text.Encoding as E
+import qualified Data.ByteString.Lazy as L
 import           Data.Time.Calendar (Day)
 import           Database.Persist   (Entity, entityKey, entityVal)
 import           Db.Connection      (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
@@ -29,6 +31,7 @@ import           General.Types      (Activity (Active), Code, Place, QuizDate,
                                      UserHash, UserName, UserSalt, unwrap, wrap)
 import           GHC.Natural        (Natural, intToNatural, naturalToInt)
 import           Utils              (randomDistinctHexadecimal)
+import Data.Aeson (encode)
 
 data TeamRating =
   TeamRating
@@ -185,19 +188,21 @@ deriveJSON defaultOptions ''QuizInfo
 mkQuizInfo :: Entity DbQuiz -> QuizInfo
 mkQuizInfo eq =
   QuizInfo
-    { quizId = entityKey eq
+    { quizId = qid
     , quizIdentifier =
         QuizIdentifier {name = wrap (T.pack (dbQuizName q)), date = wrap day, place = wrap (T.pack (dbQuizPlace q))}
     , active = wrap (dbQuizActive q)
-    , fullSheetPath = mkPathForQuizSheetWith sheetFileName day
-    , qrOnlyPath = mkPathForQuizSheetWith qrOnlyFileName day
+    , fullSheetPath = mkPathForQuizSheetWith sheetFileName day qid
+    , qrOnlyPath = mkPathForQuizSheetWith qrOnlyFileName day qid
     }
   where
     q = entityVal eq
+    qid = entityKey eq
     day = dbQuizDate q
 
-mkPathForQuizSheetWith :: T.Text -> Day -> T.Text
-mkPathForQuizSheetWith fileName day = T.concat [T.pack (show day), fileName, T.pack ".pdf"]
+mkPathForQuizSheetWith :: T.Text -> Day -> DbQuizId -> T.Text
+mkPathForQuizSheetWith fileName day qid =
+  T.intercalate (T.pack "-") [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, T.pack ".pdf"]]
 
 fullQuizName :: QuizIdentifier -> T.Text
 fullQuizName identifier =
