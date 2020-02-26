@@ -222,6 +222,12 @@ lockApi = "lock"
 newApi :: B.ByteString
 newApi = "new"
 
+sheetFileName :: T.Text
+sheetFileName = "QuizSheet"
+
+qrOnlyFileName :: T.Text
+qrOnlyFileName = "QuizQROnly"
+
 publicExponent :: Integer
 publicExponent = 103787
 

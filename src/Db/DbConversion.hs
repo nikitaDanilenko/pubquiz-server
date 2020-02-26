@@ -4,6 +4,7 @@
 
 module Db.DbConversion where
 
+import           Constants          (qrOnlyFileName, sheetFileName)
 import           Control.Arrow      ((&&&))
 import           Data.Aeson.TH      (defaultOptions, deriveJSON)
 import           Data.Function      (on)
@@ -175,6 +176,8 @@ data QuizInfo =
     { quizId         :: DbQuizId
     , quizIdentifier :: QuizIdentifier
     , active         :: Activity
+    , fullSheetPath  :: T.Text
+    , qrOnlyPath     :: T.Text
     }
 
 deriveJSON defaultOptions ''QuizInfo
@@ -184,12 +187,17 @@ mkQuizInfo eq =
   QuizInfo
     { quizId = entityKey eq
     , quizIdentifier =
-        QuizIdentifier
-          {name = wrap (T.pack (dbQuizName q)), date = wrap (dbQuizDate q), place = wrap (T.pack (dbQuizPlace q))}
+        QuizIdentifier {name = wrap (T.pack (dbQuizName q)), date = wrap day, place = wrap (T.pack (dbQuizPlace q))}
     , active = wrap (dbQuizActive q)
+    , fullSheetPath = mkPathForQuizSheetWith sheetFileName day
+    , qrOnlyPath = mkPathForQuizSheetWith qrOnlyFileName day
     }
   where
     q = entityVal eq
+    day = dbQuizDate q
+
+mkPathForQuizSheetWith :: T.Text -> Day -> T.Text
+mkPathForQuizSheetWith fileName day = T.concat [T.pack (show day), fileName, T.pack ".pdf"]
 
 fullQuizName :: QuizIdentifier -> T.Text
 fullQuizName identifier =
