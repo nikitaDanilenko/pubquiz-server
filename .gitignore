@@ -4,5 +4,6 @@ cabal.sandbox.config
 brokenSB/*
 linuxSB/*
 quizzes/*
+sheets/*
 
 !quizzes/style.css
