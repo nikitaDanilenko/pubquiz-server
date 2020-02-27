@@ -13,7 +13,7 @@ import           Data.Time.Calendar (Day)
 import           Db.Connection      (DbQuizId)
 import           Db.DbConversion    (Credentials, Header, QuizIdentifier,
                                      QuizInfo, QuizRatings, QuizSettings,
-                                     Ratings, RoundRating, TeamInfo, TeamRating)
+                                     Ratings, RoundRating, TeamInfo, TeamRating, TeamLine, TeamTable)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ETCon (ETCon), ETVar (ETVar),
                                      EType (ETyCon),
@@ -113,6 +113,10 @@ deriveElmDef elmOptions ''Action
 
 deriveElmDef elmOptions ''QuizRatings
 
+deriveElmDef elmOptions ''TeamLine
+
+deriveElmDef elmOptions ''TeamTable
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -123,7 +127,7 @@ main :: String -> IO ()
 main path =
   writeFile path $
   makeElmModule
-    "Types"
+    "Common.Types"
     [ DefineElm (Proxy :: Proxy TeamNumber)
     , DefineElm (Proxy :: Proxy RoundNumber)
     , DefineElm (Proxy :: Proxy Code)
@@ -165,4 +169,6 @@ main path =
     , DefineElm (Proxy :: Proxy Activity)
     , DefineElm (Proxy :: Proxy Action)
     , DefineElm (Proxy :: Proxy QuizRatings)
+    , DefineElm (Proxy :: Proxy TeamLine)
+    , DefineElm (Proxy :: Proxy TeamTable)
     ]

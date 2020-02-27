@@ -204,6 +204,19 @@ mkPathForQuizSheetWith :: T.Text -> T.Text -> Day -> DbQuizId -> T.Text
 mkPathForQuizSheetWith sheetsFolder fileName day qid =
   T.intercalate (T.pack "/") [sheetsFolder, T.intercalate (T.pack "-") [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, T.pack ".pdf"]]]
 
+data TeamLine = TeamLine {
+  roundNumber :: RoundNumber,
+  reachedPoints :: Double,
+  maximumPoints :: Double,
+  reachablePoints :: Double
+}
+
+deriveJSON defaultOptions ''TeamLine
+
+newtype TeamTable = TeamTable [TeamLine]
+
+deriveJSON defaultOptions ''TeamTable
+
 fullQuizName :: QuizIdentifier -> T.Text
 fullQuizName identifier =
   T.unwords
