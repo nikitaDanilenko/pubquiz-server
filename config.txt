@@ -1,6 +1,7 @@
 quizzesFolder=./quizzes
+serverQuizzesFolder=quizzes
 sheetsFolder=./sheets
-serverRelativeQuizPath=quizzes
+serverSheetsFolder=sheets
 database=./db
 databaseHost=
 databaseName=

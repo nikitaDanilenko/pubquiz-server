@@ -10,7 +10,7 @@ import           Data.Map               (Map)
 import qualified Data.Map               as M (fromList)
 import           Data.Map.Lazy          ((!?))
 import           Data.Maybe             (fromMaybe)
-import qualified Data.Text              as T (Text)
+import qualified Data.Text              as T (Text, pack)
 import           System.Directory       (createDirectoryIfMissing,
                                          doesDirectoryExist)
 import           System.FilePath        (pathSeparator)
@@ -46,8 +46,8 @@ readFromConfigFile param dft = do
   let path = fromMaybe dft (settings !? param)
   return path
 
-sheetsFolderIO :: IO String
-sheetsFolderIO = readFromConfigFile "sheetsFolder" (addSeparator [".", "sheets"])
+sheetsFolderIO :: IO T.Text
+sheetsFolderIO = fmap T.pack (readFromConfigFile "sheetsFolder" (addSeparator [".", "sheets"]))
 
 quizzesFolderIO :: IO String
 quizzesFolderIO = readFromConfigFile "quizzesFolder" (addSeparator [".", "quizzes"])
@@ -171,8 +171,11 @@ numberOfTeamsParam = "numberOfTeams"
 server :: String
 server = "https://www.danilenko.io"
 
-serverQuizPathIO :: IO String
-serverQuizPathIO = readFromConfigFile "serverRelativeQuizPath" (addSeparator [".", "quizzes"])
+serverQuizzesFolderIO :: IO String
+serverQuizzesFolderIO = readFromConfigFile "serverQuizzesFolder" "quizzes"
+
+serverSheetsFolderIO :: IO T.Text
+serverSheetsFolderIO = fmap T.pack (readFromConfigFile "serverSheetsFolder" "sheets")
 
 apiPath :: T.Text
 apiPath = "api"
