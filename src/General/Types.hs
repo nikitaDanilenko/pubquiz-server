@@ -62,9 +62,6 @@ newtype MaxReachableLabel =
 newtype BackToChartViewLabel =
   BackToChartViewLabel Text
 
-newtype MainLabel =
-  MainLabel Text
-
 newtype OwnPageLabel =
   OwnPageLabel Text
 
@@ -188,10 +185,6 @@ instance Unwrappable BackToChartViewLabel Text where
   unwrap (BackToChartViewLabel l) = l
   wrap = BackToChartViewLabel
 
-instance Unwrappable MainLabel Text where
-  unwrap (MainLabel l) = l
-  wrap = MainLabel
-
 instance Unwrappable OwnPageLabel Text where
   unwrap (OwnPageLabel l) = l
   wrap = OwnPageLabel
@@ -262,9 +255,6 @@ instance Fallback MaxReachableLabel where
 instance Fallback BackToChartViewLabel where
   fallback = wrap (T.pack "Gesamtansicht")
 
-instance Fallback MainLabel where
-  fallback = wrap (T.pack "Pubquiz")
-
 instance Fallback OwnPageLabel where
   fallback = wrap (T.pack "Eigene Punkte")
 
@@ -317,8 +307,6 @@ deriveJSON elmOptions ''MaxReachedLabel
 deriveJSON elmOptions ''MaxReachableLabel
 
 deriveJSON elmOptions ''BackToChartViewLabel
-
-deriveJSON elmOptions ''MainLabel
 
 deriveJSON elmOptions ''OwnPageLabel
 

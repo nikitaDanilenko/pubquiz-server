@@ -13,7 +13,6 @@ module General.Labels
   , maxReachableLabel
   , backToChartView
   , ownPageLabel
-  , mainLabel
   , roundLabel
   , viewPrevious
   , cumulativeLabel
@@ -42,7 +41,7 @@ import           General.Types                 (BackToChartViewLabel,
                                                 CumulativeLabel,
                                                 Fallback (fallback),
                                                 IndividualRoundsLabel,
-                                                MainLabel, MaxReachableLabel,
+                                                MaxReachableLabel,
                                                 MaxReachedLabel, OwnPageLabel,
                                                 OwnPointsLabel, PlaceLabel,
                                                 PlacementLabel, PointsLabel,
@@ -68,7 +67,6 @@ data Labels =
     , maxReachedLabel       :: MaxReachedLabel
     , maxReachableLabel     :: MaxReachableLabel
     , backToChartView       :: BackToChartViewLabel
-    , mainLabel             :: MainLabel
     , ownPageLabel          :: OwnPageLabel
     , viewPrevious          :: ViewPreviousLabel
     , cumulativeLabel       :: CumulativeLabel
@@ -98,7 +96,6 @@ parameters lbls =
     , unwrap . maxReachedLabel
     , unwrap . maxReachableLabel
     , unwrap . backToChartView
-    , unwrap . mainLabel
     , unwrap . ownPageLabel
     , unwrap . viewPrevious
     , unwrap . cumulativeLabel
@@ -201,7 +198,7 @@ placementsKeys = additionalChartsKeys ++ [placementKey, placeKey, pointsKey, rou
 labelsFromParameterList :: [String] -> Labels
 labelsFromParameterList ws =
   case ws of
-    [r, t, op, mred, mr, btc, m, o, vp] ->
+    [r, t, op, mred, mr, btc, o, vp] ->
       mkLabels
         r
         t
@@ -209,7 +206,6 @@ labelsFromParameterList ws =
         mred
         mr
         btc
-        m
         o
         vp
         cumulativeFallback
@@ -219,9 +215,9 @@ labelsFromParameterList ws =
         placeFallback
         pointsFallback
         roundWinnerFallback
-    [r, t, op, mred, mr, btc, m, o, vp, c, i, p] ->
-      mkLabels r t op mred mr btc m o vp c i p placementFallback placeFallback pointsFallback roundWinnerFallback
-    r:t:op:mred:mr:btc:m:o:vp:c:i:p:plcm:plc:ps:rw:_ -> mkLabels r t op mred mr btc m o vp c i p plcm plc ps rw
+    [r, t, op, mred, mr, btc, o, vp, c, i, p] ->
+      mkLabels r t op mred mr btc o vp c i p placementFallback placeFallback pointsFallback roundWinnerFallback
+    r:t:op:mred:mr:btc:o:vp:c:i:p:plcm:plc:ps:rw:_ -> mkLabels r t op mred mr btc o vp c i p plcm plc ps rw
     _ -> defaultLabels
 
 labelsParser :: Parser Labels
@@ -288,9 +284,8 @@ mkLabels ::
   -> String
   -> String
   -> String
-  -> String
   -> Labels
-mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mainLbl ownPageLbl viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl placementLbl placeLbl pointsLbl roundWinnerLbl =
+mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl ownPageLbl viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl placementLbl placeLbl pointsLbl roundWinnerLbl =
   Labels
     { roundLabel = wrap roundLbl
     , teamLabel = wrap teamLbl
@@ -298,7 +293,6 @@ mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl mai
     , maxReachedLabel = wrap maxReachedLbl
     , maxReachableLabel = wrap maxReachableLbl
     , backToChartView = wrap backLbl
-    , mainLabel = wrap mainLbl
     , ownPageLabel = wrap ownPageLbl
     , viewPrevious = wrap viewPreviousLbl
     , cumulativeLabel = wrap cumulativeLbl
@@ -321,7 +315,6 @@ mkHTMLSafe lbls = SafeLabels sfLbls
         , maxReachedLabel = wrap (htmlSafeString (unwrap (maxReachedLabel lbls)))
         , maxReachableLabel = wrap (htmlSafeString (unwrap (maxReachableLabel lbls)))
         , backToChartView = wrap (htmlSafeString (unwrap (backToChartView lbls)))
-        , mainLabel = wrap (htmlSafeString (unwrap (mainLabel lbls)))
         , ownPageLabel = wrap (htmlSafeString (unwrap (ownPageLabel lbls)))
         , viewPrevious = wrap (htmlSafeString (unwrap (viewPrevious lbls)))
         , cumulativeLabel = wrap (htmlSafeString (unwrap (cumulativeLabel lbls)))
@@ -369,7 +362,6 @@ fallbackLabels =
     (fallback :: MaxReachedLabel)
     (fallback :: MaxReachableLabel)
     (fallback :: BackToChartViewLabel)
-    (fallback :: MainLabel)
     (fallback :: OwnPageLabel)
     (fallback :: ViewPreviousLabel)
     (fallback :: CumulativeLabel)

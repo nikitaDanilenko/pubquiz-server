@@ -40,13 +40,12 @@ import           Database.Persist.TH                   (mkMigrate, mkPersist,
 import           Db.Configuration                      (readConfiguration,
                                                         toConnection)
 import           Db.Instances
-import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, mainLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
+import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
                                                         mkLabels)
 import           General.Types                         (Activity,
                                                         BackToChartViewLabel,
                                                         Code, CumulativeLabel,
                                                         IndividualRoundsLabel,
-                                                        MainLabel,
                                                         MaxReachableLabel,
                                                         MaxReachedLabel,
                                                         OwnPageLabel,
@@ -84,7 +83,6 @@ DbLabels
   maxReachedLabel String
   maxReachableLabel String
   backToChartView String
-  mainLabel String
   ownPageLabel String
   viewPrevious String
   cumulativeLabel String
@@ -144,7 +142,6 @@ mkDbLabels ::
   -> MaxReachedLabel
   -> MaxReachableLabel
   -> BackToChartViewLabel
-  -> MainLabel
   -> OwnPageLabel
   -> ViewPreviousLabel
   -> CumulativeLabel
@@ -155,7 +152,7 @@ mkDbLabels ::
   -> PointsLabel
   -> RoundWinnerLabel
   -> DbLabels
-mkDbLabels qid rd t own mr mred btc m op vp c ir pr plcmt plc pts rw =
+mkDbLabels qid rd t own mr mred btc op vp c ir pr plcmt plc pts rw =
   DbLabels
     qid
     (unwrap rd)
@@ -164,7 +161,6 @@ mkDbLabels qid rd t own mr mred btc m op vp c ir pr plcmt plc pts rw =
     (unwrap mr)
     (unwrap mred)
     (unwrap btc)
-    (unwrap m)
     (unwrap op)
     (unwrap vp)
     (unwrap c)
@@ -193,7 +189,6 @@ dbLabelsToLabels dbLabels =
     (dbLabelsMaxReachedLabel dbLabels)
     (dbLabelsMaxReachableLabel dbLabels)
     (dbLabelsBackToChartView dbLabels)
-    (dbLabelsMainLabel dbLabels)
     (dbLabelsOwnPageLabel dbLabels)
     (dbLabelsViewPrevious dbLabels)
     (dbLabelsCumulativeLabel dbLabels)
@@ -214,7 +209,6 @@ labelsToDbLabels qid lbls =
     (maxReachedLabel lbls)
     (maxReachableLabel lbls)
     (backToChartView lbls)
-    (mainLabel lbls)
     (ownPageLabel lbls)
     (viewPrevious lbls)
     (cumulativeLabel lbls)

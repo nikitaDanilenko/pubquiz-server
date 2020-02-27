@@ -14,7 +14,7 @@ import System.Environment     ( getArgs )
 
 import Prelude hiding         ( lookup, div )
 
-import General.Labels         ( Labels, mainLabel, ownPageLabel, backToChartView, roundLabel,
+import General.Labels         ( Labels, ownPageLabel, backToChartView, roundLabel,
                                 ownPageLabel, ownPointsLabel, maxReachedLabel, maxReachableLabel,
                                 teamLabel, defaultLabels, viewPrevious, placeLabel, pointsLabel,
                                 cumulativeLabel, progressionLabel, individualRoundsLabel, unwrapped,
@@ -24,7 +24,7 @@ import Pages.HtmlUtil         ( centerDivV, h1With, tableCell, tableRow, headerC
                                 mkButton, mkButtonTo, pageHeader, div, taggedV, taggedWith,
                                 htmlSafeString, encoding, tableRowWith )
 import Pages.RoundsParser     ( parseCodesWithMaybeNames )
-import General.Types          ( Unwrappable (unwrap) )
+import General.Types          ( Unwrappable (unwrap), QuizName )
 
 import Pages.PointComputation
 
@@ -47,6 +47,10 @@ writeGraphPage prefix safeLabels labels rounds teams winners colors =
 
 cssPath :: String
 cssPath = "<link rel='stylesheet' type='text/css' href='../style.css'/>"
+
+-- todo: remove entirely
+mainLabel :: Labels -> QuizName
+mainLabel labels = undefined
 
 pointPage :: SafeLabels -> Color -> Team -> String
 pointPage safeLabels color team =

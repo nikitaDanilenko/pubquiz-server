@@ -11,9 +11,9 @@ import           Data.Proxy         (Proxy (Proxy))
 
 import           Data.Time.Calendar (Day)
 import           Db.Connection      (DbQuizId)
-import           Db.DbConversion    (Credentials, Header, QuizInfo, QuizIdentifier,
-                                     QuizRatings, QuizSettings, Ratings,
-                                     RoundRating, TeamInfo, TeamRating)
+import           Db.DbConversion    (Credentials, Header, QuizIdentifier,
+                                     QuizInfo, QuizRatings, QuizSettings,
+                                     Ratings, RoundRating, TeamInfo, TeamRating)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ETCon (ETCon), ETVar (ETVar),
                                      EType (ETyCon),
@@ -25,15 +25,14 @@ import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
 import           General.Labels     (Labels)
 import           General.Types      (Action, Activity, BackToChartViewLabel,
                                      Code, CumulativeLabel,
-                                     IndividualRoundsLabel, MainLabel,
-                                     MaxReachableLabel, MaxReachedLabel,
-                                     OwnPageLabel, OwnPointsLabel, Password,
-                                     Place, PlaceLabel, PlacementLabel,
-                                     PointsLabel, ProgressionLabel, QuizDate,
-                                     QuizName, RoundLabel, RoundNumber,
-                                     RoundWinnerLabel, TeamLabel, TeamName,
-                                     TeamNumber, UserHash, UserName, UserSalt,
-                                     ViewPreviousLabel)
+                                     IndividualRoundsLabel, MaxReachableLabel,
+                                     MaxReachedLabel, OwnPageLabel,
+                                     OwnPointsLabel, Password, Place,
+                                     PlaceLabel, PlacementLabel, PointsLabel,
+                                     ProgressionLabel, QuizDate, QuizName,
+                                     RoundLabel, RoundNumber, RoundWinnerLabel,
+                                     TeamLabel, TeamName, TeamNumber, UserHash,
+                                     UserName, UserSalt, ViewPreviousLabel)
 import           Utils              (elmOptions)
 
 deriveElmDef elmOptions ''TeamNumber
@@ -61,8 +60,6 @@ deriveElmDef elmOptions ''MaxReachedLabel
 deriveElmDef elmOptions ''MaxReachableLabel
 
 deriveElmDef elmOptions ''BackToChartViewLabel
-
-deriveElmDef elmOptions ''MainLabel
 
 deriveElmDef elmOptions ''OwnPageLabel
 
@@ -140,7 +137,6 @@ main path =
     , DefineElm (Proxy :: Proxy MaxReachedLabel)
     , DefineElm (Proxy :: Proxy MaxReachableLabel)
     , DefineElm (Proxy :: Proxy BackToChartViewLabel)
-    , DefineElm (Proxy :: Proxy MainLabel)
     , DefineElm (Proxy :: Proxy OwnPageLabel)
     , DefineElm (Proxy :: Proxy ViewPreviousLabel)
     , DefineElm (Proxy :: Proxy CumulativeLabel)
