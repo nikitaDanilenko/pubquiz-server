@@ -36,7 +36,7 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          lockApi, newApi, quizIdParam,
                                          quizIdentifierParam, quizPath,
                                          quizRatingsParam, quizSettingsParam,
-                                         serverQuizPathIO, updateApi,
+                                         serverQuizzesFolderIO, updateApi,
                                          updateQuizSettingsApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
@@ -217,7 +217,7 @@ updateLabelsAndSettings qid quizSettings =
 
 createSheetWithSettings :: QuizIdentifier -> QuizSettings -> Header -> IO ()
 createSheetWithSettings identifier quizSettings header = do
-  serverPath <- serverQuizPathIO
+  serverPath <- serverQuizzesFolderIO
   createSheetWith
     (unwrap (teamLabel (labels quizSettings)))
     (map naturalToInt (rounds quizSettings))

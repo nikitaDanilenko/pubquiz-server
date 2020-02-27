@@ -1,22 +1,27 @@
-module Sheet.SheetMaker ( createSheetWith, Ending ) where
+module Sheet.SheetMaker
+  ( createSheetWith
+  , Ending
+  ) where
 
-import Control.Exception           ( catch )
-import Control.Exception.Base      ( IOException )
-import Control.Monad               ( void )
-import Data.Text                   ( Text )
-import qualified Data.Text as T    ( pack, concat )
-import qualified Data.Text.IO as I ( writeFile )
-import System.Directory            ( setCurrentDirectory, getCurrentDirectory, removeFile )
-import System.Process              ( callProcess )
+import Control.Exception (catch)
+import Control.Exception.Base (IOException)
+import Control.Monad (void)
+import Data.Text (Text)
+import qualified Data.Text as T (concat, pack, unpack)
+import qualified Data.Text.IO as I (writeFile)
+import System.Directory (getCurrentDirectory, removeFile, setCurrentDirectory)
+import System.Process (callProcess)
 
-import Constants                   ( quizzesFolderIO, addSeparator, sheetsFolderIO )
-import Sheet.Tex                   ( mkSheetWithArbitraryQuestions, mkQROnly )
-import General.Types (TeamNumber, Code, unwrap)
+import Constants (addSeparator, quizzesFolderIO, sheetsFolderIO)
 import Data.List (sortOn)
 import GHC.Natural (Natural)
+import General.Types (Code, TeamNumber, unwrap)
+import Sheet.Tex (mkQROnly, mkSheetWithArbitraryQuestions)
 
 type Prefix = String
+
 type Server = String
+
 type Ending = String
 
 createQRPath :: Prefix -> Ending -> Text
@@ -34,20 +39,20 @@ createSheetWith teamLabel rounds prefix server numberedCodes = do
       sheetFile = mkSheetFile prefix
       qrs = mkQROnly tl paths
       codesFile = mkCodesFile prefix
-  setCurrentDirectory sheetsFolder
+  setCurrentDirectory (T.unpack sheetsFolder)
   writeAndCleanPDF sheetFile sht
   writeAndCleanPDF codesFile qrs
   setCurrentDirectory currentDir
 
 writeAndCleanPDF :: FilePath -> Text -> IO ()
 writeAndCleanPDF mainPath content = do
-    I.writeFile texFile content
-    createPDF texFile `catch` noPDFLatex
-    cleanLatex mainPath
-  where texFile = mainPath ++ ".tex"
- 
-        noPDFLatex :: IOException -> IO ()
-        noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
+  I.writeFile texFile content
+  createPDF texFile `catch` noPDFLatex
+  cleanLatex mainPath
+  where
+    texFile = mainPath ++ ".tex"
+    noPDFLatex :: IOException -> IO ()
+    noPDFLatex _ = putStrLn "pdflatex not found or it failed during document creation."
 
 sheet :: String
 sheet = "Sheet"
@@ -71,6 +76,7 @@ cleanLatex :: String -> IO ()
 cleanLatex sheetFile = mapM_ (safeRemoveFile . (sheetFile ++)) [".log", ".aux", ".tex"]
 
 safeRemoveFile :: String -> IO ()
-safeRemoveFile path = removeFile path `catch` noFile where
+safeRemoveFile path = removeFile path `catch` noFile
+  where
     noFile :: IOException -> IO ()
     noFile _ = void (putStrLn "No file to remove")

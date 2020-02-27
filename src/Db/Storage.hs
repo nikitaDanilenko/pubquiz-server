@@ -50,6 +50,7 @@ import           General.Types               (Activity (..), Code, Place,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap),
                                               UserHash, UserName, UserSalt)
+import Constants (serverSheetsFolderIO)
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
 setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
@@ -121,7 +122,9 @@ createQuiz = runSql . createQuizStatement
 createQuizStatement :: MonadIO m => QuizIdentifier -> Statement m QuizInfo
 createQuizStatement identifier = checkUnique newQuiz >>= maybe success (const (error errorMsg))
   where
-    success = fmap (mkQuizInfo . flip Entity newQuiz) (insert newQuiz)
+    success = do
+      sheetsFolder <- liftIO serverSheetsFolderIO 
+      fmap (mkQuizInfo sheetsFolder . flip Entity newQuiz) (insert newQuiz)
     newQuiz = mkDbQuiz p d n Active
     errorMsg =
       unwords
@@ -150,7 +153,9 @@ findAllActiveQuizzes :: IO [QuizInfo]
 findAllActiveQuizzes = runSql findAllActiveQuizzesStatement
 
 findAllActiveQuizzesStatement :: MonadIO m => Statement m [QuizInfo]
-findAllActiveQuizzesStatement = fmap (fmap mkQuizInfo) (selectList [DbQuizActive ==. True] [])
+findAllActiveQuizzesStatement = do 
+ sheetsFolder <- liftIO serverSheetsFolderIO
+ fmap (fmap (mkQuizInfo sheetsFolder)) (selectList [DbQuizActive ==. True] [])
 
 findRatings :: DbQuizId -> IO Ratings
 findRatings = runSql . findRatingsStatement
@@ -186,7 +191,9 @@ findQuizInfo :: DbQuizId -> IO (Maybe QuizInfo)
 findQuizInfo = runSql . findQuizInfoStatement
 
 findQuizInfoStatement :: MonadIO m => DbQuizId -> Statement m (Maybe QuizInfo)
-findQuizInfoStatement qid = fmap (fmap mkQuizInfo) (selectFirst [DbQuizId ==. qid] [])
+findQuizInfoStatement qid = do
+  sheetsFolder <- liftIO serverSheetsFolderIO 
+  fmap (fmap (mkQuizInfo sheetsFolder)) (selectFirst [DbQuizId ==. qid] [])
 
 findQuizRatings :: DbQuizId -> IO QuizRatings
 findQuizRatings = runSql . findQuizRatingsStatement

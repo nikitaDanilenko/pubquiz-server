@@ -185,24 +185,24 @@ data QuizInfo =
 
 deriveJSON defaultOptions ''QuizInfo
 
-mkQuizInfo :: Entity DbQuiz -> QuizInfo
-mkQuizInfo eq =
+mkQuizInfo :: T.Text -> Entity DbQuiz -> QuizInfo
+mkQuizInfo sheetsFolder eq =
   QuizInfo
     { quizId = qid
     , quizIdentifier =
         QuizIdentifier {name = wrap (T.pack (dbQuizName q)), date = wrap day, place = wrap (T.pack (dbQuizPlace q))}
     , active = wrap (dbQuizActive q)
-    , fullSheetPath = mkPathForQuizSheetWith sheetFileName day qid
-    , qrOnlyPath = mkPathForQuizSheetWith qrOnlyFileName day qid
+    , fullSheetPath = mkPathForQuizSheetWith sheetsFolder sheetFileName day qid
+    , qrOnlyPath = mkPathForQuizSheetWith sheetsFolder qrOnlyFileName day qid
     }
   where
     q = entityVal eq
     qid = entityKey eq
     day = dbQuizDate q
 
-mkPathForQuizSheetWith :: T.Text -> Day -> DbQuizId -> T.Text
-mkPathForQuizSheetWith fileName day qid =
-  T.intercalate (T.pack "-") [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, T.pack ".pdf"]]
+mkPathForQuizSheetWith :: T.Text -> T.Text -> Day -> DbQuizId -> T.Text
+mkPathForQuizSheetWith sheetsFolder fileName day qid =
+  T.intercalate (T.pack "/") [sheetsFolder, T.intercalate (T.pack "-") [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, T.pack ".pdf"]]]
 
 fullQuizName :: QuizIdentifier -> T.Text
 fullQuizName identifier =
