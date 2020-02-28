@@ -227,8 +227,9 @@ newtype TeamTable =
 
 deriveJSON defaultOptions ''TeamTable
 
--- todo: One needs to traverse the reached rounds twice. 
+-- todo: One needs to traverse the reached rounds twice.
 --  It is possibly better to perform only one DB operation and to compute the rest in code.
+-- Alternatively: This might be a good application for computed columns.
 mkTeamTable :: [Entity DbRoundReached] -> [Entity DbRoundReachable] -> [Entity DbRoundReached] -> TeamTable
 mkTeamTable reached reachable allReached =
   TeamTable (elems (intersectionWithKey (\k r (p, m) -> TeamLine k r p m) ratings (intersectionWith (,) possibles ms)))
