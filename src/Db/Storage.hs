@@ -11,7 +11,8 @@ import           Database.Persist            (Entity (Entity), Key, checkUnique,
                                               selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
-import           Control.Applicative         (liftA2)
+import           Constants                   (serverSheetsFolderIO)
+import           Control.Applicative         (liftA2, liftA3)
 import           Data.List                   (intercalate)
 import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
@@ -31,16 +32,19 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbQuiz, mkDbRoundReachable,
                                               mkDbRoundReached, mkFilter,
                                               runSql)
-import           Db.DbConversion             (Header, QuizInfo,
+import           Db.DbConversion             (Header,
                                               QuizIdentifier (date, name, place),
-                                              QuizRatings (QuizRatings, header, ratings),
+                                              QuizInfo,
+                                              QuizRatings (QuizRatings, header, reached),
                                               Ratings,
                                               RoundRating (points, reachableInRound),
                                               SavedUser, TeamInfo,
                                               TeamRating (rating, teamNumber),
+                                              TeamTable,
                                               dbTeamNameCodeToTeamInfo,
                                               dbUserToSavedUser, mkQuizInfo,
-                                              ratingsFromDb, savedUserToDbUser,
+                                              mkTeamTable, ratingsFromDb,
+                                              savedUserToDbUser,
                                               teamInfoToDbTeamNameCode,
                                               userHash, userName, userSalt)
 import           General.Labels              (Labels (..), fallbackLabels,
@@ -50,7 +54,6 @@ import           General.Types               (Activity (..), Code, Place,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap),
                                               UserHash, UserName, UserSalt)
-import Constants (serverSheetsFolderIO)
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
 setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
@@ -111,7 +114,7 @@ setQuizRatings qid quizRatings = runSql (setQuizRatingsStatement qid quizRatings
 setQuizRatingsStatement :: MonadIO m => DbQuizId -> QuizRatings -> Statement m ()
 setQuizRatingsStatement qid quizRatings = do
   setHeaderStatement qid (header quizRatings)
-  setRatingsStatement qid (ratings quizRatings)
+  setRatingsStatement qid (reached quizRatings)
 
 createQuiz :: QuizIdentifier -> IO QuizInfo
 createQuiz = runSql . createQuizStatement
@@ -123,7 +126,7 @@ createQuizStatement :: MonadIO m => QuizIdentifier -> Statement m QuizInfo
 createQuizStatement identifier = checkUnique newQuiz >>= maybe success (const (error errorMsg))
   where
     success = do
-      sheetsFolder <- liftIO serverSheetsFolderIO 
+      sheetsFolder <- liftIO serverSheetsFolderIO
       fmap (mkQuizInfo sheetsFolder . flip Entity newQuiz) (insert newQuiz)
     newQuiz = mkDbQuiz p d n Active
     errorMsg =
@@ -153,9 +156,9 @@ findAllActiveQuizzes :: IO [QuizInfo]
 findAllActiveQuizzes = runSql findAllActiveQuizzesStatement
 
 findAllActiveQuizzesStatement :: MonadIO m => Statement m [QuizInfo]
-findAllActiveQuizzesStatement = do 
- sheetsFolder <- liftIO serverSheetsFolderIO
- fmap (fmap (mkQuizInfo sheetsFolder)) (selectList [DbQuizActive ==. True] [])
+findAllActiveQuizzesStatement = do
+  sheetsFolder <- liftIO serverSheetsFolderIO
+  fmap (fmap (mkQuizInfo sheetsFolder)) (selectList [DbQuizActive ==. True] [])
 
 findRatings :: DbQuizId -> IO Ratings
 findRatings = runSql . findRatingsStatement
@@ -192,7 +195,7 @@ findQuizInfo = runSql . findQuizInfoStatement
 
 findQuizInfoStatement :: MonadIO m => DbQuizId -> Statement m (Maybe QuizInfo)
 findQuizInfoStatement qid = do
-  sheetsFolder <- liftIO serverSheetsFolderIO 
+  sheetsFolder <- liftIO serverSheetsFolderIO
   fmap (fmap (mkQuizInfo sheetsFolder)) (selectFirst [DbQuizId ==. qid] [])
 
 findQuizRatings :: DbQuizId -> IO QuizRatings
@@ -207,6 +210,17 @@ findHeader = runSql . findHeaderStatement
 findHeaderStatement :: MonadIO m => DbQuizId -> Statement m Header
 findHeaderStatement qid =
   fmap (wrap . fmap (dbTeamNameCodeToTeamInfo . entityVal)) (selectList [DbTeamNameCodeQuizId ==. qid] [])
+
+findTeamTable :: DbQuizId -> TeamNumber -> IO TeamTable
+findTeamTable qid tn = runSql (findTeamTableStatement qid tn)
+
+findTeamTableStatement :: MonadIO m => DbQuizId -> TeamNumber -> Statement m TeamTable
+findTeamTableStatement qid tn =
+  liftA3
+    mkTeamTable
+    (selectList [DbRoundReachedQuizId ==. qid, DbRoundReachedTeamNumber ==. unwrap tn] [])
+    (selectList [DbRoundReachableQuizId ==. qid] [])
+    (selectList [DbRoundReachedQuizId ==. qid] [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)

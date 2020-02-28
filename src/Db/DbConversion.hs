@@ -4,34 +4,36 @@
 
 module Db.DbConversion where
 
-import           Constants          (qrOnlyFileName, sheetFileName)
-import           Control.Arrow      ((&&&))
-import           Data.Aeson.TH      (defaultOptions, deriveJSON)
-import           Data.Function      (on)
-import           Data.List          (groupBy, sortOn)
-import           Data.Map           (fromList, intersectionWith, toList)
-import           Data.Text          (pack)
-import qualified Data.Text          as T
-import qualified Data.Text.Encoding as E
+import           Constants            (qrOnlyFileName, sheetFileName)
+import           Control.Arrow        (first, (&&&))
+import           Data.Aeson           (encode)
+import           Data.Aeson.TH        (defaultOptions, deriveJSON)
 import qualified Data.ByteString.Lazy as L
-import           Data.Time.Calendar (Day)
-import           Database.Persist   (Entity, entityKey, entityVal)
-import           Db.Connection      (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
-                                     DbQuizId,
-                                     DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
-                                     DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
-                                     DbTeamNameCode (DbTeamNameCode, dbTeamNameCodeActive, dbTeamNameCodeQuizId, dbTeamNameCodeTeamCode, dbTeamNameCodeTeamName, dbTeamNameCodeTeamNumber),
-                                     DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
-                                     dbQuizActive)
-import           General.Labels     (Labels, fallbackLabels)
-import           General.Types      (Activity (Active), Code, Place, QuizDate,
-                                     QuizName, RoundNumber (RoundNumber),
-                                     TeamLabel, TeamName,
-                                     TeamNumber (TeamNumber), Unwrappable,
-                                     UserHash, UserName, UserSalt, unwrap, wrap)
-import           GHC.Natural        (Natural, intToNatural, naturalToInt)
-import           Utils              (randomDistinctHexadecimal)
-import Data.Aeson (encode)
+import           Data.Function        (on)
+import           Data.List            (groupBy, maximumBy, sortOn)
+import           Data.Map             (fromList, intersectionWith, intersectionWithKey, toList, elems)
+import           Data.Ord             (comparing)
+import           Data.Text            (pack)
+import qualified Data.Text            as T
+import qualified Data.Text.Encoding   as E
+import           Data.Time.Calendar   (Day)
+import           Database.Persist     (Entity, entityKey, entityVal)
+import           Db.Connection        (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
+                                       DbQuizId,
+                                       DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
+                                       DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
+                                       DbTeamNameCode (DbTeamNameCode, dbTeamNameCodeActive, dbTeamNameCodeQuizId, dbTeamNameCodeTeamCode, dbTeamNameCodeTeamName, dbTeamNameCodeTeamNumber),
+                                       DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
+                                       dbQuizActive)
+import           General.Labels       (Labels, fallbackLabels)
+import           General.Types        (Activity (Active), Code, Place, QuizDate,
+                                       QuizName, RoundNumber (RoundNumber),
+                                       TeamLabel, TeamName,
+                                       TeamNumber (TeamNumber), Unwrappable,
+                                       UserHash, UserName, UserSalt, unwrap,
+                                       wrap)
+import           GHC.Natural          (Natural, intToNatural, naturalToInt)
+import           Utils                (randomDistinctHexadecimal)
 
 data TeamRating =
   TeamRating
@@ -125,7 +127,7 @@ instance Unwrappable Ratings [(RoundNumber, RoundRating)] where
 data QuizRatings =
   QuizRatings
     { header  :: Header
-    , ratings :: Ratings
+    , reached :: Ratings
     }
 
 deriveJSON defaultOptions ''QuizRatings
@@ -202,20 +204,39 @@ mkQuizInfo sheetsFolder eq =
 
 mkPathForQuizSheetWith :: T.Text -> T.Text -> Day -> DbQuizId -> T.Text
 mkPathForQuizSheetWith sheetsFolder fileName day qid =
-  T.intercalate (T.pack "/") [sheetsFolder, T.intercalate (T.pack "-") [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, T.pack ".pdf"]]]
+  T.intercalate
+    (T.pack "/")
+    [ sheetsFolder
+    , T.intercalate
+        (T.pack "-")
+        [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, T.pack ".pdf"]]
+    ]
 
-data TeamLine = TeamLine {
-  roundNumber :: RoundNumber,
-  reachedPoints :: Double,
-  maximumPoints :: Double,
-  reachablePoints :: Double
-}
+data TeamLine =
+  TeamLine
+    { roundNumber     :: RoundNumber
+    , reachedPoints   :: Double
+    , maximumPoints   :: Double
+    , reachablePoints :: Double
+    }
 
 deriveJSON defaultOptions ''TeamLine
 
-newtype TeamTable = TeamTable [TeamLine]
+newtype TeamTable =
+  TeamTable [TeamLine]
 
 deriveJSON defaultOptions ''TeamTable
+
+-- todo: One needs to traverse the reached rounds twice. 
+--  It is possibly better to perform only one DB operation and to compute the rest in code.
+mkTeamTable :: [Entity DbRoundReached] -> [Entity DbRoundReachable] -> [Entity DbRoundReached] -> TeamTable
+mkTeamTable reached reachable allReached =
+  TeamTable (elems (intersectionWithKey (\k r (p, m) -> TeamLine k r p m) ratings (intersectionWith (,) possibles ms)))
+  where
+    ratings = fromList (mkReached wrap reached)
+    possibles = fromList (map (((wrap . dbRoundReachableRoundNumber) &&& dbRoundReachablePoints) . entityVal) reachable)
+    ms = fromList (map (first wrap . maximumBy (comparing snd)) $ groupBy ((==) `on` fst) $ sortOn fst (mkReached id allReached))
+    mkReached w = map (((w . dbRoundReachedRoundNumber) &&& dbRoundReachedPoints) . entityVal)
 
 fullQuizName :: QuizIdentifier -> T.Text
 fullQuizName identifier =
