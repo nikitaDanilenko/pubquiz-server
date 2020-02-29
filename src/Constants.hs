@@ -168,6 +168,9 @@ signatureParam = "signature"
 numberOfTeamsParam :: B.ByteString
 numberOfTeamsParam = "numberOfTeams"
 
+teamQueryParam :: B.ByteString
+teamQueryParam = "teamQuery"
+
 server :: String
 server = "https://www.danilenko.io"
 
@@ -224,6 +227,9 @@ lockApi = "lock"
 
 newApi :: B.ByteString
 newApi = "new"
+
+teamTableApi :: B.ByteString
+teamTableApi = "teamTable"
 
 sheetFileName :: T.Text
 sheetFileName = "QuizSheet"

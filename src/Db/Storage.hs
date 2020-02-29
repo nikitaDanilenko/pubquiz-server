@@ -14,6 +14,7 @@ import           Database.Persist.Postgresql (SqlBackend)
 import           Constants                   (serverSheetsFolderIO)
 import           Control.Applicative         (liftA2, liftA3)
 import           Data.List                   (intercalate)
+import           Data.Maybe                  (isJust)
 import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
@@ -38,7 +39,7 @@ import           Db.DbConversion             (Header,
                                               QuizRatings (QuizRatings, header, reached),
                                               Ratings,
                                               RoundRating (points, reachableInRound),
-                                              SavedUser, TeamInfo,
+                                              SavedUser, TeamInfo, TeamQuery,
                                               TeamRating (rating, teamNumber),
                                               TeamTable,
                                               dbTeamNameCodeToTeamInfo,
@@ -46,7 +47,10 @@ import           Db.DbConversion             (Header,
                                               mkTeamTable, ratingsFromDb,
                                               savedUserToDbUser,
                                               teamInfoToDbTeamNameCode,
-                                              userHash, userName, userSalt)
+                                              teamQueryQuizId,
+                                              teamQueryTeamCode,
+                                              teamQueryTeamNumber, userHash,
+                                              userName, userSalt)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -221,6 +225,20 @@ findTeamTableStatement qid tn =
     (selectList [DbRoundReachedQuizId ==. qid, DbRoundReachedTeamNumber ==. unwrap tn] [])
     (selectList [DbRoundReachableQuizId ==. qid] [])
     (selectList [DbRoundReachedQuizId ==. qid] [])
+
+existsTeam :: TeamQuery -> IO Bool
+existsTeam = runSql . existsTeamStatement
+
+existsTeamStatement :: MonadIO m => TeamQuery -> Statement m Bool
+existsTeamStatement tq =
+  fmap
+    isJust
+    (selectFirst
+       [ DbTeamNameCodeQuizId ==. teamQueryQuizId tq
+       , DbTeamNameCodeTeamNumber ==. unwrap (teamQueryTeamNumber tq)
+       , DbTeamNameCodeTeamCode ==. unwrap (teamQueryTeamCode tq)
+       ]
+       [])
 
 -- * Auxiliary functions
 repsertQuiz :: MonadIO m => DbQuiz -> Statement m (Key DbQuiz)

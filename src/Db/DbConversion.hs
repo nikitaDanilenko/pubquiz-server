@@ -227,6 +227,14 @@ newtype TeamTable =
 
 deriveJSON defaultOptions ''TeamTable
 
+data TeamQuery = TeamQuery {
+  teamQueryQuizId :: DbQuizId,
+  teamQueryTeamNumber :: TeamNumber,
+  teamQueryTeamCode :: Code
+} 
+
+deriveJSON defaultOptions ''TeamQuery
+
 -- todo: One needs to traverse the reached rounds twice.
 --  It is possibly better to perform only one DB operation and to compute the rest in code.
 -- Alternatively: This might be a good application for computed columns.
