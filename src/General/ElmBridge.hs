@@ -14,7 +14,7 @@ import           Db.Connection      (DbQuizId)
 import           Db.DbConversion    (Credentials, Header, QuizIdentifier,
                                      QuizInfo, QuizRatings, QuizSettings,
                                      Ratings, RoundRating, TeamInfo, TeamLine,
-                                     TeamQuery, TeamRating, TeamTable)
+                                     TeamQuery, TeamRating, TeamTable, TeamTableInfo)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ETCon (ETCon), ETVar (ETVar),
                                      EType (ETyCon),
@@ -120,6 +120,8 @@ deriveElmDef elmOptions ''TeamTable
 
 deriveElmDef elmOptions ''TeamQuery
 
+deriveElmDef elmOptions ''TeamTableInfo
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -175,4 +177,5 @@ main path =
     , DefineElm (Proxy :: Proxy TeamLine)
     , DefineElm (Proxy :: Proxy TeamTable)
     , DefineElm (Proxy :: Proxy TeamQuery)
+    , DefineElm (Proxy :: Proxy TeamTableInfo)
     ]
