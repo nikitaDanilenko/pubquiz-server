@@ -48,10 +48,10 @@ import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
                                          Ratings,
                                          TeamInfo (TeamInfo, teamInfoCode, teamInfoNumber),
                                          active, adjustHeaderToSize,
-                                         fallbackSettings, fullQuizName, labels,
+                                         fallbackSettings, labels,
                                          mkDefaultTeamInfos, numberOfTeams,
                                          quizId, quizIdentifier, rounds,
-                                         teamNumber, teamQueryQuizId, teamQueryTeamNumber)
+                                         teamNumber, teamQueryQuizId, teamQueryTeamNumber, date)
 import qualified Db.DbConversion        as D
 import           Db.Storage             (createQuiz, createQuizStatement,
                                          findAllActiveQuizzes, findHeader,
@@ -201,7 +201,7 @@ newQuiz = do
             quizInfo <- createQuizStatement quizIdentifier
             setHeaderStatement (quizId quizInfo) header
             pure quizInfo
-        liftIO (createSheetWithSettings quizIdentifier quizSettings header)
+        liftIO (createSheetWithSettings (quizId quizInfo) quizIdentifier quizSettings header)
         writeLBS (encode quizInfo)
         modifyResponse (setResponseCodeJSON 200)
 
@@ -214,17 +214,18 @@ updateLabelsAndSettings qid quizSettings =
       setLabelsStatement qid ls
       adjustedHeader <- liftIO (adjustHeaderToSize (numberOfTeams quizSettings) teamCodeLength (teamLabel ls) header)
       setHeaderStatement qid adjustedHeader
-      liftIO (createSheetWithSettings (quizIdentifier quizInfo) quizSettings adjustedHeader)
+      liftIO (createSheetWithSettings qid (quizIdentifier quizInfo) quizSettings adjustedHeader)
 
-createSheetWithSettings :: QuizIdentifier -> QuizSettings -> Header -> IO ()
-createSheetWithSettings identifier quizSettings header = do
+createSheetWithSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> Header -> IO ()
+createSheetWithSettings qid identifier quizSettings header = do
   serverPath <- serverQuizzesFolderIO
   createSheetWith
     (unwrap (teamLabel (labels quizSettings)))
     (map naturalToInt (rounds quizSettings))
-    (T.unpack (fullQuizName identifier))
     serverPath
     (map (teamInfoNumber &&& teamInfoCode) (unwrap header))
+    (unwrap (date identifier))
+    qid
 
 ifActiveDo :: DbQuizId -> IO a -> (QuizInfo -> IO a) -> IO a
 ifActiveDo qid dft action = findQuizInfo qid >>= maybe dft checkActive
