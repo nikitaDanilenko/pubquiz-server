@@ -36,7 +36,7 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
 import           Db.DbConversion             (Header,
                                               QuizIdentifier (date, name, place),
                                               QuizInfo,
-                                              QuizRatings (QuizRatings, header, reached),
+                                              QuizRatings (QuizRatings, header, ratings),
                                               Ratings,
                                               RoundRating (points, reachableInRound),
                                               SavedUser, TeamInfo, TeamQuery,
@@ -118,7 +118,7 @@ setQuizRatings qid quizRatings = runSql (setQuizRatingsStatement qid quizRatings
 setQuizRatingsStatement :: MonadIO m => DbQuizId -> QuizRatings -> Statement m ()
 setQuizRatingsStatement qid quizRatings = do
   setHeaderStatement qid (header quizRatings)
-  setRatingsStatement qid (reached quizRatings)
+  setRatingsStatement qid (ratings quizRatings)
 
 createQuiz :: QuizIdentifier -> IO QuizInfo
 createQuiz = runSql . createQuizStatement
