@@ -31,7 +31,7 @@ import           General.Types        (Activity (Active), Code, Place, QuizDate,
                                        TeamLabel, TeamName,
                                        TeamNumber (TeamNumber), Unwrappable,
                                        UserHash, UserName, UserSalt, unwrap,
-                                       wrap, Colour)
+                                       wrap)
 import           GHC.Natural          (Natural, intToNatural, naturalToInt)
 import           Utils                (randomDistinctHexadecimal)
 
