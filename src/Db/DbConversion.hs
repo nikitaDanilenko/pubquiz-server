@@ -31,7 +31,7 @@ import           General.Types        (Activity (Active), Code, Place, QuizDate,
                                        TeamLabel, TeamName,
                                        TeamNumber (TeamNumber), Unwrappable,
                                        UserHash, UserName, UserSalt, unwrap,
-                                       wrap)
+                                       wrap, Colour)
 import           GHC.Natural          (Natural, intToNatural, naturalToInt)
 import           Utils                (randomDistinctHexadecimal)
 
@@ -127,7 +127,7 @@ instance Unwrappable Ratings [(RoundNumber, RoundRating)] where
 data QuizRatings =
   QuizRatings
     { header  :: Header
-    , reached :: Ratings
+    , ratings :: Ratings
     }
 
 deriveJSON defaultOptions ''QuizRatings
@@ -194,22 +194,22 @@ mkQuizInfo sheetsFolder eq =
     , quizIdentifier =
         QuizIdentifier {name = wrap (T.pack (dbQuizName q)), date = wrap day, place = wrap (T.pack (dbQuizPlace q))}
     , active = wrap (dbQuizActive q)
-    , fullSheetPath = mkPathForQuizSheetWith sheetsFolder sheetFileName day qid
-    , qrOnlyPath = mkPathForQuizSheetWith sheetsFolder qrOnlyFileName day qid
+    , fullSheetPath = mkPathForQuizSheetWith (T.pack ".pdf") sheetsFolder sheetFileName day qid
+    , qrOnlyPath = mkPathForQuizSheetWith (T.pack ".pdf") sheetsFolder qrOnlyFileName day qid
     }
   where
     q = entityVal eq
     qid = entityKey eq
     day = dbQuizDate q
 
-mkPathForQuizSheetWith :: T.Text -> T.Text -> Day -> DbQuizId -> T.Text
-mkPathForQuizSheetWith sheetsFolder fileName day qid =
+mkPathForQuizSheetWith :: T.Text -> T.Text -> T.Text -> Day -> DbQuizId -> T.Text
+mkPathForQuizSheetWith fileEnding sheetsFolder fileName day qid =
   T.intercalate
     (T.pack "/")
     [ sheetsFolder
     , T.intercalate
         (T.pack "-")
-        [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, T.pack ".pdf"]]
+        [T.pack (show day), E.decodeUtf8 (L.toStrict (encode qid)), T.concat [fileName, fileEnding]]
     ]
 
 data TeamLine =
@@ -231,9 +231,17 @@ data TeamQuery = TeamQuery {
   teamQueryQuizId :: DbQuizId,
   teamQueryTeamNumber :: TeamNumber,
   teamQueryTeamCode :: Code
-} 
+}
 
 deriveJSON defaultOptions ''TeamQuery
+
+data TeamTableInfo = TeamTableInfo {
+  teamTable :: TeamTable,
+  teamTableInfoTeamName :: TeamName,
+  teamTableInfoNumberOfTeams :: Natural
+}
+
+deriveJSON defaultOptions ''TeamTableInfo
 
 -- todo: One needs to traverse the reached rounds twice.
 --  It is possibly better to perform only one DB operation and to compute the rest in code.
@@ -246,14 +254,6 @@ mkTeamTable reached reachable allReached =
     possibles = fromList (map (((wrap . dbRoundReachableRoundNumber) &&& dbRoundReachablePoints) . entityVal) reachable)
     ms = fromList (map (first wrap . maximumBy (comparing snd)) $ groupBy ((==) `on` fst) $ sortOn fst (mkReached id allReached))
     mkReached w = map (((w . dbRoundReachedRoundNumber) &&& dbRoundReachedPoints) . entityVal)
-
-fullQuizName :: QuizIdentifier -> T.Text
-fullQuizName identifier =
-  T.unwords
-    [ T.concat [T.pack (show (unwrap (date identifier) :: Day)), T.pack ":"]
-    , unwrap (name identifier)
-    , T.concat [T.pack "(", unwrap (place identifier), T.pack ")"]
-    ]
 
 data SavedUser =
   SavedUser
