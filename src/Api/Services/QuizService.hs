@@ -37,7 +37,7 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          quizIdentifierParam, quizPath,
                                          quizRatingsParam, quizSettingsParam,
                                          serverQuizzesFolderIO, updateApi,
-                                         updateQuizSettingsApi)
+                                         updateQuizSettingsApi, teamQueryParam, teamTableApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
@@ -51,7 +51,7 @@ import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
                                          fallbackSettings, fullQuizName, labels,
                                          mkDefaultTeamInfos, numberOfTeams,
                                          quizId, quizIdentifier, rounds,
-                                         teamNumber)
+                                         teamNumber, teamQueryQuizId, teamQueryTeamNumber)
 import qualified Db.DbConversion        as D
 import           Db.Storage             (createQuiz, createQuizStatement,
                                          findAllActiveQuizzes, findHeader,
@@ -60,7 +60,7 @@ import           Db.Storage             (createQuiz, createQuizStatement,
                                          findRatings, lockQuiz, setHeader,
                                          setHeaderStatement, setLabels,
                                          setLabelsStatement, setQuizRatings,
-                                         setRatings, setTeamInfo)
+                                         setRatings, setTeamInfo, findTeamTable)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -89,6 +89,7 @@ quizRoutes =
   , updateApi +> method POST updateQuiz
   , lockApi +> method POST lockQuizHandler
   , newApi +> method POST newQuiz
+  , teamTableApi +> method POST teamTableHandler
   ]
 
 -- todo: switch all writeBS uses to writeLBS
@@ -241,6 +242,19 @@ lockQuizHandler = do
   failIfUnverified verified $ do
     liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") (fValue mQuizId)))
     modifyResponse (setResponseCodeJSON 201)
+
+teamTableHandler :: Handler b QuizService ()
+teamTableHandler = do
+  mTeamQuery <- getJSONParam teamQueryParam
+  case mTeamQuery of
+    Nothing -> do
+      writeLBS "No such team found"
+      modifyResponse (setResponseCodeJSON 404)
+    Just tq -> do
+      teamTable <- liftIO (findTeamTable (teamQueryQuizId tq) (teamQueryTeamNumber tq))
+      writeLBS (encode teamTable) 
+      modifyResponse (setResponseCodeJSON 201)
+
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit =
