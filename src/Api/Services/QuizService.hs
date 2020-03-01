@@ -89,7 +89,7 @@ quizRoutes =
   , updateApi +> method POST updateQuiz
   , lockApi +> method POST lockQuizHandler
   , newApi +> method POST newQuiz
-  , teamTableApi +> method POST teamTableHandler
+  , teamTableApi +> method GET teamTableHandler
   ]
 
 -- todo: switch all writeBS uses to writeLBS
