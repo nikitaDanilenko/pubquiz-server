@@ -34,6 +34,7 @@ userServiceInit =
     addRoutes userRoutes
     return UserService
 
+--todo: Use a more holistic approach here and fix the construction w.r.t. the current Elm implementation.
 createUser :: Handler b UserService ()
 createUser = do
   mUser <- attemptDecode (getPostParam userParam) :: Handler b UserService (Maybe UserName)
