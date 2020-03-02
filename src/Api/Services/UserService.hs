@@ -5,28 +5,27 @@ module Api.Services.UserService where
 
 import           Control.Monad.IO.Class        (liftIO)
 import qualified Data.ByteString.Char8         as B
-import qualified Data.Text.Encoding            as E
-import           Snap.Core                     (Method (POST), getPostParam,
-                                                method, modifyResponse,
-                                                setResponseCode, writeBS)
+import           Snap.Core                     (Method (POST), method,
+                                                modifyResponse, setResponseCode,
+                                                writeBS)
 import           Snap.Snaplet                  (Handler, SnapletInit, addRoutes,
                                                 makeSnaplet)
 
-import           Api.Services.HashCheck        (authenticate,
-                                                failIfUnverified)
+import           Api.Services.HashCheck        (authenticate, failIfUnverified)
 import           Api.Services.SavedUserHandler (Status (..), mkAndSaveUser)
-import           Api.Services.SnapUtil         (attemptDecode)
-import           Constants                     (credentialsParam, newUserParam,
-                                                passwordParam, userParam,
-                                                userPath)
-import           General.Types                 (Password, UserName, unwrap)
+import           Api.Services.SnapUtil         (fKey, getJSONPostParam,
+                                                getJSONPostParamWithPure)
+import           Constants                     (createUserApi, credentialsParam,
+                                                userCreationParam, userPath)
+import           General.Types                 (UserCreation, unwrap,
+                                                userCreationUser)
 import           Utils                         ((+>))
 
 data UserService =
   UserService
 
 userRoutes :: [(B.ByteString, Handler b UserService ())]
-userRoutes = ["createUser" +> method POST createUser]
+userRoutes = [createUserApi +> method POST createUser]
 
 userServiceInit :: SnapletInit b UserService
 userServiceInit =
@@ -34,22 +33,18 @@ userServiceInit =
     addRoutes userRoutes
     return UserService
 
---todo: Use a more holistic approach here and fix the construction w.r.t. the current Elm implementation.
 createUser :: Handler b UserService ()
 createUser = do
-  mUser <- attemptDecode (getPostParam userParam) :: Handler b UserService (Maybe UserName)
-  mNewUser <- attemptDecode (getPostParam newUserParam) :: Handler b UserService (Maybe UserName)
-  mCredentials <- attemptDecode (getPostParam credentialsParam)
-  mNewPass <- attemptDecode (getPostParam passwordParam) :: Handler b UserService (Maybe Password)
-  verified <-
-    authenticate mCredentials [(newUserParam, unwrap mNewUser), (passwordParam, unwrap mNewPass)]
+  mCredentials <- getJSONPostParam credentialsParam
+  mUserCreationWithText <- getJSONPostParamWithPure userCreationParam
+  verified <- authenticate mCredentials [(userCreationParam, fKey mUserCreationWithText)]
   failIfUnverified verified $
-    case (mNewUser, mNewPass) of
-      (Just user, Just pass) -> do
-        status <- liftIO (mkAndSaveUser user pass)
+    case mUserCreationWithText of
+      Just (_, userCreation) -> do
+        status <- liftIO (mkAndSaveUser userCreation)
         case status of
           Success -> do
-            writeBS (B.unwords ["Created user", unwrap user])
+            writeBS (B.unwords ["Created user", unwrap (userCreationUser userCreation)])
             modifyResponse (setResponseCode 201)
           Exists u -> do
             writeBS (B.unwords ["User", unwrap u, "already exists. Nothing changed."])
