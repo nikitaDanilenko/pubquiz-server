@@ -171,6 +171,9 @@ numberOfTeamsParam = "numberOfTeams"
 teamQueryParam :: B.ByteString
 teamQueryParam = "teamQuery"
 
+userCreationParam :: B.ByteString
+userCreationParam = "userCreation"
+
 server :: String
 server = "https://www.danilenko.io"
 
@@ -230,6 +233,9 @@ newApi = "new"
 
 teamTableApi :: B.ByteString
 teamTableApi = "teamTable"
+
+createUserApi :: B.ByteString
+createUserApi = "createUser"
 
 sheetFileName :: T.Text
 sheetFileName = "QuizSheet"
