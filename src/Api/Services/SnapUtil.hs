@@ -10,21 +10,13 @@ import           Data.CaseInsensitive  (CI, mk)
 import           Data.Maybe            (fromMaybe)
 import           Snap                  (Handler)
 import           Snap.Core             (Response, getParam, getPostParam,
-                                        setContentType, setHeader,
-                                        setResponseCode)
-
-setResponseCodePlain :: Int -> Response -> Response
-setResponseCodePlain code = setResponseCode code . setContentType (B.pack "text/plain")
+                                        setHeader, setResponseCode)
 
 setResponseCodeJSON :: Int -> Response -> Response
 setResponseCodeJSON code = setResponseCode code . setHeader (mkFromString "Content-Type") (B.pack "application/json")
 
 mkFromString :: String -> CI B.ByteString
 mkFromString = mk . B.pack
-
---todo : Check uses of this function and replace with getJSONPostParam
-attemptDecode :: (Functor f, FromJSON a) => f (Maybe B.ByteString) -> f (Maybe a)
-attemptDecode = fmap maybeDecode
 
 maybeDecode :: FromJSON a => Maybe B.ByteString -> Maybe a
 maybeDecode = (>>= strictDecode)
