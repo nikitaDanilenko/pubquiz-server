@@ -16,8 +16,9 @@ import qualified Data.Text.Encoding     as E
 import           Constants              (saltSize, userFileIO)
 import           Db.DbConversion        (SavedUser (SavedUser), userName)
 import           Db.Storage             (findUser, setUser)
-import           General.Types          (Password, UserHash, UserName, UserSalt,
-                                         unwrap, wrap)
+import           General.Types          (Password, UserCreation (UserCreation),
+                                         UserHash, UserName, UserSalt, unwrap,
+                                         wrap)
 import           Utils                  (Hashed, mkHashed, randomStringIO,
                                          readOrCreateEmpty)
 
@@ -29,12 +30,12 @@ mkUser user pass = do
       savedUser = SavedUser user salt hashValue
   return savedUser
 
-mkAndSaveUser :: UserName -> Password -> IO Status
-mkAndSaveUser user pass = do
+mkAndSaveUser :: UserCreation -> IO Status
+mkAndSaveUser (UserCreation user pass) = do
   mDbUser <- findUser user
   case mDbUser of
     Just _ -> do
-      putStrLn (unwords ["User", T.unpack (unwrap user), "already exists.", "Nothing changed."])
+      putStrLn (unwords ["User", unwrap user, "already exists.", "Nothing changed."])
       pure (Exists user)
     Nothing -> do
       newUser <- mkUser user pass
