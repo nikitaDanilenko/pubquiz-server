@@ -1,15 +1,17 @@
 {-# LANGUAGE TupleSections #-}
+
 module Api.Services.SnapUtil where
 
-import           Data.Aeson            (decode, ToJSON, encode)
+import           Data.Aeson            (ToJSON, decode, encode)
 import           Data.Aeson.Types      (FromJSON)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy  as L
 import           Data.CaseInsensitive  (CI, mk)
-import           Snap.Core             (Response, setContentType, setHeader,
-                                        setResponseCode, getPostParam, getParam)
-import Snap (Handler)
-import Data.Maybe (fromMaybe)
+import           Data.Maybe            (fromMaybe)
+import           Snap                  (Handler)
+import           Snap.Core             (Response, getParam, getPostParam,
+                                        setContentType, setHeader,
+                                        setResponseCode)
 
 setResponseCodePlain :: Int -> Response -> Response
 setResponseCodePlain code = setResponseCode code . setContentType (B.pack "text/plain")
@@ -19,6 +21,7 @@ setResponseCodeJSON code = setResponseCode code . setHeader (mkFromString "Conte
 
 mkFromString :: String -> CI B.ByteString
 mkFromString = mk . B.pack
+
 --todo : Check uses of this function and replace with getJSONPostParam
 attemptDecode :: (Functor f, FromJSON a) => f (Maybe B.ByteString) -> f (Maybe a)
 attemptDecode = fmap maybeDecode
@@ -44,7 +47,8 @@ processJSONWithPure = processJSONWith (\mbs a -> fmap (, a) mbs)
 processJSON :: (FromJSON a, Functor f) => f (Maybe B.ByteString) -> f (Maybe a)
 processJSON = processJSONWith (const pure)
 
-processJSONWith :: (FromJSON a, Functor f) => (Maybe B.ByteString -> a -> Maybe b) -> f (Maybe B.ByteString) -> f (Maybe b)
+processJSONWith ::
+     (FromJSON a, Functor f) => (Maybe B.ByteString -> a -> Maybe b) -> f (Maybe B.ByteString) -> f (Maybe b)
 processJSONWith f = fmap (\mValue -> maybeDecode mValue >>= f mValue)
 
 getJSONPostParamWithPure :: FromJSON a => B.ByteString -> Handler b service (Maybe (B.ByteString, a))
@@ -58,3 +62,9 @@ getJSONParamWithPure = processJSONWithPure . getParam
 
 getJSONParam :: FromJSON a => B.ByteString -> Handler b service (Maybe a)
 getJSONParam = processJSON . getParam
+
+fKey :: Functor f => f (a, b) -> f a
+fKey = fmap fst
+
+fValue :: Functor f => f (a, b) -> f b
+fValue = fmap snd
