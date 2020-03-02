@@ -33,7 +33,7 @@ import           General.Types      (Action, Activity, BackToChartViewLabel,
                                      ProgressionLabel, QuizDate, QuizName,
                                      RoundLabel, RoundNumber, RoundWinnerLabel,
                                      TeamLabel, TeamName, TeamNumber, UserHash,
-                                     UserName, UserSalt, ViewPreviousLabel)
+                                     UserName, UserSalt, ViewPreviousLabel, UserCreation)
 import           Utils              (elmOptions)
 
 deriveElmDef elmOptions ''TeamNumber
@@ -122,6 +122,8 @@ deriveElmDef elmOptions ''TeamQuery
 
 deriveElmDef elmOptions ''TeamTableInfo
 
+deriveElmDef elmOptions ''UserCreation
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -178,4 +180,5 @@ main path =
     , DefineElm (Proxy :: Proxy TeamTable)
     , DefineElm (Proxy :: Proxy TeamQuery)
     , DefineElm (Proxy :: Proxy TeamTableInfo)
+    , DefineElm (Proxy :: Proxy UserCreation)
     ]

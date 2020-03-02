@@ -107,6 +107,11 @@ data Action
   = CreateQuizA
   | LockA
   | UpdateSettingsA
+  
+data UserCreation = UserCreation {
+  userCreationUser :: UserName,
+  userCreationPassword :: Password
+}
 
 class Unwrappable t v where
   unwrap :: t -> v
@@ -338,3 +343,5 @@ deriveJSON elmOptions ''Password
 deriveJSON elmOptions ''Activity
 
 deriveJSON elmOptions ''Action
+
+deriveJSON elmOptions ''UserCreation
