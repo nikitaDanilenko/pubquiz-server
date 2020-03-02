@@ -27,7 +27,7 @@ import           System.Directory       (createDirectory, doesDirectoryExist,
                                          doesFileExist, getDirectoryContents)
 
 import           Api.Services.HashCheck (authenticate, failIfUnverified)
-import           Api.Services.SnapUtil  (encodeOrEmpty,
+import           Api.Services.SnapUtil  (encodeOrEmpty, fKey, fValue,
                                          getJSONParam, getJSONPostParam,
                                          getJSONPostParamWithPure,
                                          setResponseCodeJSON, strictEncodeF)
@@ -36,8 +36,9 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          lockApi, newApi, quizIdParam,
                                          quizIdentifierParam, quizPath,
                                          quizRatingsParam, quizSettingsParam,
-                                         serverQuizzesFolderIO, updateApi,
-                                         updateQuizSettingsApi, teamQueryParam, teamTableApi)
+                                         serverQuizzesFolderIO, teamQueryParam,
+                                         teamTableApi, updateApi,
+                                         updateQuizSettingsApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
@@ -47,20 +48,22 @@ import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
                                          QuizInfo, QuizRatings, QuizSettings,
                                          Ratings,
                                          TeamInfo (TeamInfo, teamInfoCode, teamInfoNumber),
-                                         active, adjustHeaderToSize,
+                                         active, adjustHeaderToSize, date,
                                          fallbackSettings, labels,
                                          mkDefaultTeamInfos, numberOfTeams,
                                          quizId, quizIdentifier, rounds,
-                                         teamNumber, teamQueryQuizId, teamQueryTeamNumber, date)
+                                         teamNumber, teamQueryQuizId,
+                                         teamQueryTeamNumber)
 import qualified Db.DbConversion        as D
 import           Db.Storage             (createQuiz, createQuizStatement,
                                          findAllActiveQuizzes, findHeader,
                                          findHeaderStatement, findLabels,
                                          findQuizInfo, findQuizRatings,
-                                         findRatings, lockQuiz, setHeader,
-                                         setHeaderStatement, setLabels,
-                                         setLabelsStatement, setQuizRatings,
-                                         setRatings, setTeamInfo, findTeamTable)
+                                         findRatings, findTeamTable, lockQuiz,
+                                         setHeader, setHeaderStatement,
+                                         setLabels, setLabelsStatement,
+                                         setQuizRatings, setRatings,
+                                         setTeamInfo)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -128,12 +131,6 @@ updateQuiz = do
   mCredentials <- getJSONPostParam credentialsParam
   verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (quizRatingsParam, fKey mQuizRatings)]
   failIfUnverified verified (updateQuizDataLifted (fValue mQuizId) (fValue mQuizRatings))
-
-fKey :: Functor f => f (a, b) -> f a
-fKey = fmap fst
-
-fValue :: Functor f => f (a, b) -> f b
-fValue = fmap snd
 
 updateQuizDataLifted :: Maybe DbQuizId -> Maybe QuizRatings -> Handler b QuizService ()
 updateQuizDataLifted mQid mQuizRatings =
@@ -253,9 +250,8 @@ teamTableHandler = do
       modifyResponse (setResponseCodeJSON 404)
     Just tq -> do
       teamTable <- liftIO (findTeamTable (teamQueryQuizId tq) (teamQueryTeamNumber tq))
-      writeLBS (encode teamTable) 
+      writeLBS (encode teamTable)
       modifyResponse (setResponseCodeJSON 201)
-
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit =
