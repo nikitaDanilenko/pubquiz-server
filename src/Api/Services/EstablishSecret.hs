@@ -15,30 +15,27 @@ import           Snap.Core                     hiding (pass)
 import           Snap.Snaplet
 
 import           Api.Services.SavedUserHandler (Password, mkHash)
-import           Api.Services.SnapUtil         (attemptDecode)
-import           Constants                     (keySize, oneWayHashSize,
-                                                passwordParam, publicExponent,
-                                                sessionKeysFileIO, userFileIO,
-                                                userParam)
+import           Api.Services.SnapUtil         (getJSONPostParam)
+import           Constants                     (oneWayHashSize, passwordParam,
+                                                userParam, secretApi)
 import           Control.Applicative           (liftA2)
 import           Data.Aeson                    (encode)
 import           Db.DbConversion               (SavedUser, userHash, userName,
                                                 userSalt)
 import           Db.Storage                    (findUser, setSessionKey)
 import           General.Types                 (UserHash, UserName, wrap)
-import           Utils                         (randomStringIO,
-                                                readOrCreateEmptyBS, (+>))
+import           Utils                         (randomStringIO, (+>))
 
 data SecretService =
   SecretService
 
 secretRoutes :: [(B.ByteString, Handler b SecretService ())]
-secretRoutes = ["/" +> method POST createSecret]
+secretRoutes = [secretApi +> method POST createSecret]
 
 createSecret :: Handler b SecretService ()
 createSecret = do
-  mUser <- attemptDecode (getPostParam userParam)
-  mPass <- attemptDecode (getPostParam passwordParam)
+  mUser <- getJSONPostParam userParam
+  mPass <- getJSONPostParam passwordParam
   valid <- liftIO $ fromMaybe (pure False) (liftA2 verifyUser mUser mPass)
   if valid
     then do

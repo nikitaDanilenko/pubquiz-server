@@ -237,6 +237,9 @@ teamTableApi = "teamTable"
 createUserApi :: B.ByteString
 createUserApi = "createUser"
 
+secretApi :: B.ByteString
+secretApi = "/"
+
 sheetFileName :: T.Text
 sheetFileName = "QuizSheet"
 
