@@ -42,6 +42,7 @@ import           Db.DbConversion             (Header,
                                               SavedUser, TeamInfo, TeamQuery,
                                               TeamRating (rating, teamNumber),
                                               TeamTable,
+                                              TeamTableInfo (TeamTableInfo),
                                               dbTeamNameCodeToTeamInfo,
                                               dbUserToSavedUser, mkQuizInfo,
                                               mkTeamTable, ratingsFromDb,
@@ -50,7 +51,7 @@ import           Db.DbConversion             (Header,
                                               teamQueryQuizId,
                                               teamQueryTeamCode,
                                               teamQueryTeamNumber, userHash,
-                                              userName, userSalt)
+                                              userName, userSalt, teamInfoName, teamInfoNumber)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code, Place,
@@ -58,6 +59,7 @@ import           General.Types               (Activity (..), Code, Place,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap),
                                               UserHash, UserName, UserSalt)
+import GHC.Natural (intToNatural)
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
 setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
@@ -225,6 +227,17 @@ findTeamTableStatement qid tn =
     (selectList [DbRoundReachedQuizId ==. qid, DbRoundReachedTeamNumber ==. unwrap tn] [])
     (selectList [DbRoundReachableQuizId ==. qid] [])
     (selectList [DbRoundReachedQuizId ==. qid] [])
+
+findTeamTableInfoStatement :: MonadIO m => DbQuizId -> TeamNumber -> Statement m TeamTableInfo
+findTeamTableInfoStatement qid tn = do
+  header <- findHeaderStatement qid
+  teamTable <- findTeamTableStatement qid tn
+  let unwrappedHeader = unwrap header
+      name = teamInfoName (head (filter (\ti -> teamInfoNumber ti == tn) unwrappedHeader))
+  pure (TeamTableInfo teamTable name (intToNatural (length unwrappedHeader)) tn)
+
+findTeamTableInfo :: DbQuizId -> TeamNumber -> IO TeamTableInfo
+findTeamTableInfo qid tn = runSql (findTeamTableInfoStatement qid tn)
 
 existsTeam :: TeamQuery -> IO Bool
 existsTeam = runSql . existsTeamStatement

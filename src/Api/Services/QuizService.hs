@@ -59,11 +59,11 @@ import           Db.Storage             (createQuiz, createQuizStatement,
                                          findAllActiveQuizzes, findHeader,
                                          findHeaderStatement, findLabels,
                                          findQuizInfo, findQuizRatings,
-                                         findRatings, findTeamTable, lockQuiz,
-                                         setHeader, setHeaderStatement,
-                                         setLabels, setLabelsStatement,
-                                         setQuizRatings, setRatings,
-                                         setTeamInfo)
+                                         findRatings, findTeamTableInfo,
+                                         lockQuiz, setHeader,
+                                         setHeaderStatement, setLabels,
+                                         setLabelsStatement, setQuizRatings,
+                                         setRatings, setTeamInfo)
 import qualified Db.Storage             as S
 import           General.Labels         (Labels, defaultLabels, parameters,
                                          showAsBS, teamLabel)
@@ -92,7 +92,7 @@ quizRoutes =
   , updateApi +> method POST updateQuiz
   , lockApi +> method POST lockQuizHandler
   , newApi +> method POST newQuiz
-  , teamTableApi +> method GET teamTableHandler
+  , teamTableApi +> method GET teamTableInfoHandler
   ]
 
 -- todo: switch all writeBS uses to writeLBS
@@ -241,16 +241,16 @@ lockQuizHandler = do
     liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") (fValue mQuizId)))
     modifyResponse (setResponseCodeJSON 201)
 
-teamTableHandler :: Handler b QuizService ()
-teamTableHandler = do
+teamTableInfoHandler :: Handler b QuizService ()
+teamTableInfoHandler = do
   mTeamQuery <- getJSONParam teamQueryParam
   case mTeamQuery of
     Nothing -> do
       writeLBS "No such team found"
       modifyResponse (setResponseCodeJSON 404)
     Just tq -> do
-      teamTable <- liftIO (findTeamTable (teamQueryQuizId tq) (teamQueryTeamNumber tq))
-      writeLBS (encode teamTable)
+      teamTableInfo <- liftIO (findTeamTableInfo (teamQueryQuizId tq) (teamQueryTeamNumber tq))
+      writeLBS (encode teamTableInfo)
       modifyResponse (setResponseCodeJSON 201)
 
 quizServiceInit :: SnapletInit b QuizService
