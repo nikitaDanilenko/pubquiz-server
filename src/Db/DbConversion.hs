@@ -238,7 +238,8 @@ deriveJSON defaultOptions ''TeamQuery
 data TeamTableInfo = TeamTableInfo {
   teamTable :: TeamTable,
   teamTableInfoTeamName :: TeamName,
-  teamTableInfoNumberOfTeams :: Natural
+  teamTableInfoNumberOfTeams :: Natural,
+  teamTableInfoTeamNumber :: TeamNumber
 }
 
 deriveJSON defaultOptions ''TeamTableInfo
