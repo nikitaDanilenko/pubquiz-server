@@ -38,7 +38,7 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          quizRatingsParam, quizSettingsParam,
                                          serverQuizzesFolderIO, teamQueryParam,
                                          teamTableApi, updateApi,
-                                         updateQuizSettingsApi)
+                                         updateQuizSettingsApi, quizInfoApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
@@ -93,6 +93,7 @@ quizRoutes =
   , lockApi +> method POST lockQuizHandler
   , newApi +> method POST newQuiz
   , teamTableApi +> method GET teamTableInfoHandler
+  , quizInfoApi +> method GET quizInfoHandler
   ]
 
 -- todo: switch all writeBS uses to writeLBS
@@ -252,6 +253,23 @@ teamTableInfoHandler = do
       teamTableInfo <- liftIO (findTeamTableInfo (teamQueryQuizId tq) (teamQueryTeamNumber tq))
       writeLBS (encode teamTableInfo)
       modifyResponse (setResponseCodeJSON 201)
+
+quizInfoHandler :: Handler b QuizService ()
+quizInfoHandler = do
+  mQuizId <- getJSONParam quizIdParam
+  case mQuizId of
+    Nothing -> do
+      writeLBS "Not a valid quiz id"
+      modifyResponse (setResponseCodeJSON 404)
+    Just qid -> do
+      mQuizInfo <- liftIO (findQuizInfo qid)
+      case mQuizInfo of
+        Nothing -> do
+          writeLBS "No quiz with this id found"
+          modifyResponse (setResponseCodeJSON 404)
+        Just quizInfo -> do
+          writeLBS (encode quizInfo)
+          modifyResponse (setResponseCodeJSON 201)
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit =
