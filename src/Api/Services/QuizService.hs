@@ -38,7 +38,7 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          quizRatingsParam, quizSettingsParam,
                                          serverQuizzesFolderIO, teamQueryParam,
                                          teamTableApi, updateApi,
-                                         updateQuizSettingsApi, quizInfoApi)
+                                         updateQuizSettingsApi, getQuizInfoApi)
 import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
                                          object, (.=))
 import           Data.Functor           (void)
@@ -93,7 +93,7 @@ quizRoutes =
   , lockApi +> method POST lockQuizHandler
   , newApi +> method POST newQuiz
   , teamTableApi +> method GET teamTableInfoHandler
-  , quizInfoApi +> method GET quizInfoHandler
+  , getQuizInfoApi +> method GET quizInfoHandler
   ]
 
 -- todo: switch all writeBS uses to writeLBS

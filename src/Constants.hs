@@ -234,8 +234,8 @@ newApi = "new"
 teamTableApi :: B.ByteString
 teamTableApi = "teamTable"
 
-quizInfoApi :: B.ByteString
-quizInfoApi = "quizInfo"
+getQuizInfoApi :: B.ByteString
+getQuizInfoApi = "getQuizInfo"
 
 createUserApi :: B.ByteString
 createUserApi = "createUser"
