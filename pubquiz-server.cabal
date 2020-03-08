@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8051e5bf574af64a74a3ee95755b8759e7ba8e88b916f9d3d79e35f9eccffb3d
+-- hash: 8e28cb98ddc8c48695655d435cf2e45150a2509adea32f4a97ceb751c7fa4029
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -47,9 +47,6 @@ library
       General.Labels
       General.Types
       Main
-      Pages.HtmlUtil
-      Pages.PointComputation
-      Pages.RoundsParser
       Sheet.Interval
       Sheet.SheetMaker
       Sheet.Tex
@@ -113,9 +110,6 @@ executable pubquiz-server-exe
       General.ElmBridge
       General.Labels
       General.Types
-      Pages.HtmlUtil
-      Pages.PointComputation
-      Pages.RoundsParser
       Sheet.Interval
       Sheet.SheetMaker
       Sheet.Tex
