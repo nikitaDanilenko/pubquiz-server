@@ -19,7 +19,7 @@ import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as E
 import           Snap.Core              (Method (GET, POST), getParams,
                                          getPostParam, getQueryParam, method,
-                                         modifyResponse, writeBS, writeLBS)
+                                         modifyResponse, writeLBS)
 import           Snap.Snaplet           (Handler, SnapletInit, addRoutes,
                                          makeSnaplet)
 
@@ -85,28 +85,25 @@ data QuizService =
 
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
-  [ allApi +> method GET sendAvailableActive
-  , getQuizRatingsApi +> method GET getSingleQuizRatings
-  , getLabelsApi +> method GET getSingleLabels
-  , updateQuizSettingsApi +> method POST updateQuizSettings
-  , updateApi +> method POST updateQuiz
-  , lockApi +> method POST lockQuizHandler
+  [ allApi +> method GET sendAvailableActiveHandler
+  , getQuizRatingsApi +> method GET getQuizRatingsHandler
+  , getLabelsApi +> method GET getLabelsHandler
+  , updateQuizSettingsApi +> method POST updateQuizSettingsHandler
+  , updateApi +> method POST updateHandler
+  , lockApi +> method POST lockHandler
   , newApi +> method POST newQuiz
   , teamTableApi +> method GET teamTableInfoHandler
-  , getQuizInfoApi +> method GET quizInfoHandler
+  , getQuizInfoApi +> method GET quizQuizInfoHandler
   ]
 
--- todo: switch all writeBS uses to writeLBS
--- todo: adjust routes after legacy removal
--- todo: remove all legacy functions
-sendAvailableActive :: Handler b QuizService ()
-sendAvailableActive = do
+sendAvailableActiveHandler :: Handler b QuizService ()
+sendAvailableActiveHandler = do
   active <- liftIO findAllActiveQuizzes
   writeLBS (encode active)
   modifyResponse (setResponseCodeJSON 200)
 
-getSingleQuizRatings :: Handler b QuizService ()
-getSingleQuizRatings = do
+getQuizRatingsHandler :: Handler b QuizService ()
+getQuizRatingsHandler = do
   mQuizId <- getJSONParam quizIdParam
   case mQuizId of
     Nothing -> modifyResponse (setResponseCodeJSON 400)
@@ -115,18 +112,18 @@ getSingleQuizRatings = do
       writeLBS (encode quizRatings)
       modifyResponse (setResponseCodeJSON 200)
 
-getSingleLabels :: Handler b QuizService ()
-getSingleLabels = do
+getLabelsHandler :: Handler b QuizService ()
+getLabelsHandler = do
   mQuizId <- getJSONParam quizIdParam
   case mQuizId of
-    Nothing -> writeBS (B.pack "Invalid quiz id") >> modifyResponse (setResponseCodeJSON 400)
+    Nothing -> writeLBS "Invalid quiz id" >> modifyResponse (setResponseCodeJSON 400)
     Just qid -> do
       labels <- liftIO (findLabels qid)
       writeLBS (encode labels)
       modifyResponse (setResponseCodeJSON 200)
 
-updateQuiz :: Handler b QuizService ()
-updateQuiz = do
+updateHandler :: Handler b QuizService ()
+updateHandler = do
   mQuizRatings <- getJSONPostParamWithPure quizRatingsParam
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
@@ -136,7 +133,7 @@ updateQuiz = do
 updateQuizDataLifted :: Maybe DbQuizId -> Maybe QuizRatings -> Handler b QuizService ()
 updateQuizDataLifted mQid mQuizRatings =
   maybe
-    (do writeBS (mkUpdateErrorMessage mQid mQuizRatings)
+    (do writeLBS (L.fromStrict (mkUpdateErrorMessage mQid mQuizRatings))
         modifyResponse (setResponseCodeJSON 406))
     liftIO
     (liftA2 updateQuizData mQid mQuizRatings)
@@ -152,8 +149,8 @@ mkUpdateErrorMessage mQid mQuizRatings =
 updateQuizData :: DbQuizId -> QuizRatings -> IO ()
 updateQuizData qid quizRatings = ifActiveDo qid (pure ()) (\_ -> setQuizRatings qid quizRatings)
 
-updateQuizSettings :: Handler b QuizService ()
-updateQuizSettings = do
+updateQuizSettingsHandler :: Handler b QuizService ()
+updateQuizSettingsHandler = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mQuizSettings <- getJSONPostParamWithPure quizSettingsParam
   mCredentials <- getJSONPostParam credentialsParam
@@ -166,9 +163,6 @@ updateQuizSettings = do
       ]
   failIfUnverified verified $
     liftIO (fromMaybe (pure ()) (liftA2 updateLabelsAndSettings (fValue mQuizId) (fValue mQuizSettings)))
-
-mkActualTeamNumber :: Maybe B.ByteString -> Int
-mkActualTeamNumber = maybe 20 (read . B.unpack)
 
 teamCodeLength :: Int
 teamCodeLength = 6
@@ -233,8 +227,8 @@ ifActiveDo qid dft action = findQuizInfo qid >>= maybe dft checkActive
         Active   -> action quizInfo
         Inactive -> dft
 
-lockQuizHandler :: Handler b QuizService ()
-lockQuizHandler = do
+lockHandler :: Handler b QuizService ()
+lockHandler = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
   verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, strictEncodeF (Just LockA))]
@@ -254,8 +248,8 @@ teamTableInfoHandler = do
       writeLBS (encode teamTableInfo)
       modifyResponse (setResponseCodeJSON 201)
 
-quizInfoHandler :: Handler b QuizService ()
-quizInfoHandler = do
+quizQuizInfoHandler :: Handler b QuizService ()
+quizQuizInfoHandler = do
   mQuizId <- getJSONParam quizIdParam
   case mQuizId of
     Nothing -> do
