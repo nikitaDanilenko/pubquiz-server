@@ -1,5 +1,6 @@
 module Sheet.SheetMaker
   ( createSheetWith
+  , safeRemoveFile
   , Ending
   ) where
 

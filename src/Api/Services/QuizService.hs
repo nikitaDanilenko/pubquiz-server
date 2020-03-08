@@ -12,6 +12,7 @@ import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8  as B
 import qualified Data.ByteString.Lazy   as L
 import           Data.Maybe             (fromMaybe, maybe)
+import qualified Data.Text              as T (unpack)
 import           Snap.Core              (Method (GET, POST), method,
                                          modifyResponse, writeLBS)
 import           Snap.Snaplet           (Handler, SnapletInit, addRoutes,
@@ -28,18 +29,19 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          quizIdParam, quizIdentifierParam,
                                          quizPath, quizRatingsParam,
                                          quizSettingsParam,
-                                         serverQuizzesFolderIO, teamQueryParam,
-                                         teamTableApi, updateApi,
-                                         updateQuizSettingsApi)
+                                         serverQuizzesFolderIO, sheetsFolderIO,
+                                         teamQueryParam, teamTableApi,
+                                         updateApi, updateQuizSettingsApi)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
                                          QuizInfo, QuizRatings, QuizSettings,
                                          TeamInfo (teamInfoCode, teamInfoNumber),
                                          active, adjustHeaderToSize, date,
-                                         fallbackSettings, labels,
-                                         mkDefaultTeamInfos, numberOfTeams,
-                                         quizId, quizIdentifier, rounds,
+                                         fallbackSettings, fullSheetPath,
+                                         labels, mkDefaultTeamInfos,
+                                         numberOfTeams, qrOnlyPath, quizId,
+                                         quizIdentifier, rounds,
                                          teamQueryQuizId, teamQueryTeamNumber)
 import           Db.Storage             (createQuizStatement,
                                          findAllActiveQuizzes,
@@ -53,7 +55,7 @@ import           General.Types          (Action (CreateQuizA, LockA, UpdateSetti
                                          Activity (Active, Inactive),
                                          Unwrappable (unwrap), wrap)
 import           GHC.Natural            (naturalToInt)
-import           Sheet.SheetMaker       (createSheetWith)
+import           Sheet.SheetMaker       (createSheetWith, safeRemoveFile)
 import           Utils                  (randomDistinctHexadecimal, (+>))
 
 data QuizService =
@@ -208,17 +210,28 @@ lockHandler = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
   verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (actionParam, strictEncodeF (Just LockA))]
-  failIfUnverified verified $ do
-    liftIO (lockQuiz (fromMaybe (error "Empty key should be impossible") (fValue mQuizId)))
-    modifyResponse (setResponseCodeJSON 201)
+  failIfUnverified verified $
+    case mQuizId of
+      Just (_, qid) -> do
+        mQuizInfo <- liftIO (findQuizInfo qid)
+        case mQuizInfo of
+          Just quizInfo -> do
+            liftIO (lockQuiz qid)
+            mapM_ (liftIO . safeRemoveFile . T.unpack) [fullSheetPath quizInfo, qrOnlyPath quizInfo]
+            modifyResponse (setResponseCodeJSON 201)
+          Nothing -> errorInfo "No quiz with given id."
+      Nothing -> errorInfo "No valid quiz id in parameter."
+
+errorInfo :: L.ByteString -> Handler b QuizService ()
+errorInfo str = do
+  writeLBS str
+  modifyResponse (setResponseCodeJSON 404)
 
 teamTableInfoHandler :: Handler b QuizService ()
 teamTableInfoHandler = do
   mTeamQuery <- getJSONParam teamQueryParam
   case mTeamQuery of
-    Nothing -> do
-      writeLBS "No such team found"
-      modifyResponse (setResponseCodeJSON 404)
+    Nothing -> errorInfo "No such team found"
     Just tq -> do
       teamTableInfo <- liftIO (findTeamTableInfo (teamQueryQuizId tq) (teamQueryTeamNumber tq))
       writeLBS (encode teamTableInfo)
@@ -228,15 +241,11 @@ quizQuizInfoHandler :: Handler b QuizService ()
 quizQuizInfoHandler = do
   mQuizId <- getJSONParam quizIdParam
   case mQuizId of
-    Nothing -> do
-      writeLBS "Not a valid quiz id"
-      modifyResponse (setResponseCodeJSON 404)
+    Nothing -> errorInfo "Not a valid quiz id"
     Just qid -> do
       mQuizInfo <- liftIO (findQuizInfo qid)
       case mQuizInfo of
-        Nothing -> do
-          writeLBS "No quiz with this id found"
-          modifyResponse (setResponseCodeJSON 404)
+        Nothing -> errorInfo "No quiz with this id found"
         Just quizInfo -> do
           writeLBS (encode quizInfo)
           modifyResponse (setResponseCodeJSON 201)
