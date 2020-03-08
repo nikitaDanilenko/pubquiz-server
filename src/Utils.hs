@@ -21,25 +21,6 @@ import           System.Directory                    (createDirectoryIfMissing,
 import           System.FilePath                     (pathSeparator)
 import           System.Random                       (newStdGen, randomRs)
 
-readOrCreateEmpty :: FilePath -> IO String
-readOrCreateEmpty = readOrCreateEmptyWith "" writeFile readFile
-
--- todo can be probably removed
-readOrCreateEmptyBS :: FilePath -> IO B.ByteString
-readOrCreateEmptyBS = readOrCreateEmptyWith B.empty B.writeFile B.readFile
-
-readOrCreateEmptyWith :: a -> (FilePath -> a -> IO ()) -> (FilePath -> IO a) -> FilePath -> IO a
-readOrCreateEmptyWith empty writer reader filePath = do
-  exists <- doesFileExist filePath
-  if exists
-    then reader filePath
-    else do
-      when (null dir) (createDirectoryIfMissing True dir)
-      writer filePath empty
-      reader filePath
-  where
-    parts = linesBy (pathSeparator ==) filePath
-    dir = intercalate [pathSeparator] (init parts)
 
 (+>) :: B.ByteString -> Handler b service () -> (B.ByteString, Handler b service ())
 (+>) = mkRoute

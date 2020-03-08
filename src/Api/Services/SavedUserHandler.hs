@@ -7,20 +7,16 @@ module Api.Services.SavedUserHandler
   , Password
   ) where
 
-import           Control.Exception      (catch)
-import           Control.Exception.Base (IOException)
-import qualified Data.ByteString.Char8  as B (ByteString, concat, pack, unpack)
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as E
 
-import           Constants              (saltSize, userFileIO)
-import           Db.DbConversion        (SavedUser (SavedUser), userName)
+import           Constants              (saltSize)
+import           Db.DbConversion        (SavedUser (SavedUser))
 import           Db.Storage             (findUser, setUser)
 import           General.Types          (Password, UserCreation (UserCreation),
                                          UserHash, UserName, UserSalt, unwrap,
                                          wrap)
-import           Utils                  (Hashed, mkHashed, randomStringIO,
-                                         readOrCreateEmpty)
+import           Utils                  (Hashed, mkHashed, randomStringIO)
 
 mkUser :: UserName -> Password -> IO SavedUser
 mkUser user pass = do
