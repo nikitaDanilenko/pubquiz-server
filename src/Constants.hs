@@ -15,21 +15,6 @@ import           System.Directory       (createDirectoryIfMissing,
                                          doesDirectoryExist)
 import           System.FilePath        (pathSeparator)
 
-dbFolderIO :: IO String
-dbFolderIO = readFromConfigFile "database" (addSeparator [".", "db"])
-
-sessionKeysFileIO :: IO String
-sessionKeysFileIO = fmap (\dbFolder -> addSeparator [dbFolder, "sessionKeys.txt"]) dbFolderIO
-
-userFileIO :: IO String
-userFileIO = fmap (\dbFolder -> addSeparator [dbFolder, "users.txt"]) dbFolderIO
-
-doesDBExist :: IO Bool
-doesDBExist = dbFolderIO >>= doesDirectoryExist
-
-createDBFolder :: IO ()
-createDBFolder = dbFolderIO >>= createDirectoryIfMissing True
-
 configFile :: String
 configFile = "./config.txt"
 
@@ -66,26 +51,11 @@ splitOnSetter str = (key, drop 1 preValue)
 addSeparator :: [String] -> String
 addSeparator = intercalate [pathSeparator]
 
-addSeparatorBS :: [B.ByteString] -> B.ByteString
-addSeparatorBS = B.intercalate (B.pack [pathSeparator])
-
-locked :: String
-locked = ".locked"
-
-prefix :: B.ByteString
-prefix = "prefix"
-
 quizRatingsParam :: B.ByteString
 quizRatingsParam = "quizRatings"
 
-labelsParam :: B.ByteString
-labelsParam = "labels"
-
 actionParam :: B.ByteString
 actionParam = "action"
-
-roundsNumberParam :: B.ByteString
-roundsNumberParam = "roundsNumber"
 
 quizIdParam :: B.ByteString
 quizIdParam = "quizId"
@@ -99,83 +69,17 @@ quizSettingsParam = "quizSettings"
 credentialsParam :: B.ByteString
 credentialsParam = "credentials"
 
-roundsFile :: String
-roundsFile = "rounds.txt"
-
-labelsFile :: String
-labelsFile = "labels.txt"
-
-roundParam :: B.ByteString
-roundParam = "roundLabel"
-
-teamParam :: B.ByteString
-teamParam = "teamLabel"
-
-ownPointsParam :: B.ByteString
-ownPointsParam = "ownPointsLabel"
-
-maxReachedParam :: B.ByteString
-maxReachedParam = "maxReachedLabel"
-
-maxReachableParam :: B.ByteString
-maxReachableParam = "maxReachableLabel"
-
-backToChartViewParam :: B.ByteString
-backToChartViewParam = "backToChartViewLabel"
-
-mainParam :: B.ByteString
-mainParam = "mainLabel"
-
-ownPageParam :: B.ByteString
-ownPageParam = "ownPageLabel"
-
-viewQuizzesParam :: B.ByteString
-viewQuizzesParam = "viewQuizzesLabel"
-
-cumulativeParam :: B.ByteString
-cumulativeParam = "cumulativeLabel"
-
-individualParam :: B.ByteString
-individualParam = "individualLabel"
-
-progressionParam :: B.ByteString
-progressionParam = "progressionLabel"
-
-placementParam :: B.ByteString
-placementParam = "placementLabel"
-
-placeParam :: B.ByteString
-placeParam = "placeLabel"
-
-pointsParam :: B.ByteString
-pointsParam = "pointsLabel"
-
-roundWinnerParam :: B.ByteString
-roundWinnerParam = "roundWinnerLabel"
-
 userParam :: B.ByteString
 userParam = "user"
 
-newUserParam :: B.ByteString
-newUserParam = "newUser"
-
 passwordParam :: B.ByteString
 passwordParam = "pass"
-
-signatureParam :: B.ByteString
-signatureParam = "signature"
-
-numberOfTeamsParam :: B.ByteString
-numberOfTeamsParam = "numberOfTeams"
 
 teamQueryParam :: B.ByteString
 teamQueryParam = "teamQuery"
 
 userCreationParam :: B.ByteString
 userCreationParam = "userCreation"
-
-server :: String
-server = "https://www.danilenko.io"
 
 serverQuizzesFolderIO :: IO String
 serverQuizzesFolderIO = readFromConfigFile "serverQuizzesFolder" "quizzes"
