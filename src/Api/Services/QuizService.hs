@@ -6,25 +6,16 @@ module Api.Services.QuizService
   , QuizService
   ) where
 
-import           Control.Applicative    (liftA2, liftA3)
-import           Control.Arrow          (first, (&&&))
-import           Control.Exception      (catch)
-import           Control.Exception.Base (IOException)
-import           Control.Monad          (filterM)
+import           Control.Applicative    (liftA2)
+import           Control.Arrow          ((&&&))
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8  as B
 import qualified Data.ByteString.Lazy   as L
 import           Data.Maybe             (fromMaybe, maybe)
-import qualified Data.Text              as T
-import qualified Data.Text.Encoding     as E
-import           Snap.Core              (Method (GET, POST), getParams,
-                                         getPostParam, getQueryParam, method,
+import           Snap.Core              (Method (GET, POST), method,
                                          modifyResponse, writeLBS)
 import           Snap.Snaplet           (Handler, SnapletInit, addRoutes,
                                          makeSnaplet)
-
-import           System.Directory       (createDirectory, doesDirectoryExist,
-                                         doesFileExist, getDirectoryContents)
 
 import           Api.Services.HashCheck (authenticate, failIfUnverified)
 import           Api.Services.SnapUtil  (encodeOrEmpty, fKey, fValue,
@@ -32,52 +23,37 @@ import           Api.Services.SnapUtil  (encodeOrEmpty, fKey, fValue,
                                          getJSONPostParamWithPure,
                                          setResponseCodeJSON, strictEncodeF)
 import           Constants              (actionParam, allApi, credentialsParam,
-                                         getLabelsApi, getQuizRatingsApi,
-                                         lockApi, newApi, quizIdParam,
-                                         quizIdentifierParam, quizPath,
-                                         quizRatingsParam, quizSettingsParam,
+                                         getLabelsApi, getQuizInfoApi,
+                                         getQuizRatingsApi, lockApi, newApi,
+                                         quizIdParam, quizIdentifierParam,
+                                         quizPath, quizRatingsParam,
+                                         quizSettingsParam,
                                          serverQuizzesFolderIO, teamQueryParam,
                                          teamTableApi, updateApi,
-                                         updateQuizSettingsApi, getQuizInfoApi)
-import           Data.Aeson             (FromJSON, ToJSON, decode, encode,
-                                         object, (.=))
-import           Data.Functor           (void)
-import           Data.Functor.Identity  (Identity (Identity))
+                                         updateQuizSettingsApi)
+import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
                                          QuizInfo, QuizRatings, QuizSettings,
-                                         Ratings,
-                                         TeamInfo (TeamInfo, teamInfoCode, teamInfoNumber),
+                                         TeamInfo (teamInfoCode, teamInfoNumber),
                                          active, adjustHeaderToSize, date,
                                          fallbackSettings, labels,
                                          mkDefaultTeamInfos, numberOfTeams,
                                          quizId, quizIdentifier, rounds,
-                                         teamNumber, teamQueryQuizId,
-                                         teamQueryTeamNumber)
-import qualified Db.DbConversion        as D
-import           Db.Storage             (createQuiz, createQuizStatement,
-                                         findAllActiveQuizzes, findHeader,
+                                         teamQueryQuizId, teamQueryTeamNumber)
+import           Db.Storage             (createQuizStatement,
+                                         findAllActiveQuizzes,
                                          findHeaderStatement, findLabels,
                                          findQuizInfo, findQuizRatings,
-                                         findRatings, findTeamTableInfo,
-                                         lockQuiz, setHeader,
-                                         setHeaderStatement, setLabels,
-                                         setLabelsStatement, setQuizRatings,
-                                         setRatings, setTeamInfo)
-import qualified Db.Storage             as S
-import           General.Labels         (Labels, defaultLabels, parameters,
-                                         showAsBS, teamLabel)
+                                         findTeamTableInfo, lockQuiz,
+                                         setHeaderStatement, setLabelsStatement,
+                                         setQuizRatings, setTeamInfo)
+import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
-                                         Code (Code), RoundNumber,
-                                         TeamName (TeamName),
-                                         TeamNumber (TeamNumber),
-                                         Unwrappable (unwrap), UserHash,
-                                         UserName, wrap)
+                                         Unwrappable (unwrap), wrap)
 import           GHC.Natural            (naturalToInt)
-import           Pages.GeneratePage     (createWith)
-import           Pages.QuizzesFrontpage (createFrontPage)
-import           Sheet.SheetMaker       (Ending, createSheetWith)
+import           Sheet.SheetMaker       (createSheetWith)
 import           Utils                  (randomDistinctHexadecimal, (+>))
 
 data QuizService =
