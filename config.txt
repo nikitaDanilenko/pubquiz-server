@@ -2,6 +2,7 @@ quizzesFolder=./quizzes
 serverQuizzesFolder=quizzes
 sheetsFolder=./sheets
 serverSheetsFolder=sheets
+serverPath=
 database=./db
 databaseHost=
 databaseName=
