@@ -4,45 +4,57 @@ module Sheet.SheetMaker
   , Ending
   ) where
 
-import Control.Exception (catch)
-import Control.Exception.Base (IOException)
-import Control.Monad (void)
-import Data.Text (Text)
-import qualified Data.Text as T (Text, intercalate, concat, pack, unpack)
-import qualified Data.Text.Encoding as E
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Char8 as BS
-import qualified Data.Text.IO as I (writeFile)
-import System.Directory (getCurrentDirectory, removeFile, setCurrentDirectory)
-import System.Process (callProcess)
+import qualified Blaze.ByteString.Builder as Builder
+import           Control.Exception        (catch)
+import           Control.Exception.Base   (IOException)
+import           Control.Monad            (void)
+import qualified Data.ByteString.Char8    as B
+import qualified Data.ByteString.Lazy     as L
+import           Data.Text                (Text)
+import qualified Data.Text                as T (Text, concat, intercalate, pack,
+                                                unpack)
+import qualified Data.Text.Encoding       as E
+import qualified Data.Text.IO             as I (writeFile)
+import           System.Directory         (getCurrentDirectory, removeFile,
+                                           setCurrentDirectory)
+import           System.Process           (callProcess)
 
-import Constants (addSeparator, quizzesFolderIO, sheetsFolderIO, sheetFileName, qrOnlyFileName, teamQueryParam)
-import Data.List (sortOn)
-import GHC.Natural (Natural)
-import General.Types (Code, TeamNumber, unwrap)
-import Sheet.Tex (mkQROnly, mkSheetWithArbitraryQuestions)
-import Db.DbConversion (mkPathForQuizSheetWith, TeamQuery (TeamQuery))
-import Data.Time.Calendar (Day)
-import Db.Connection (DbQuizId)
-import Data.Aeson (encode)
+import           Constants                (qrOnlyFileName, quizIdParam,
+                                           sheetFileName, sheetsFolderIO,
+                                           teamCodeParam, teamNumberParam,
+                                           teamQueryParam)
+import           Data.Aeson               (encode)
+import           Data.List                (sortOn)
+import           Data.Time.Calendar       (Day)
+import           Db.Connection            (DbQuizId)
+import           Db.DbConversion          (TeamQuery (TeamQuery),
+                                           mkPathForQuizSheetWith,
+                                           teamQueryQuizId, teamQueryTeamCode,
+                                           teamQueryTeamNumber)
+import           General.Types            (Code, TeamNumber, unwrap)
+import           GHC.Natural              (Natural)
+import           Network.HTTP.Types       (encodePathSegments)
+import           Sheet.Tex                (mkQROnly,
+                                           mkSheetWithArbitraryQuestions)
+import           Utils                    (encodePath)
 
-type Prefix = String
+type ServerPrefix = String
 
-type Server = String
+type ServerFolder = String
 
 type Ending = String
 
 --todo use proper types?
 -- todo: reduce number of conversions?
 -- todo: setting the folder vs. setting the file names could be improved?
-createSheetWith :: String -> [Int] -> Server -> [(TeamNumber, Code)] -> Day -> DbQuizId -> IO ()
-createSheetWith teamLabel rounds server numberedCodes day qid = do
+createSheetWith :: String -> [Int] -> ServerPrefix -> ServerFolder -> [(TeamNumber, Code)] -> Day -> DbQuizId -> IO ()
+createSheetWith teamLabel rounds prefix folder numberedCodes day qid = do
   sheetsFolder <- sheetsFolderIO
   currentDir <- getCurrentDirectory
   let tl = T.pack teamLabel
-      sht = mkSheetWithArbitraryQuestions tl rounds paths
       endings = sortOn fst numberedCodes
-      paths = map (uncurry (mkPath server qid)) endings
+      paths = map (mkPath prefix folder . uncurry (TeamQuery qid)) endings
+      sht = mkSheetWithArbitraryQuestions tl rounds paths
       sheetFile = mkPathForQuizSheetWith (T.pack "") (T.pack ".") sheetFileName day qid
       qrs = mkQROnly tl paths
       codesFile = mkPathForQuizSheetWith (T.pack "") (T.pack ".") qrOnlyFileName day qid
@@ -51,10 +63,21 @@ createSheetWith teamLabel rounds server numberedCodes day qid = do
   writeAndCleanPDF (T.unpack codesFile) qrs
   setCurrentDirectory currentDir
 
-mkPath :: Server -> DbQuizId -> TeamNumber -> Code -> T.Text
-mkPath server qid tn code =
-  T.intercalate (T.pack "/") [T.pack server, T.intercalate (T.pack "=") [E.decodeUtf8 teamQueryParam, E.decodeUtf8 (L.toStrict (encode teamQuery))]]
-  where teamQuery = TeamQuery qid tn code
+mkPath :: ServerPrefix -> ServerFolder -> TeamQuery -> T.Text
+mkPath prefix folder teamQuery =
+  E.decodeUtf8
+    (encodePath
+       (map
+          E.decodeUtf8
+          [ B.pack prefix
+          , B.pack folder
+          , quizIdParam
+          , L.toStrict (encode (teamQueryQuizId teamQuery))
+          , teamNumberParam
+          , L.toStrict (encode (teamQueryTeamNumber teamQuery))
+          , teamCodeParam
+          , E.encodeUtf8 (unwrap (teamQueryTeamCode teamQuery))
+          ]))
 
 writeAndCleanPDF :: FilePath -> Text -> IO ()
 writeAndCleanPDF mainPath content = do

@@ -31,7 +31,7 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          quizSettingsParam,
                                          serverQuizzesFolderIO, sheetsFolderIO,
                                          teamQueryParam, teamTableApi,
-                                         updateApi, updateQuizSettingsApi)
+                                         updateApi, updateQuizSettingsApi, serverPathIO)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
@@ -188,11 +188,13 @@ updateLabelsAndSettings qid quizSettings =
 
 createSheetWithSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> Header -> IO ()
 createSheetWithSettings qid identifier quizSettings header = do
-  serverPath <- serverQuizzesFolderIO
+  serverPath <- serverPathIO
+  serverFolder <- serverQuizzesFolderIO
   createSheetWith
     (unwrap (teamLabel (labels quizSettings)))
     (map naturalToInt (rounds quizSettings))
     serverPath
+    serverFolder
     (map (teamInfoNumber &&& teamInfoCode) (unwrap header))
     (unwrap (date identifier))
     qid
