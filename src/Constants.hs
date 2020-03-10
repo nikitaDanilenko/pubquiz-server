@@ -37,6 +37,9 @@ sheetsFolderIO = fmap T.pack (readFromConfigFile "sheetsFolder" (addSeparator ["
 quizzesFolderIO :: IO String
 quizzesFolderIO = readFromConfigFile "quizzesFolder" (addSeparator [".", "quizzes"])
 
+serverPathIO :: IO String
+serverPathIO = readFromConfigFile "serverPath" "localhost:9000"
+
 noConfigFile :: IOException -> IO String
 noConfigFile _ = do
   putStrLn "No config file found. This should not happen. Created an empty one."
@@ -77,6 +80,12 @@ passwordParam = "pass"
 
 teamQueryParam :: B.ByteString
 teamQueryParam = "teamQuery"
+
+teamNumberParam :: B.ByteString
+teamNumberParam = "teamNumber"
+
+teamCodeParam :: B.ByteString
+teamCodeParam = "teamCode"
 
 userCreationParam :: B.ByteString
 userCreationParam = "userCreation"
