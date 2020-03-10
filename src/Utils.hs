@@ -2,6 +2,7 @@
 
 module Utils where
 
+import qualified Blaze.ByteString.Builder            as Builder (toByteString)
 import           Control.Arrow                       (second)
 import           Control.Monad                       (when)
 import           "cryptonite" Crypto.Hash            (Digest, hash)
@@ -13,14 +14,15 @@ import           Data.List                           (groupBy, intercalate,
                                                       sortBy, sortOn)
 import           Data.List.Extra                     (linesBy)
 import           Data.Ord                            (comparing)
+import qualified Data.Text                           as T (Text)
 import qualified Elm.Derive                          as E
+import           Network.HTTP.Types                  (encodePathSegments)
 import           Snap.Snaplet                        (Handler)
 import           Snap.Util.CORS                      (applyCORS, defaultOptions)
 import           System.Directory                    (createDirectoryIfMissing,
                                                       doesFileExist)
 import           System.FilePath                     (pathSeparator)
 import           System.Random                       (newStdGen, randomRs)
-
 
 (+>) :: B.ByteString -> Handler b service () -> (B.ByteString, Handler b service ())
 (+>) = mkRoute
@@ -78,3 +80,6 @@ mkHashed = hash
 
 elmOptions :: E.Options
 elmOptions = E.defaultOptions {E.unwrapUnaryRecords = True}
+
+encodePath :: [T.Text] -> B.ByteString
+encodePath = Builder.toByteString . encodePathSegments
