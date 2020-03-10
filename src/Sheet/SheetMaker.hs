@@ -66,18 +66,20 @@ createSheetWith teamLabel rounds prefix folder numberedCodes day qid = do
 mkPath :: ServerPrefix -> ServerFolder -> TeamQuery -> T.Text
 mkPath prefix folder teamQuery =
   E.decodeUtf8
-    (encodePath
-       (map
-          E.decodeUtf8
-          [ B.pack prefix
-          , B.pack folder
-          , quizIdParam
-          , L.toStrict (encode (teamQueryQuizId teamQuery))
-          , teamNumberParam
-          , L.toStrict (encode (teamQueryTeamNumber teamQuery))
-          , teamCodeParam
-          , E.encodeUtf8 (unwrap (teamQueryTeamCode teamQuery))
-          ]))
+    (B.concat
+       [ B.pack prefix
+       , encodePath
+           (map
+              E.decodeUtf8
+              [ B.pack folder
+              , quizIdParam
+              , L.toStrict (encode (teamQueryQuizId teamQuery))
+              , teamNumberParam
+              , L.toStrict (encode (teamQueryTeamNumber teamQuery))
+              , teamCodeParam
+              , E.encodeUtf8 (unwrap (teamQueryTeamCode teamQuery))
+              ])
+       ])
 
 writeAndCleanPDF :: FilePath -> Text -> IO ()
 writeAndCleanPDF mainPath content = do
