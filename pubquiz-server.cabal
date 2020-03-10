@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8e28cb98ddc8c48695655d435cf2e45150a2509adea32f4a97ceb751c7fa4029
+-- hash: 98581625d245b0ba84cd67d187a2709389e6859305204fff873670836d4add01
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -60,6 +60,7 @@ library
       HaTeX >=3 && <4
     , aeson
     , base >=4.7 && <5
+    , blaze-builder
     , bytestring >=0.10 && <0.11
     , case-insensitive
     , colour >=2.1 && <3
@@ -123,6 +124,7 @@ executable pubquiz-server-exe
       HaTeX >=3 && <4
     , aeson
     , base >=4.7 && <5
+    , blaze-builder
     , bytestring >=0.10 && <0.11
     , case-insensitive
     , colour >=2.1 && <3

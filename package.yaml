@@ -51,6 +51,7 @@ dependencies:
 - case-insensitive
 - elm-bridge
 - http-types
+- blaze-builder
 
 
 library:
