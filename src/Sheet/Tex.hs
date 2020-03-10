@@ -136,22 +136,21 @@ mkIntervals = reverse . (\(x, _, _) -> x) . go ([], [], Full) . map (mkBaseInter
     sz = isize int
 
 mkFullSheet :: LaTeXC l => Text -> [Int] -> [QRPath] -> l
-mkFullSheet teamLabel qns paths = mconcat [
-    header,
-    document (
-        mconcat (
-          intersperse separator (
-            zipWith (\i path -> (mkSingleTeamSheet (protectText teamLabel) path allRounds i)) 
-                    [1 ..] 
-                    paths
-          )
-        )
-    )
-  ] 
-  where grouped = map (map toList) (mkIntervals qns)
-        allRounds = map (mconcat . map (mkAnswerTable stretch)) grouped
-        separator | even (length grouped) = newpage
-                  | otherwise             = mconcat [newpage, hfill, medskip, newline, newpage]
+mkFullSheet teamLabel qns paths =
+  mconcat
+    [ header
+    , document
+        (mconcat
+           (intersperse
+              separator
+              (zipWith (\i path -> mkSingleTeamSheet (protectText teamLabel) path allRounds i) [1 ..] paths)))
+    ]
+  where
+    grouped = map (map toList) (mkIntervals qns)
+    allRounds = map (mconcat . map (mkAnswerTable stretch)) grouped
+    separator
+      | even (length grouped) = newpage
+      | otherwise = mconcat [newpage, hfill, medskip, newline, newpage]
 
 mkSheetWithArbitraryQuestions :: Text -> [Int] -> [QRPath] -> Text
 mkSheetWithArbitraryQuestions teamLabel qns paths =
