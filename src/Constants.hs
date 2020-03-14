@@ -132,11 +132,11 @@ getQuizRatingsApi = "getQuizRatings"
 getLabelsApi :: B.ByteString
 getLabelsApi = "getLabels"
 
-updateQuizSettingsApi :: B.ByteString
-updateQuizSettingsApi = "updateQuizSettings"
+updateQuizApi :: B.ByteString
+updateQuizApi = "updateQuiz"
 
-updateApi :: B.ByteString
-updateApi = "update"
+updateQuizRatingsApi :: B.ByteString
+updateQuizRatingsApi = "updateQuizRatings"
 
 lockApi :: B.ByteString
 lockApi = "lock"

@@ -31,7 +31,7 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          quizSettingsParam,
                                          serverQuizzesFolderIO, sheetsFolderIO,
                                          teamQueryParam, teamTableApi,
-                                         updateApi, updateQuizSettingsApi, serverPathIO)
+                                         updateQuizRatingsApi, updateQuizApi, serverPathIO)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
@@ -66,8 +66,8 @@ quizRoutes =
   [ allApi +> method GET sendAvailableActiveHandler
   , getQuizRatingsApi +> method GET getQuizRatingsHandler
   , getLabelsApi +> method GET getLabelsHandler
-  , updateQuizSettingsApi +> method POST updateQuizSettingsHandler
-  , updateApi +> method POST updateHandler
+  , updateQuizApi +> method POST updateQuizHandler
+  , updateQuizRatingsApi +> method POST updateQuizRatingsHandler
   , lockApi +> method POST lockHandler
   , newApi +> method POST newQuiz
   , teamTableApi +> method GET teamTableInfoHandler
@@ -100,8 +100,8 @@ getLabelsHandler = do
       writeLBS (encode labels)
       modifyResponse (setResponseCodeJSON 200)
 
-updateHandler :: Handler b QuizService ()
-updateHandler = do
+updateQuizRatingsHandler :: Handler b QuizService ()
+updateQuizRatingsHandler = do
   mQuizRatings <- getJSONPostParamWithPure quizRatingsParam
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mCredentials <- getJSONPostParam credentialsParam
@@ -127,8 +127,8 @@ mkUpdateErrorMessage mQid mQuizRatings =
 updateQuizData :: DbQuizId -> QuizRatings -> IO ()
 updateQuizData qid quizRatings = ifActiveDo qid (pure ()) (\_ -> setQuizRatings qid quizRatings)
 
-updateQuizSettingsHandler :: Handler b QuizService ()
-updateQuizSettingsHandler = do
+updateQuizHandler :: Handler b QuizService ()
+updateQuizHandler = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mQuizSettings <- getJSONPostParamWithPure quizSettingsParam
   mCredentials <- getJSONPostParam credentialsParam
