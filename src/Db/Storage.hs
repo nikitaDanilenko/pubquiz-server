@@ -122,6 +122,13 @@ setQuizRatingsStatement qid quizRatings = do
   setHeaderStatement qid (header quizRatings)
   setRatingsStatement qid (ratings quizRatings)
 
+setQuizIdentifier :: DbQuizId -> QuizIdentifier -> IO DbQuizId
+setQuizIdentifier qid quizIdentifier = runSql (setQuizIdentifierStatement qid quizIdentifier)
+
+setQuizIdentifierStatement :: MonadIO m => DbQuizId -> QuizIdentifier -> Statement m DbQuizId
+setQuizIdentifierStatement qid quizIdentifier = 
+  repsertQuiz (mkDbQuiz (place quizIdentifier) (date quizIdentifier) (name quizIdentifier) Active)
+
 createQuiz :: QuizIdentifier -> IO QuizInfo
 createQuiz = runSql . createQuizStatement
 
