@@ -6,7 +6,7 @@ module Api.Services.QuizService
   , QuizService
   ) where
 
-import           Control.Applicative    (liftA2)
+import           Control.Applicative    (liftA2, liftA3)
 import           Control.Arrow          ((&&&))
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8  as B
@@ -28,10 +28,10 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          getQuizRatingsApi, lockApi, newApi,
                                          quizIdParam, quizIdentifierParam,
                                          quizPath, quizRatingsParam,
-                                         quizSettingsParam,
+                                         quizSettingsParam, serverPathIO,
                                          serverQuizzesFolderIO, sheetsFolderIO,
                                          teamQueryParam, teamTableApi,
-                                         updateQuizRatingsApi, updateQuizApi, serverPathIO)
+                                         updateQuizApi, updateQuizRatingsApi)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
@@ -49,6 +49,7 @@ import           Db.Storage             (createQuizStatement,
                                          findQuizInfo, findQuizRatings,
                                          findTeamTableInfo, lockQuiz,
                                          setHeaderStatement, setLabelsStatement,
+                                         setQuizIdentifierStatement,
                                          setQuizRatings, setTeamInfo)
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
@@ -131,16 +132,21 @@ updateQuizHandler :: Handler b QuizService ()
 updateQuizHandler = do
   mQuizId <- getJSONPostParamWithPure quizIdParam
   mQuizSettings <- getJSONPostParamWithPure quizSettingsParam
+  mQuizIdentifier <- getJSONPostParamWithPure quizIdentifierParam
   mCredentials <- getJSONPostParam credentialsParam
   verified <-
     authenticate
       mCredentials
       [ (quizIdParam, fKey mQuizId)
+      , (quizIdentifierParam, fKey mQuizIdentifier)
       , (quizSettingsParam, fKey mQuizSettings)
       , (actionParam, strictEncodeF (Just UpdateSettingsA))
       ]
   failIfUnverified verified $
-    liftIO (fromMaybe (pure ()) (liftA2 updateLabelsAndSettings (fValue mQuizId) (fValue mQuizSettings)))
+    liftIO
+      (fromMaybe
+         (pure ())
+         (liftA3 updateIdentifierAndSettings (fValue mQuizId) (fValue mQuizIdentifier) (fValue mQuizSettings)))
 
 teamCodeLength :: Int
 teamCodeLength = 6
@@ -175,10 +181,11 @@ newQuiz = do
         writeLBS (encode quizInfo)
         modifyResponse (setResponseCodeJSON 200)
 
-updateLabelsAndSettings :: DbQuizId -> QuizSettings -> IO ()
-updateLabelsAndSettings qid quizSettings =
+updateIdentifierAndSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> IO ()
+updateIdentifierAndSettings qid idf quizSettings =
   ifActiveDo qid (pure ()) $ \quizInfo ->
     runSql $ do
+      setQuizIdentifierStatement qid idf
       let ls = labels quizSettings
       header <- findHeaderStatement qid
       setLabelsStatement qid ls
