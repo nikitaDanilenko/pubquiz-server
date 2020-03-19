@@ -143,9 +143,30 @@ data Credentials =
 
 deriveJSON defaultOptions ''Credentials
 
+data QuestionsInRound =
+  QuestionsInRound
+    { questionsInRoundRoundNumber       :: RoundNumber
+    , questionsInRoundNumberOfQuestions :: NumberOfQuestions
+    }
+
+deriveJSON defaultOptions ''QuestionsInRound
+
+dbRoundQuestionsToQuestionsInRound :: DbRoundQuestions -> QuestionsInRound
+dbRoundQuestionsToQuestionsInRound rq =
+  QuestionsInRound (wrap (dbRoundQuestionsRoundNumber rq)) (wrap (dbRoundQuestionsQuestions rq))
+
+newtype QuestionsInQuiz =
+  QuestionsInQuiz [QuestionsInRound]
+
+deriveJSON defaultOptions ''QuestionsInQuiz
+
+instance Unwrappable QuestionsInQuiz [QuestionsInRound] where
+  unwrap (QuestionsInQuiz rqs) = rqs
+  wrap = QuestionsInQuiz
+
 data QuizSettings =
   QuizSettings
-    { questionsInQuiz :: [Natural]
+    { questionsInQuiz :: QuestionsInQuiz
     , numberOfTeams   :: Natural
     , labels          :: Labels
     }
@@ -153,7 +174,14 @@ data QuizSettings =
 deriveJSON defaultOptions ''QuizSettings
 
 fallbackSettings :: QuizSettings
-fallbackSettings = QuizSettings {questionsInQuiz = replicate 4 8, numberOfTeams = 20, labels = fallbackLabels}
+fallbackSettings =
+  QuizSettings
+    { questionsInQuiz =
+        wrap
+          (zipWith (\rn q -> QuestionsInRound (wrap (intToNatural rn)) (wrap (intToNatural q))) [1 ..] (replicate 4 8))
+    , numberOfTeams = 20
+    , labels = fallbackLabels
+    }
 
 -- | Merges a list of reachable points and a list of reached points in their respective database representations
 --   into a unified rating element.
@@ -285,24 +313,3 @@ dbUserToSavedUser dbUser =
     , userSalt = wrap (dbUserUserSalt dbUser)
     , userHash = wrap (dbUserUserHash dbUser)
     }
-
-data QuestionsInRound =
-  QuestionsInRound
-    { questionsInRoundRoundNumber       :: RoundNumber
-    , questionsInRoundNumberOfQuestions :: NumberOfQuestions
-    }
-
-deriveJSON defaultOptions ''QuestionsInRound
-
-dbRoundQuestionsToQuestionsInRound :: DbRoundQuestions -> QuestionsInRound
-dbRoundQuestionsToQuestionsInRound rq =
-  QuestionsInRound (wrap (dbRoundQuestionsRoundNumber rq)) (wrap (dbRoundQuestionsQuestions rq))
-
-newtype QuestionsInQuiz =
-  QuestionsInQuiz [QuestionsInRound]
-
-deriveJSON defaultOptions ''QuestionsInQuiz
-
-instance Unwrappable QuestionsInQuiz [QuestionsInRound] where
-  unwrap (QuestionsInQuiz rqs) = rqs
-  wrap = QuestionsInQuiz
