@@ -27,12 +27,15 @@ import           Data.Aeson               (encode)
 import           Data.List                (sortOn)
 import           Data.Time.Calendar       (Day)
 import           Db.Connection            (DbQuizId)
-import           Db.DbConversion          (TeamQuery (TeamQuery),
+import           Db.DbConversion          (QuestionsInQuiz,
+                                           TeamQuery (TeamQuery),
                                            mkPathForQuizSheetWith,
+                                           questionsInRoundNumberOfQuestions,
+                                           questionsInRoundRoundNumber,
                                            teamQueryQuizId, teamQueryTeamCode,
                                            teamQueryTeamNumber)
 import           General.Types            (Code, TeamNumber, unwrap)
-import           GHC.Natural              (Natural)
+import           GHC.Natural              (Natural, naturalToInt)
 import           Network.HTTP.Types       (encodePathSegments)
 import           Sheet.Tex                (mkQROnly,
                                            mkSheetWithArbitraryQuestions)
@@ -47,13 +50,24 @@ type Ending = String
 --todo use proper types?
 -- todo: reduce number of conversions?
 -- todo: setting the folder vs. setting the file names could be improved?
-createSheetWith :: String -> [Int] -> ServerPrefix -> ServerFolder -> [(TeamNumber, Code)] -> Day -> DbQuizId -> IO ()
-createSheetWith teamLabel rounds prefix folder numberedCodes day qid = do
+createSheetWith ::
+     String -> QuestionsInQuiz -> ServerPrefix -> ServerFolder -> [(TeamNumber, Code)] -> Day -> DbQuizId -> IO ()
+createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
   sheetsFolder <- sheetsFolderIO
   currentDir <- getCurrentDirectory
   let tl = T.pack teamLabel
       endings = sortOn fst numberedCodes
       paths = map (mkPath prefix folder . uncurry (TeamQuery qid)) endings
+      rounds =
+        map
+          snd
+          (sortOn
+             fst
+             (map
+                (\qir ->
+                   ( naturalToInt (unwrap (questionsInRoundRoundNumber qir))
+                   , naturalToInt (unwrap (questionsInRoundNumberOfQuestions qir))))
+                (unwrap qirs)))
       sht = mkSheetWithArbitraryQuestions tl rounds paths
       sheetFile = mkPathForQuizSheetWith (T.pack "") (T.pack ".") sheetFileName day qid
       qrs = mkQROnly tl paths

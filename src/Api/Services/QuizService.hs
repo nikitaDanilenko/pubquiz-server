@@ -40,9 +40,10 @@ import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
                                          active, adjustHeaderToSize, date,
                                          fallbackSettings, fullSheetPath,
                                          labels, mkDefaultTeamInfos,
-                                         numberOfTeams, qrOnlyPath, quizId,
-                                         quizIdentifier, questionsInQuiz,
-                                         teamQueryQuizId, teamQueryTeamNumber)
+                                         numberOfTeams, qrOnlyPath,
+                                         questionsInQuiz, quizId,
+                                         quizIdentifier, teamQueryQuizId,
+                                         teamQueryTeamNumber)
 import           Db.Storage             (createQuizStatement,
                                          findAllActiveQuizzes,
                                          findHeaderStatement, findLabels,
@@ -199,7 +200,7 @@ createSheetWithSettings qid identifier quizSettings header = do
   serverFolder <- serverQuizzesFolderIO
   createSheetWith
     (unwrap (teamLabel (labels quizSettings)))
-    (map naturalToInt (questionsInQuiz quizSettings))
+    (questionsInQuiz quizSettings)
     serverPath
     serverFolder
     (map (teamInfoNumber &&& teamInfoCode) (unwrap header))
