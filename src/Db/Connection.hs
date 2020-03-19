@@ -48,6 +48,7 @@ import           General.Types                         (Activity,
                                                         IndividualRoundsLabel,
                                                         MaxReachableLabel,
                                                         MaxReachedLabel,
+                                                        NumberOfQuestions,
                                                         OwnPageLabel,
                                                         OwnPointsLabel, Place,
                                                         PlaceLabel,
@@ -185,6 +186,9 @@ mkDbRoundReached qid rn tn = DbRoundReached qid (unwrap rn) (unwrap tn)
 
 mkDbUser :: UserName -> UserSalt -> UserHash -> DbUser
 mkDbUser n s h = DbUser (unwrap n) (unwrap s) (unwrap h)
+
+mkRoundQuestions :: DbQuizId -> RoundNumber -> NumberOfQuestions -> DbRoundQuestions
+mkRoundQuestions qid rn nq = DbRoundQuestions qid (unwrap rn) (unwrap nq)
 
 dbLabelsToLabels :: DbLabels -> Labels
 dbLabelsToLabels dbLabels =

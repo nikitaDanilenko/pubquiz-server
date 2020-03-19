@@ -19,6 +19,7 @@ import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
 import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
                                               DbQuiz (DbQuiz), DbQuizId,
+                                              DbRoundQuestions,
                                               DbRoundReachable (dbRoundReachableQuizId, dbRoundReachableRoundNumber),
                                               DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                               DbSessionKey (DbSessionKey),
@@ -26,13 +27,15 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               DbUser (DbUser, dbUserUserName),
                                               EntityField (..), Statement,
                                               dbLabelsToLabels,
+                                              dbRoundQuestionsQuizId,
+                                              dbRoundQuestionsRoundNumber,
                                               dbSessionKeyUserHash,
                                               dbSessionKeyUserName,
                                               dbUserUserHash, dbUserUserSalt,
                                               insertOrReplace, labelsToDbLabels,
                                               mkDbQuiz, mkDbRoundReachable,
                                               mkDbRoundReached, mkFilter,
-                                              runSql)
+                                              mkRoundQuestions, runSql)
 import           Db.DbConversion             (Header,
                                               QuizIdentifier (date, name, place),
                                               QuizInfo,
@@ -46,20 +49,22 @@ import           Db.DbConversion             (Header,
                                               dbTeamNameCodeToTeamInfo,
                                               dbUserToSavedUser, mkQuizInfo,
                                               mkTeamTable, ratingsFromDb,
-                                              savedUserToDbUser,
+                                              savedUserToDbUser, teamInfoName,
+                                              teamInfoNumber,
                                               teamInfoToDbTeamNameCode,
                                               teamQueryQuizId,
                                               teamQueryTeamCode,
                                               teamQueryTeamNumber, userHash,
-                                              userName, userSalt, teamInfoName, teamInfoNumber)
+                                              userName, userSalt)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
-import           General.Types               (Activity (..), Code, Place,
+import           General.Types               (Activity (..), Code,
+                                              NumberOfQuestions, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap),
                                               UserHash, UserName, UserSalt)
-import GHC.Natural (intToNatural)
+import           GHC.Natural                 (intToNatural)
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
 setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
@@ -126,8 +131,15 @@ setQuizIdentifier :: DbQuizId -> QuizIdentifier -> IO DbQuizId
 setQuizIdentifier qid quizIdentifier = runSql (setQuizIdentifierStatement qid quizIdentifier)
 
 setQuizIdentifierStatement :: MonadIO m => DbQuizId -> QuizIdentifier -> Statement m DbQuizId
-setQuizIdentifierStatement qid quizIdentifier = 
+setQuizIdentifierStatement qid quizIdentifier =
   repsertQuiz (mkDbQuiz (place quizIdentifier) (date quizIdentifier) (name quizIdentifier) Active)
+
+setRoundQuestions :: DbQuizId -> RoundNumber -> NumberOfQuestions -> IO (Key DbRoundQuestions)
+setRoundQuestions qid rn nq = runSql (setRoundQuestionsStatement qid rn nq)
+
+setRoundQuestionsStatement ::
+     MonadIO m => DbQuizId -> RoundNumber -> NumberOfQuestions -> Statement m (Key DbRoundQuestions)
+setRoundQuestionsStatement qid rn nq = repsertRoundQuestions (mkRoundQuestions qid rn nq)
 
 createQuiz :: QuizIdentifier -> IO QuizInfo
 createQuiz = runSql . createQuizStatement
@@ -293,3 +305,10 @@ repsertUser = insertOrReplace [mkFilter DbUserUserName dbUserUserName]
 
 repsertSessionKey :: MonadIO m => DbSessionKey -> Statement m (Key DbSessionKey)
 repsertSessionKey = insertOrReplace [mkFilter DbSessionKeyUserName dbSessionKeyUserName]
+
+repsertRoundQuestions :: MonadIO m => DbRoundQuestions -> Statement m (Key DbRoundQuestions)
+repsertRoundQuestions =
+  insertOrReplace
+    [ mkFilter DbRoundQuestionsQuizId dbRoundQuestionsQuizId
+    , mkFilter DbRoundQuestionsRoundNumber dbRoundQuestionsRoundNumber
+    ]
