@@ -31,7 +31,7 @@ import           General.Types        (Activity (Active), Code, Place, QuizDate,
                                        TeamLabel, TeamName,
                                        TeamNumber (TeamNumber), Unwrappable,
                                        UserHash, UserName, UserSalt, unwrap,
-                                       wrap)
+                                       wrap, NumberOfQuestions)
 import           GHC.Natural          (Natural, intToNatural, naturalToInt)
 import           Utils                (randomDistinctHexadecimal)
 
@@ -278,3 +278,7 @@ dbUserToSavedUser dbUser =
     , userSalt = wrap (dbUserUserSalt dbUser)
     , userHash = wrap (dbUserUserHash dbUser)
     }
+
+newtype QuestionsPerRound = QuestionsPerRound [(RoundNumber, NumberOfQuestions)]
+
+deriveJSON defaultOptions ''QuestionsPerRound
