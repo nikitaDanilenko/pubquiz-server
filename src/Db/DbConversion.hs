@@ -145,15 +145,15 @@ deriveJSON defaultOptions ''Credentials
 
 data QuizSettings =
   QuizSettings
-    { rounds        :: [Natural]
-    , numberOfTeams :: Natural
-    , labels        :: Labels
+    { questionsInQuiz :: [Natural]
+    , numberOfTeams   :: Natural
+    , labels          :: Labels
     }
 
 deriveJSON defaultOptions ''QuizSettings
 
 fallbackSettings :: QuizSettings
-fallbackSettings = QuizSettings {rounds = replicate 4 8, numberOfTeams = 20, labels = fallbackLabels}
+fallbackSettings = QuizSettings {questionsInQuiz = replicate 4 8, numberOfTeams = 20, labels = fallbackLabels}
 
 -- | Merges a list of reachable points and a list of reached points in their respective database representations
 --   into a unified rating element.
