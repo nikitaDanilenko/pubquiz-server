@@ -14,7 +14,7 @@ import           Data.Text             (Text)
 import qualified Data.Text             as T
 import qualified Data.Text.Encoding    as E
 import           Data.Time.Calendar    (Day)
-import           GHC.Natural           (Natural)
+import           GHC.Natural           (Natural, intToNatural)
 import           Utils                 (elmOptions)
 
 newtype TeamNumber =
@@ -107,11 +107,15 @@ data Action
   = CreateQuizA
   | LockA
   | UpdateSettingsA
-  
-data UserCreation = UserCreation {
-  userCreationUser :: UserName,
-  userCreationPassword :: Password
-}
+
+newtype NumberOfQuestions =
+  NumberOfQuestions Natural
+
+data UserCreation =
+  UserCreation
+    { userCreationUser     :: UserName
+    , userCreationPassword :: Password
+    }
 
 class Unwrappable t v where
   unwrap :: t -> v
@@ -242,6 +246,10 @@ instance Unwrappable Password Text where
   unwrap (Password p) = p
   wrap = Password
 
+instance Unwrappable NumberOfQuestions Natural where
+  unwrap (NumberOfQuestions n) = n
+  wrap = NumberOfQuestions
+
 instance Fallback RoundLabel where
   fallback = wrap (T.pack "Runde")
 
@@ -286,6 +294,9 @@ instance Fallback PointsLabel where
 
 instance Fallback RoundWinnerLabel where
   fallback = wrap (T.pack "Rundensieger")
+
+instance Fallback NumberOfQuestions where
+  fallback = wrap (intToNatural 8)
 
 deriveJSON elmOptions ''TeamNumber
 
@@ -344,3 +355,5 @@ deriveJSON elmOptions ''Activity
 deriveJSON elmOptions ''Action
 
 deriveJSON elmOptions ''UserCreation
+
+deriveJSON elmOptions ''NumberOfQuestions

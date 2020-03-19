@@ -14,7 +14,8 @@ import           Db.Connection      (DbQuizId)
 import           Db.DbConversion    (Credentials, Header, QuizIdentifier,
                                      QuizInfo, QuizRatings, QuizSettings,
                                      Ratings, RoundRating, TeamInfo, TeamLine,
-                                     TeamQuery, TeamRating, TeamTable, TeamTableInfo)
+                                     TeamQuery, TeamRating, TeamTable,
+                                     TeamTableInfo)
 import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
                                      ETCon (ETCon), ETVar (ETVar),
                                      EType (ETyCon),
@@ -27,13 +28,14 @@ import           General.Labels     (Labels)
 import           General.Types      (Action, Activity, BackToChartViewLabel,
                                      Code, CumulativeLabel,
                                      IndividualRoundsLabel, MaxReachableLabel,
-                                     MaxReachedLabel, OwnPageLabel,
-                                     OwnPointsLabel, Password, Place,
-                                     PlaceLabel, PlacementLabel, PointsLabel,
-                                     ProgressionLabel, QuizDate, QuizName,
-                                     RoundLabel, RoundNumber, RoundWinnerLabel,
-                                     TeamLabel, TeamName, TeamNumber, UserHash,
-                                     UserName, UserSalt, ViewPreviousLabel, UserCreation)
+                                     MaxReachedLabel, NumberOfQuestions,
+                                     OwnPageLabel, OwnPointsLabel, Password,
+                                     Place, PlaceLabel, PlacementLabel,
+                                     PointsLabel, ProgressionLabel, QuizDate,
+                                     QuizName, RoundLabel, RoundNumber,
+                                     RoundWinnerLabel, TeamLabel, TeamName,
+                                     TeamNumber, UserCreation, UserHash,
+                                     UserName, UserSalt, ViewPreviousLabel)
 import           Utils              (elmOptions)
 
 deriveElmDef elmOptions ''TeamNumber
@@ -124,6 +126,8 @@ deriveElmDef elmOptions ''TeamTableInfo
 
 deriveElmDef elmOptions ''UserCreation
 
+deriveElmDef elmOptions ''NumberOfQuestions
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -181,4 +185,8 @@ main path =
     , DefineElm (Proxy :: Proxy TeamQuery)
     , DefineElm (Proxy :: Proxy TeamTableInfo)
     , DefineElm (Proxy :: Proxy UserCreation)
+    , DefineElm (Proxy :: Proxy NumberOfQuestions)
     ]
+
+pathToElm :: String
+pathToElm = "../pubquiz-frontend/src/Common/Types.elm"
