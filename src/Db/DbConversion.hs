@@ -11,7 +11,8 @@ import           Data.Aeson.TH        (defaultOptions, deriveJSON)
 import qualified Data.ByteString.Lazy as L
 import           Data.Function        (on)
 import           Data.List            (groupBy, maximumBy, sortOn)
-import           Data.Map             (fromList, intersectionWith, intersectionWithKey, toList, elems)
+import           Data.Map             (elems, fromList, intersectionWith,
+                                       intersectionWithKey, toList)
 import           Data.Ord             (comparing)
 import           Data.Text            (pack)
 import qualified Data.Text            as T
@@ -19,19 +20,21 @@ import qualified Data.Text.Encoding   as E
 import           Data.Time.Calendar   (Day)
 import           Database.Persist     (Entity, entityKey, entityVal)
 import           Db.Connection        (DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
-                                       DbQuizId,
+                                       DbQuizId, DbRoundQuestions,
                                        DbRoundReachable (dbRoundReachablePoints, dbRoundReachableRoundNumber),
                                        DbRoundReached (dbRoundReachedPoints, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                        DbTeamNameCode (DbTeamNameCode, dbTeamNameCodeActive, dbTeamNameCodeQuizId, dbTeamNameCodeTeamCode, dbTeamNameCodeTeamName, dbTeamNameCodeTeamNumber),
                                        DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
-                                       dbQuizActive)
+                                       dbQuizActive, dbRoundQuestionsQuestions,
+                                       dbRoundQuestionsRoundNumber)
 import           General.Labels       (Labels, fallbackLabels)
-import           General.Types        (Activity (Active), Code, Place, QuizDate,
+import           General.Types        (Activity (Active), Code,
+                                       NumberOfQuestions, Place, QuizDate,
                                        QuizName, RoundNumber (RoundNumber),
                                        TeamLabel, TeamName,
                                        TeamNumber (TeamNumber), Unwrappable,
                                        UserHash, UserName, UserSalt, unwrap,
-                                       wrap, NumberOfQuestions)
+                                       wrap)
 import           GHC.Natural          (Natural, intToNatural, naturalToInt)
 import           Utils                (randomDistinctHexadecimal)
 
@@ -227,20 +230,22 @@ newtype TeamTable =
 
 deriveJSON defaultOptions ''TeamTable
 
-data TeamQuery = TeamQuery {
-  teamQueryQuizId :: DbQuizId,
-  teamQueryTeamNumber :: TeamNumber,
-  teamQueryTeamCode :: Code
-}
+data TeamQuery =
+  TeamQuery
+    { teamQueryQuizId     :: DbQuizId
+    , teamQueryTeamNumber :: TeamNumber
+    , teamQueryTeamCode   :: Code
+    }
 
 deriveJSON defaultOptions ''TeamQuery
 
-data TeamTableInfo = TeamTableInfo {
-  teamTable :: TeamTable,
-  teamTableInfoTeamName :: TeamName,
-  teamTableInfoNumberOfTeams :: Natural,
-  teamTableInfoTeamNumber :: TeamNumber
-}
+data TeamTableInfo =
+  TeamTableInfo
+    { teamTable                  :: TeamTable
+    , teamTableInfoTeamName      :: TeamName
+    , teamTableInfoNumberOfTeams :: Natural
+    , teamTableInfoTeamNumber    :: TeamNumber
+    }
 
 deriveJSON defaultOptions ''TeamTableInfo
 
@@ -253,7 +258,9 @@ mkTeamTable reached reachable allReached =
   where
     ratings = fromList (mkReached wrap reached)
     possibles = fromList (map (((wrap . dbRoundReachableRoundNumber) &&& dbRoundReachablePoints) . entityVal) reachable)
-    ms = fromList (map (first wrap . maximumBy (comparing snd)) $ groupBy ((==) `on` fst) $ sortOn fst (mkReached id allReached))
+    ms =
+      fromList
+        (map (first wrap . maximumBy (comparing snd)) $ groupBy ((==) `on` fst) $ sortOn fst (mkReached id allReached))
     mkReached w = map (((w . dbRoundReachedRoundNumber) &&& dbRoundReachedPoints) . entityVal)
 
 data SavedUser =
@@ -279,6 +286,23 @@ dbUserToSavedUser dbUser =
     , userHash = wrap (dbUserUserHash dbUser)
     }
 
-newtype QuestionsPerRound = QuestionsPerRound [(RoundNumber, NumberOfQuestions)]
+data QuestionsInRound =
+  QuestionsInRound
+    { questionsInRoundRoundNumber       :: RoundNumber
+    , questionsInRoundNumberOfQuestions :: NumberOfQuestions
+    }
 
-deriveJSON defaultOptions ''QuestionsPerRound
+deriveJSON defaultOptions ''QuestionsInRound
+
+dbRoundQuestionsToQuestionsInRound :: DbRoundQuestions -> QuestionsInRound
+dbRoundQuestionsToQuestionsInRound rq =
+  QuestionsInRound (wrap (dbRoundQuestionsRoundNumber rq)) (wrap (dbRoundQuestionsQuestions rq))
+
+newtype QuestionsInQuiz =
+  QuestionsInQuiz [QuestionsInRound]
+
+deriveJSON defaultOptions ''QuestionsInQuiz
+
+instance Unwrappable QuestionsInQuiz [QuestionsInRound] where
+  unwrap (QuestionsInQuiz rqs) = rqs
+  wrap = QuestionsInQuiz

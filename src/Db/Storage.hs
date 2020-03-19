@@ -27,6 +27,7 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               DbUser (DbUser, dbUserUserName),
                                               EntityField (..), Statement,
                                               dbLabelsToLabels,
+                                              dbRoundQuestionsQuestions,
                                               dbRoundQuestionsQuizId,
                                               dbRoundQuestionsRoundNumber,
                                               dbSessionKeyUserHash,
@@ -37,6 +38,8 @@ import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz 
                                               mkDbRoundReached, mkFilter,
                                               mkRoundQuestions, runSql)
 import           Db.DbConversion             (Header,
+                                              QuestionsInQuiz (QuestionsInQuiz),
+                                              QuestionsInRound (QuestionsInRound),
                                               QuizIdentifier (date, name, place),
                                               QuizInfo,
                                               QuizRatings (QuizRatings, header, ratings),
@@ -46,11 +49,14 @@ import           Db.DbConversion             (Header,
                                               TeamRating (rating, teamNumber),
                                               TeamTable,
                                               TeamTableInfo (TeamTableInfo),
+                                              dbRoundQuestionsToQuestionsInRound,
                                               dbTeamNameCodeToTeamInfo,
                                               dbUserToSavedUser, mkQuizInfo,
-                                              mkTeamTable, ratingsFromDb,
-                                              savedUserToDbUser, teamInfoName,
-                                              teamInfoNumber,
+                                              mkTeamTable,
+                                              questionsInRoundNumberOfQuestions,
+                                              questionsInRoundRoundNumber,
+                                              ratingsFromDb, savedUserToDbUser,
+                                              teamInfoName, teamInfoNumber,
                                               teamInfoToDbTeamNameCode,
                                               teamQueryQuizId,
                                               teamQueryTeamCode,
@@ -140,6 +146,15 @@ setRoundQuestions qid rn nq = runSql (setRoundQuestionsStatement qid rn nq)
 setRoundQuestionsStatement ::
      MonadIO m => DbQuizId -> RoundNumber -> NumberOfQuestions -> Statement m (Key DbRoundQuestions)
 setRoundQuestionsStatement qid rn nq = repsertRoundQuestions (mkRoundQuestions qid rn nq)
+
+setQuestionsInQuiz :: DbQuizId -> QuestionsInQuiz -> IO ()
+setQuestionsInQuiz qid inQuiz = runSql (setQuestionsInQuizStatement qid inQuiz)
+
+setQuestionsInQuizStatement :: MonadIO m => DbQuizId -> QuestionsInQuiz -> Statement m ()
+setQuestionsInQuizStatement qid inQuiz =
+  mapM_
+    (\qir -> setRoundQuestionsStatement qid (questionsInRoundRoundNumber qir) (questionsInRoundNumberOfQuestions qir))
+    (unwrap inQuiz :: [QuestionsInRound])
 
 createQuiz :: QuizIdentifier -> IO QuizInfo
 createQuiz = runSql . createQuizStatement
@@ -257,6 +272,15 @@ findTeamTableInfoStatement qid tn = do
 
 findTeamTableInfo :: DbQuizId -> TeamNumber -> IO TeamTableInfo
 findTeamTableInfo qid tn = runSql (findTeamTableInfoStatement qid tn)
+
+findQuestionsPerRound :: DbQuizId -> IO QuestionsInQuiz
+findQuestionsPerRound = runSql . findQuestionsPerRoundStatement
+
+findQuestionsPerRoundStatement :: MonadIO m => DbQuizId -> Statement m QuestionsInQuiz
+findQuestionsPerRoundStatement qid =
+  fmap
+    (QuestionsInQuiz . map (dbRoundQuestionsToQuestionsInRound . entityVal))
+    (selectList [DbRoundQuestionsQuizId ==. qid] [])
 
 existsTeam :: TeamQuery -> IO Bool
 existsTeam = runSql . existsTeamStatement
