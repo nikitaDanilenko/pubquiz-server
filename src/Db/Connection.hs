@@ -115,6 +115,12 @@ DbRoundReached
   points Double
   Primary quizId roundNumber teamNumber
   deriving Show
+DbRoundQuestions
+  quizId DbQuizId
+  roundNumber Natural
+  questions Natural
+  Primary quizId roundNumber
+  deriving Show
 DbUser
   userName String
   userSalt String
