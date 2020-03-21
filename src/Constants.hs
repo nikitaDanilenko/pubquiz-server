@@ -150,6 +150,9 @@ teamTableApi = "teamTable"
 getQuizInfoApi :: B.ByteString
 getQuizInfoApi = "getQuizInfo"
 
+getQuizSettingsApi :: B.ByteString
+getQuizSettingsApi = "getQuizSettings"
+
 createUserApi :: B.ByteString
 createUserApi = "createUser"
 
