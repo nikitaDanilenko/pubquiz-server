@@ -31,7 +31,7 @@ import           Constants              (actionParam, allApi, credentialsParam,
                                          quizSettingsParam, serverPathIO,
                                          serverQuizzesFolderIO, sheetsFolderIO,
                                          teamQueryParam, teamTableApi,
-                                         updateQuizApi, updateQuizRatingsApi)
+                                         updateQuizApi, updateQuizRatingsApi, getQuizSettingsApi)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
@@ -51,7 +51,7 @@ import           Db.Storage             (createQuizStatement,
                                          findTeamTableInfo, lockQuiz,
                                          setHeaderStatement, setLabelsStatement,
                                          setQuizIdentifierStatement,
-                                         setQuizRatings, setTeamInfo)
+                                         setQuizRatings, setTeamInfo, findQuizSettings)
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
@@ -73,7 +73,8 @@ quizRoutes =
   , lockApi +> method POST lockHandler
   , newApi +> method POST newQuiz
   , teamTableApi +> method GET teamTableInfoHandler
-  , getQuizInfoApi +> method GET quizQuizInfoHandler
+  , getQuizInfoApi +> method GET quizInfoHandler
+  , getQuizSettingsApi +> method GET quizSettingsHandler
   ]
 
 sendAvailableActiveHandler :: Handler b QuizService ()
@@ -247,8 +248,8 @@ teamTableInfoHandler = do
       writeLBS (encode teamTableInfo)
       modifyResponse (setResponseCodeJSON 201)
 
-quizQuizInfoHandler :: Handler b QuizService ()
-quizQuizInfoHandler = do
+quizInfoHandler :: Handler b QuizService ()
+quizInfoHandler = do
   mQuizId <- getJSONParam quizIdParam
   case mQuizId of
     Nothing -> errorInfo "Not a valid quiz id"
@@ -259,6 +260,16 @@ quizQuizInfoHandler = do
         Just quizInfo -> do
           writeLBS (encode quizInfo)
           modifyResponse (setResponseCodeJSON 201)
+
+quizSettingsHandler :: Handler b QuizService ()
+quizSettingsHandler = do
+  mQuizId <- getJSONParam quizIdParam
+  case mQuizId of
+    Nothing -> errorInfo "Not a valid quiz id"
+    Just qid -> do
+      quizSettings <- liftIO (findQuizSettings qid)
+      writeLBS (encode quizSettings)
+      modifyResponse (setResponseCodeJSON 201)
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit =
