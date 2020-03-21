@@ -51,7 +51,7 @@ import           Db.Storage             (createQuizStatement,
                                          findTeamTableInfo, lockQuiz,
                                          setHeaderStatement, setLabelsStatement,
                                          setQuizIdentifierStatement,
-                                         setQuizRatings, setTeamInfo, findQuizSettings)
+                                         setQuizRatings, setTeamInfo, findQuizSettings, setQuestionsInQuizStatement)
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
@@ -176,9 +176,11 @@ newQuiz = do
         quizInfo <-
           liftIO $
           runSql $ do
-            quizInfo <- createQuizStatement quizIdentifier
-            setHeaderStatement (quizId quizInfo) header
-            pure quizInfo
+            newQuizInfo <- createQuizStatement quizIdentifier
+            let qid = quizId newQuizInfo
+            setHeaderStatement qid header
+            setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
+            pure newQuizInfo
         liftIO (createSheetWithSettings (quizId quizInfo) quizIdentifier quizSettings header)
         writeLBS (encode quizInfo)
         modifyResponse (setResponseCodeJSON 200)
@@ -193,6 +195,7 @@ updateIdentifierAndSettings qid idf quizSettings =
       setLabelsStatement qid ls
       adjustedHeader <- liftIO (adjustHeaderToSize (numberOfTeams quizSettings) teamCodeLength (teamLabel ls) header)
       setHeaderStatement qid adjustedHeader
+      setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
       liftIO (createSheetWithSettings qid (quizIdentifier quizInfo) quizSettings adjustedHeader)
 
 createSheetWithSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> Header -> IO ()
