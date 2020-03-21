@@ -61,7 +61,7 @@ import           Db.DbConversion             (Header,
                                               teamQueryQuizId,
                                               teamQueryTeamCode,
                                               teamQueryTeamNumber, userHash,
-                                              userName, userSalt)
+                                              userName, userSalt, QuizSettings, mkQuizSettings)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code,
@@ -273,14 +273,21 @@ findTeamTableInfoStatement qid tn = do
 findTeamTableInfo :: DbQuizId -> TeamNumber -> IO TeamTableInfo
 findTeamTableInfo qid tn = runSql (findTeamTableInfoStatement qid tn)
 
-findQuestionsPerRound :: DbQuizId -> IO QuestionsInQuiz
-findQuestionsPerRound = runSql . findQuestionsPerRoundStatement
+findQuestionsInQuiz :: DbQuizId -> IO QuestionsInQuiz
+findQuestionsInQuiz = runSql . findQuestionsInQuizStatement
 
-findQuestionsPerRoundStatement :: MonadIO m => DbQuizId -> Statement m QuestionsInQuiz
-findQuestionsPerRoundStatement qid =
+findQuestionsInQuizStatement :: MonadIO m => DbQuizId -> Statement m QuestionsInQuiz
+findQuestionsInQuizStatement qid =
   fmap
     (QuestionsInQuiz . map (dbRoundQuestionsToQuestionsInRound . entityVal))
     (selectList [DbRoundQuestionsQuizId ==. qid] [])
+
+findQuizSettings :: DbQuizId -> IO QuizSettings
+findQuizSettings = runSql . findQuizSettingsStatement
+
+findQuizSettingsStatement :: MonadIO m => DbQuizId -> Statement m QuizSettings
+findQuizSettingsStatement qid =
+  liftA3 mkQuizSettings (findQuestionsInQuizStatement qid) (findHeaderStatement qid) (findLabelsStatement qid)
 
 existsTeam :: TeamQuery -> IO Bool
 existsTeam = runSql . existsTeamStatement

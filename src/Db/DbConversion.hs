@@ -183,6 +183,14 @@ fallbackSettings =
     , labels = fallbackLabels
     }
 
+mkQuizSettings :: QuestionsInQuiz -> Header -> Labels -> QuizSettings
+mkQuizSettings qs h ls = 
+  QuizSettings {
+    questionsInQuiz = qs,
+    numberOfTeams = intToNatural (length (unwrap h :: [TeamInfo])),
+    labels = ls
+  }
+
 -- | Merges a list of reachable points and a list of reached points in their respective database representations
 --   into a unified rating element.
 --   Rounds that are mentioned in only one of the two lists are ignored.
