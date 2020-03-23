@@ -51,7 +51,7 @@ import           Db.Storage             (createQuizStatement,
                                          findTeamTableInfo, lockQuiz,
                                          setHeaderStatement, setLabelsStatement,
                                          setQuizIdentifierStatement,
-                                         setQuizRatings, setTeamInfo, findQuizSettings, setQuestionsInQuizStatement)
+                                         setQuizRatings, setTeamInfo, findQuizSettings, setQuestionsInQuizStatement, setMissingTeamRatingsToZeroStatement)
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
@@ -195,6 +195,7 @@ updateIdentifierAndSettings qid idf quizSettings =
       setLabelsStatement qid ls
       adjustedHeader <- liftIO (adjustHeaderToSize (numberOfTeams quizSettings) teamCodeLength (teamLabel ls) header)
       setHeaderStatement qid adjustedHeader
+      setMissingTeamRatingsToZeroStatement qid
       setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
       liftIO (createSheetWithSettings qid (quizIdentifier quizInfo) quizSettings adjustedHeader)
 
