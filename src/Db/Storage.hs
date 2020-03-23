@@ -6,13 +6,15 @@ module Db.Storage where
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.Trans.Reader  (ReaderT)
 
-import           Database.Persist            (Entity (Entity), Key, checkUnique,
+import           Database.Persist            (Entity (Entity), Key,
+                                              SelectOpt (Asc), checkUnique,
                                               entityVal, insert, selectFirst,
                                               selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Constants                   (serverSheetsFolderIO)
 import           Control.Applicative         (liftA2, liftA3)
+import           Data.Functor                (void)
 import           Data.List                   (intercalate)
 import           Data.Maybe                  (isJust)
 import qualified Data.Text                   as T
@@ -43,16 +45,16 @@ import           Db.DbConversion             (Header,
                                               QuizIdentifier (date, name, place),
                                               QuizInfo,
                                               QuizRatings (QuizRatings, header, ratings),
-                                              Ratings,
+                                              QuizSettings, Ratings,
                                               RoundRating (points, reachableInRound),
                                               SavedUser, TeamInfo, TeamQuery,
-                                              TeamRating (rating, teamNumber),
+                                              TeamRating (TeamRating, rating, teamNumber),
                                               TeamTable,
                                               TeamTableInfo (TeamTableInfo),
                                               dbRoundQuestionsToQuestionsInRound,
                                               dbTeamNameCodeToTeamInfo,
                                               dbUserToSavedUser, mkQuizInfo,
-                                              mkTeamTable,
+                                              mkQuizSettings, mkTeamTable,
                                               questionsInRoundNumberOfQuestions,
                                               questionsInRoundRoundNumber,
                                               ratingsFromDb, savedUserToDbUser,
@@ -61,7 +63,7 @@ import           Db.DbConversion             (Header,
                                               teamQueryQuizId,
                                               teamQueryTeamCode,
                                               teamQueryTeamNumber, userHash,
-                                              userName, userSalt, QuizSettings, mkQuizSettings)
+                                              userName, userSalt)
 import           General.Labels              (Labels (..), fallbackLabels,
                                               mkLabels)
 import           General.Types               (Activity (..), Code,
@@ -155,6 +157,36 @@ setQuestionsInQuizStatement qid inQuiz =
   mapM_
     (\qir -> setRoundQuestionsStatement qid (questionsInRoundRoundNumber qir) (questionsInRoundNumberOfQuestions qir))
     (unwrap inQuiz :: [QuestionsInRound])
+
+setMissingTeamRatingsToZero :: DbQuizId -> IO ()
+setMissingTeamRatingsToZero = runSql . setMissingTeamRatingsToZeroStatement
+
+setMissingTeamRatingsToZeroStatement :: MonadIO m => DbQuizId -> Statement m ()
+setMissingTeamRatingsToZeroStatement qid = do
+  teamNumbers <-
+    fmap
+      (fmap (wrap . dbTeamNameCodeTeamNumber . entityVal))
+      (selectList [DbTeamNameCodeQuizId ==. qid] [Asc DbTeamNameCodeTeamNumber])
+  roundNumbers <-
+    fmap
+      (fmap (wrap . dbRoundReachableRoundNumber . entityVal))
+      (selectList [DbRoundReachableQuizId ==. qid] [Asc DbRoundReachableRoundNumber])
+  mapM_
+    (uncurry (initialiseWithZero qid))
+    [(teamNumber, roundNumber) | teamNumber <- teamNumbers, roundNumber <- roundNumbers]
+  where
+    initialiseWithZero :: MonadIO m => DbQuizId -> TeamNumber -> RoundNumber -> Statement m ()
+    initialiseWithZero qid teamNumber roundNumber = do
+      points <-
+        selectFirst
+          [ DbRoundReachedQuizId ==. qid
+          , DbRoundReachedRoundNumber ==. unwrap roundNumber
+          , DbRoundReachedTeamNumber ==. unwrap teamNumber
+          ]
+          []
+      case points of
+        Nothing -> void (setTeamRatingStatement qid roundNumber (TeamRating {teamNumber = teamNumber, rating = 0}))
+        Just _ -> pure ()
 
 createQuiz :: QuizIdentifier -> IO QuizInfo
 createQuiz = runSql . createQuizStatement
