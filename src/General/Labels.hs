@@ -18,20 +18,21 @@ module General.Labels
   , placeLabel
   , pointsLabel
   , roundWinnerLabel
-  , fallbackLabels
+  , placeInRoundLabel
+  , placeAfterRoundLabel
   ) where
 
-import           Data.Aeson.TH         (deriveJSON)
-import           General.Types         (BackToChartViewLabel, CumulativeLabel,
-                                        Fallback (fallback),
-                                        IndividualRoundsLabel,
-                                        MaxReachableLabel, MaxReachedLabel,
-                                        OwnPageLabel, OwnPointsLabel,
-                                        PlaceLabel, PlacementLabel, PointsLabel,
-                                        ProgressionLabel, RoundLabel,
-                                        RoundWinnerLabel, TeamLabel,
-                                        Unwrappable (wrap), ViewPreviousLabel)
-import           Utils                 (elmOptions)
+import           Data.Aeson.TH (deriveJSON)
+import           General.Types (BackToChartViewLabel, CumulativeLabel,
+                                Fallback (fallback), IndividualRoundsLabel,
+                                MaxReachableLabel, MaxReachedLabel,
+                                OwnPageLabel, OwnPointsLabel,
+                                PlaceAfterRoundLabel, PlaceInRoundLabel,
+                                PlaceLabel, PlacementLabel, PointsLabel,
+                                ProgressionLabel, RoundLabel, RoundWinnerLabel,
+                                TeamLabel, Unwrappable (wrap),
+                                ViewPreviousLabel)
+import           Utils         (elmOptions)
 
 data Labels =
   Labels
@@ -50,28 +51,32 @@ data Labels =
     , placeLabel            :: PlaceLabel
     , pointsLabel           :: PointsLabel
     , roundWinnerLabel      :: RoundWinnerLabel
+    , placeInRoundLabel     :: PlaceInRoundLabel
+    , placeAfterRoundLabel  :: PlaceAfterRoundLabel
     }
 
 deriveJSON elmOptions ''Labels
 
-fallbackLabels :: Labels
-fallbackLabels =
-  Labels
-    (fallback :: RoundLabel)
-    (fallback :: TeamLabel)
-    (fallback :: OwnPointsLabel)
-    (fallback :: MaxReachedLabel)
-    (fallback :: MaxReachableLabel)
-    (fallback :: BackToChartViewLabel)
-    (fallback :: OwnPageLabel)
-    (fallback :: ViewPreviousLabel)
-    (fallback :: CumulativeLabel)
-    (fallback :: IndividualRoundsLabel)
-    (fallback :: ProgressionLabel)
-    (fallback :: PlacementLabel)
-    (fallback :: PlaceLabel)
-    (fallback :: PointsLabel)
-    (fallback :: RoundWinnerLabel)
+instance Fallback Labels where
+  fallback =
+    Labels
+      (fallback :: RoundLabel)
+      (fallback :: TeamLabel)
+      (fallback :: OwnPointsLabel)
+      (fallback :: MaxReachedLabel)
+      (fallback :: MaxReachableLabel)
+      (fallback :: BackToChartViewLabel)
+      (fallback :: OwnPageLabel)
+      (fallback :: ViewPreviousLabel)
+      (fallback :: CumulativeLabel)
+      (fallback :: IndividualRoundsLabel)
+      (fallback :: ProgressionLabel)
+      (fallback :: PlacementLabel)
+      (fallback :: PlaceLabel)
+      (fallback :: PointsLabel)
+      (fallback :: RoundWinnerLabel)
+      (fallback :: PlaceInRoundLabel)
+      (fallback :: PlaceAfterRoundLabel)
 
 mkLabels ::
      String
@@ -89,8 +94,10 @@ mkLabels ::
   -> String
   -> String
   -> String
+  -> String
+  -> String
   -> Labels
-mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl ownPageLbl viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl placementLbl placeLbl pointsLbl roundWinnerLbl =
+mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl ownPageLbl viewPreviousLbl cumulativeLbl individualRoundsLbl progressionLbl placementLbl placeLbl pointsLbl roundWinnerLbl placeInRoundLbl placeAfterRoundLbl =
   Labels
     { roundLabel = wrap roundLbl
     , teamLabel = wrap teamLbl
@@ -107,4 +114,6 @@ mkLabels roundLbl teamLbl ownPointsLbl maxReachedLbl maxReachableLbl backLbl own
     , placeLabel = wrap placeLbl
     , pointsLabel = wrap pointsLbl
     , roundWinnerLabel = wrap roundWinnerLbl
+    , placeInRoundLabel = wrap placeInRoundLbl
+    , placeAfterRoundLabel = wrap placeAfterRoundLbl
     }
