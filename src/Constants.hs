@@ -94,7 +94,10 @@ serverQuizzesFolderIO :: IO String
 serverQuizzesFolderIO = readFromConfigFile "serverQuizzesFolder" "quizzes"
 
 serverSheetsFolderIO :: IO T.Text
-serverSheetsFolderIO = fmap T.pack (readFromConfigFile "serverSheetsFolder" "sheets")
+serverSheetsFolderIO = do
+  folder <- readFromConfigFile "serverSheetsFolder" "sheets"
+  createDirectoryIfMissing True folder
+  pure (T.pack folder)
 
 apiPath :: T.Text
 apiPath = "api"
