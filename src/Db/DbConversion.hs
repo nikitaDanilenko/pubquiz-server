@@ -27,14 +27,14 @@ import           Db.Connection        (DbQuiz (dbQuizDate, dbQuizName, dbQuizPla
                                        DbUser (DbUser, dbUserUserHash, dbUserUserName, dbUserUserSalt),
                                        dbQuizActive, dbRoundQuestionsQuestions,
                                        dbRoundQuestionsRoundNumber)
-import           General.Labels       (Labels, fallbackLabels)
+import           General.Labels       (Labels)
 import           General.Types        (Activity (Active), Code,
                                        NumberOfQuestions, Place, QuizDate,
                                        QuizName, RoundNumber (RoundNumber),
                                        TeamLabel, TeamName,
                                        TeamNumber (TeamNumber), Unwrappable,
                                        UserHash, UserName, UserSalt, unwrap,
-                                       wrap)
+                                       wrap, fallback)
 import           GHC.Natural          (Natural, intToNatural, naturalToInt)
 import           Utils                (randomDistinctHexadecimal)
 
@@ -180,7 +180,7 @@ fallbackSettings =
         wrap
           (zipWith (\rn q -> QuestionsInRound (wrap (intToNatural rn)) (wrap (intToNatural q))) [1 ..] (replicate 4 8))
     , numberOfTeams = 20
-    , labels = fallbackLabels
+    , labels = fallback :: Labels
     }
 
 mkQuizSettings :: QuestionsInQuiz -> Header -> Labels -> QuizSettings

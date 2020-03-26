@@ -40,7 +40,7 @@ import           Database.Persist.TH                   (mkMigrate, mkPersist,
 import           Db.Configuration                      (readConfiguration,
                                                         toConnection)
 import           Db.Instances
-import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
+import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious, placeInRoundLabel, placeAfterRoundLabel),
                                                         mkLabels)
 import           General.Types                         (Activity,
                                                         BackToChartViewLabel,
@@ -51,6 +51,8 @@ import           General.Types                         (Activity,
                                                         NumberOfQuestions,
                                                         OwnPageLabel,
                                                         OwnPointsLabel, Place,
+                                                        PlaceAfterRoundLabel,
+                                                        PlaceInRoundLabel,
                                                         PlaceLabel,
                                                         PlacementLabel,
                                                         PointsLabel,
@@ -93,8 +95,8 @@ DbLabels
   placeLabel String
   pointsLabel String
   roundWinnerLabel String
-  placeInRound String
-  placeAfterRound String
+  placeInRoundLabel String
+  placeAfterRoundLabel String
   Primary quizId
   deriving Show
 DbTeamNameCode
@@ -160,8 +162,10 @@ mkDbLabels ::
   -> PlaceLabel
   -> PointsLabel
   -> RoundWinnerLabel
+  -> PlaceInRoundLabel
+  -> PlaceAfterRoundLabel
   -> DbLabels
-mkDbLabels qid rd t own mr mred btc op vp c ir pr plcmt plc pts rw =
+mkDbLabels qid rd t own mr mred btc op vp c ir pr plcmt plc pts rw pird pard =
   DbLabels
     qid
     (unwrap rd)
@@ -179,6 +183,8 @@ mkDbLabels qid rd t own mr mred btc op vp c ir pr plcmt plc pts rw =
     (unwrap plc)
     (unwrap pts)
     (unwrap rw)
+    (unwrap pird)
+    (unwrap pard)
 
 mkDbRoundReachable :: DbQuizId -> RoundNumber -> Double -> DbRoundReachable
 mkDbRoundReachable qid rn = DbRoundReachable qid (unwrap rn)
@@ -210,6 +216,8 @@ dbLabelsToLabels dbLabels =
     (dbLabelsPlaceLabel dbLabels)
     (dbLabelsPointsLabel dbLabels)
     (dbLabelsRoundWinnerLabel dbLabels)
+    (dbLabelsPlaceInRoundLabel dbLabels)
+    (dbLabelsPlaceAfterRoundLabel dbLabels)
 
 labelsToDbLabels :: DbQuizId -> Labels -> DbLabels
 labelsToDbLabels qid lbls =
@@ -230,6 +238,8 @@ labelsToDbLabels qid lbls =
     (placeLabel lbls)
     (pointsLabel lbls)
     (roundWinnerLabel lbls)
+    (placeInRoundLabel lbls)
+    (placeAfterRoundLabel lbls)
 
 -- todo: either remove logging or pipe it directly into a log file
 type Statement m k = ReaderT SqlBackend m k
