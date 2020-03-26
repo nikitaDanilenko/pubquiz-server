@@ -64,14 +64,14 @@ import           Db.DbConversion             (Header,
                                               teamQueryTeamCode,
                                               teamQueryTeamNumber, userHash,
                                               userName, userSalt)
-import           General.Labels              (Labels (..), fallbackLabels,
-                                              mkLabels)
+import           General.Labels              (Labels (..), mkLabels)
 import           General.Types               (Activity (..), Code,
                                               NumberOfQuestions, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
                                               Unwrappable (unwrap, wrap),
-                                              UserHash, UserName, UserSalt)
+                                              UserHash, UserName, UserSalt,
+                                              fallback)
 import           GHC.Natural                 (intToNatural)
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
@@ -246,7 +246,7 @@ findLabels = runSql . findLabelsStatement
 
 findLabelsStatement :: MonadIO m => DbQuizId -> Statement m Labels
 findLabelsStatement qid =
-  fmap (maybe fallbackLabels (dbLabelsToLabels . entityVal)) (selectFirst [DbLabelsQuizId ==. qid] [])
+  fmap (maybe (fallback :: Labels) (dbLabelsToLabels . entityVal)) (selectFirst [DbLabelsQuizId ==. qid] [])
 
 findUser :: UserName -> IO (Maybe SavedUser)
 findUser = runSql . findUserStatement
