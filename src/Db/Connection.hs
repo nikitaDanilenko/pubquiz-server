@@ -93,6 +93,8 @@ DbLabels
   placeLabel String
   pointsLabel String
   roundWinnerLabel String
+  placeInRound String
+  placeAfterRound String
   Primary quizId
   deriving Show
 DbTeamNameCode

@@ -90,6 +90,12 @@ newtype PointsLabel =
 newtype RoundWinnerLabel =
   RoundWinnerLabel Text
 
+newtype PlaceInRoundLabel =
+  PlaceInRoundLabel Text
+
+newtype PlaceAfterRoundLabel =
+  PlaceAfterRoundLabel Text
+
 newtype UserName =
   UserName Text
 
@@ -230,6 +236,14 @@ instance Unwrappable RoundWinnerLabel Text where
   unwrap (RoundWinnerLabel l) = l
   wrap = RoundWinnerLabel
 
+instance Unwrappable PlaceInRoundLabel Text where
+  unwrap (PlaceInRoundLabel l) = l
+  wrap = PlaceInRoundLabel
+
+instance Unwrappable PlaceAfterRoundLabel Text where
+  unwrap (PlaceAfterRoundLabel l) = l
+  wrap = PlaceAfterRoundLabel
+
 instance Unwrappable UserName Text where
   unwrap (UserName s) = s
   wrap = UserName
@@ -295,6 +309,12 @@ instance Fallback PointsLabel where
 instance Fallback RoundWinnerLabel where
   fallback = wrap (T.pack "Rundensieger")
 
+instance Fallback PlaceInRoundLabel where
+  fallback = wrap (T.pack "Platz in dieser Runde")
+
+instance Fallback PlaceAfterRoundLabel where
+  fallback = wrap (T.pack "Platz nach dieser Runde")
+
 instance Fallback NumberOfQuestions where
   fallback = wrap (intToNatural 8)
 
@@ -341,6 +361,10 @@ deriveJSON elmOptions ''PlaceLabel
 deriveJSON elmOptions ''PointsLabel
 
 deriveJSON elmOptions ''RoundWinnerLabel
+
+deriveJSON elmOptions ''PlaceInRoundLabel
+
+deriveJSON elmOptions ''PlaceAfterRoundLabel
 
 deriveJSON elmOptions ''UserName
 
