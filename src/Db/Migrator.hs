@@ -5,18 +5,21 @@ module Db.Migrator where
 import           Control.Applicative           ((<|>))
 import           Control.Arrow                 (first)
 import           Data.Maybe                    (fromMaybe)
-import           Db.DbConversion               (QuizRatings (..), Ratings (..),
-                                                RoundRating (..), TeamInfo (..),
-                                                TeamRating (..))
-import           General.Types                 (Active, wrap)
+import           Db.DbConversion               (Header (..), QuizRatings (..),
+                                                Ratings (..), RoundRating (..),
+                                                TeamInfo (..), TeamRating (..))
+import           General.Types                 (Activity (Active), RoundNumber,
+                                                unwrap, wrap)
 import           GHC.Natural                   (Natural)
 import           Text.Parsec.Prim              (parse)
 import           Text.ParserCombinators.Parsec (Parser, char, many1, noneOf,
                                                 oneOf, sepBy, spaces)
-import           Utils                         (hexadecimal)
+
+alphaNumeric :: String
+alphaNumeric = ['0' .. '9'] ++ ['a' .. 'z']
 
 codeParser :: Parser String
-codeParser = many1 (oneOf hexadecimal)
+codeParser = many1 (oneOf alphaNumeric)
 
 codeWithNameParser :: Parser (String, Maybe String)
 codeWithNameParser = do
@@ -55,12 +58,13 @@ parseRounds :: [String] -> Ratings
 parseRounds = Ratings . zipWith (\i ps -> (wrap i, ps)) [1 :: Natural ..] . map parseRound
 
 parseQuiz :: String -> QuizRatings
-parseQuiz text = QuizRatings header ratings
+parseQuiz text = QuizRatings (Header header) ratings
   where
     headLine:roundLines = lines text
     ratings = parseRounds roundLines
+    numberOfTeams = length $ points $ snd $ head (unwrap ratings :: [(RoundNumber, RoundRating)])
     header =
       zipWith
         (\i (code, mName) -> TeamInfo (wrap code) (wrap (fromMaybe (unwords ["Gruppe", show i]) mName)) (wrap i) Active)
         [1 :: Natural ..]
-        (parseCodesWithMaybeNames headLine)
+        (take numberOfTeams (parseCodesWithMaybeNames headLine))
