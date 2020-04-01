@@ -1,15 +1,23 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Db.Migrator where
 
 import           Control.Applicative           ((<|>))
 import           Control.Arrow                 (first)
 import           Data.Maybe                    (fromMaybe)
-import           Db.DbConversion               (Header (..), QuizRatings (..),
-                                                Ratings (..), RoundRating (..),
-                                                TeamInfo (..), TeamRating (..))
-import           General.Types                 (Activity (Active), RoundNumber,
-                                                unwrap, wrap)
+import qualified Data.Text                     as T
+import           Data.Time.Calendar            (Day)
+import           Db.DbConversion               (Header (..),
+                                                QuizIdentifier (..),
+                                                QuizRatings (..), Ratings (..),
+                                                RoundRating (..), TeamInfo (..),
+                                                TeamRating (..), quizId, quizId)
+import           Db.Storage                    (createQuiz, setLabels,
+                                                setQuizRatings)
+import           General.Types                 (Activity (Active), QuizName,
+                                                RoundNumber, fallback, unwrap,
+                                                wrap)
 import           GHC.Natural                   (Natural)
 import           Text.Parsec.Prim              (parse)
 import           Text.ParserCombinators.Parsec (Parser, char, many1, noneOf,
@@ -68,3 +76,10 @@ parseQuiz text = QuizRatings (Header header) ratings
         (\i (code, mName) -> TeamInfo (wrap code) (wrap (fromMaybe (unwords ["Gruppe", show i]) mName)) (wrap i) Active)
         [1 :: Natural ..]
         (take numberOfTeams (parseCodesWithMaybeNames headLine))
+
+writeQuiz :: String -> String -> String -> IO ()
+writeQuiz name date ratings = do
+  quizInfo <- createQuiz (QuizIdentifier (wrap name) (wrap (read date :: Day)) (wrap ("Café Godot" :: T.Text)))
+  let qid = quizId quizInfo
+  setLabels qid fallback
+  setQuizRatings qid (parseQuiz ratings)
