@@ -23,6 +23,8 @@ import           Text.Parsec.Prim              (parse)
 import           Text.ParserCombinators.Parsec (Parser, char, many1, noneOf,
                                                 oneOf, sepBy, spaces)
 
+-- todo: Remove this module and all rounds.txt instances.
+
 alphaNumeric :: String
 alphaNumeric = ['0' .. '9'] ++ ['a' .. 'z']
 
