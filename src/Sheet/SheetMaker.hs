@@ -82,11 +82,11 @@ mkPath prefix folder teamQuery =
   E.decodeUtf8
     (B.concat
        [ B.pack prefix
-       , separatedFragment
        , encodePath
            (map
               E.decodeUtf8
               [ B.pack folder
+              , B.pack "#"
               , quizIdParam
               , L.toStrict (encode (teamQueryQuizId teamQuery))
               , teamNumberParam
