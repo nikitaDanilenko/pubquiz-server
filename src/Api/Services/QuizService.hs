@@ -23,15 +23,16 @@ import           Api.Services.SnapUtil  (encodeOrEmpty, fKey, fValue,
                                          getJSONParam, getJSONPostParam,
                                          getJSONPostParamWithPure,
                                          setResponseCodeJSON, strictEncodeF)
-import           Constants              (actionParam, allApi, credentialsParam,
-                                         getLabelsApi, getQuizInfoApi,
-                                         getQuizRatingsApi, lockApi, newApi,
+import           Constants              (actionParam, allActiveApi,
+                                         credentialsParam, getLabelsApi,
+                                         getQuizInfoApi, getQuizRatingsApi,
+                                         getQuizSettingsApi, lockApi, newApi,
                                          quizIdParam, quizIdentifierParam,
                                          quizPath, quizRatingsParam,
                                          quizSettingsParam, serverPathIO,
                                          serverQuizzesFolderIO, sheetsFolderIO,
                                          teamQueryParam, teamTableApi,
-                                         updateQuizApi, updateQuizRatingsApi, getQuizSettingsApi)
+                                         updateQuizApi, updateQuizRatingsApi)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
@@ -48,10 +49,13 @@ import           Db.Storage             (createQuizStatement,
                                          findAllActiveQuizzes,
                                          findHeaderStatement, findLabels,
                                          findQuizInfo, findQuizRatings,
-                                         findTeamTableInfo, lockQuiz,
-                                         setHeaderStatement, setLabelsStatement,
+                                         findQuizSettings, findTeamTableInfo,
+                                         lockQuiz, setHeaderStatement,
+                                         setLabelsStatement,
+                                         setMissingTeamRatingsToZeroStatement,
+                                         setQuestionsInQuizStatement,
                                          setQuizIdentifierStatement,
-                                         setQuizRatings, setTeamInfo, findQuizSettings, setQuestionsInQuizStatement, setMissingTeamRatingsToZeroStatement)
+                                         setQuizRatings, setTeamInfo)
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
@@ -65,7 +69,8 @@ data QuizService =
 
 quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
-  [ allApi +> method GET sendAvailableActiveHandler
+  [ allActiveApi +> method GET sendAvailableActiveHandler
+  , allApi +> method GET sendAllAvailableHandler
   , getQuizRatingsApi +> method GET getQuizRatingsHandler
   , getLabelsApi +> method GET getLabelsHandler
   , updateQuizApi +> method POST updateQuizHandler
@@ -78,9 +83,15 @@ quizRoutes =
   ]
 
 sendAvailableActiveHandler :: Handler b QuizService ()
-sendAvailableActiveHandler = do
-  active <- liftIO findAllActiveQuizzes
-  writeLBS (encode active)
+sendAvailableActiveHandler = sendAvailableWith findAllActiveQuizzes
+
+sendAllAvailableHandler :: Handler b QuizService ()
+sendAllAvailableHandler = sendAvailableWith findAllQuizzes
+
+sendAvailableWith :: IO [QuizInfo] -> Handler b QuizService ()
+sendAvailableWith activeInfoListIO = do
+  quizInfoList <- liftIO activeInfoListIO
+  writeLBS (encode quizInfoList)
   modifyResponse (setResponseCodeJSON 200)
 
 getQuizRatingsHandler :: Handler b QuizService ()

@@ -126,6 +126,9 @@ databasePassword = "databasePassword"
 databasePort :: String
 databasePort = "databasePort"
 
+allActiveApi :: B.ByteString
+allActiveApi = "allActive"
+
 allApi :: B.ByteString
 allApi = "all"
 

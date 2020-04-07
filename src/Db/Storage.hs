@@ -9,7 +9,7 @@ import           Control.Monad.Trans.Reader  (ReaderT)
 import           Database.Persist            (Entity (Entity), Key,
                                               SelectOpt (Asc), checkUnique,
                                               entityVal, insert, selectFirst,
-                                              selectList, update, (=.), (==.))
+                                              selectList, update, (=.), (==.), Filter)
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Constants                   (serverSheetsFolderIO)
@@ -227,10 +227,19 @@ lockQuizStatement qid = do
 findAllActiveQuizzes :: IO [QuizInfo]
 findAllActiveQuizzes = runSql findAllActiveQuizzesStatement
 
+findAllQuizzes :: IO [QuizInfo]
+findAllQuizzes = runSql findAllQuizzesStatement
+
 findAllActiveQuizzesStatement :: MonadIO m => Statement m [QuizInfo]
-findAllActiveQuizzesStatement = do
+findAllActiveQuizzesStatement = findAllQuizzesWithStatement [DbQuizActive ==. True]
+
+findAllQuizzesStatement :: MonadIO m => Statement m [QuizInfo]
+findAllQuizzesStatement = findAllQuizzesWithStatement []
+
+findAllQuizzesWithStatement :: MonadIO m => [Filter DbQuiz] -> Statement m [QuizInfo]
+findAllQuizzesWithStatement filters = do
   sheetsFolder <- liftIO serverSheetsFolderIO
-  fmap (fmap (mkQuizInfo sheetsFolder)) (selectList [DbQuizActive ==. True] [])
+  fmap (fmap (mkQuizInfo sheetsFolder)) (selectList filters [])
 
 findRatings :: DbQuizId -> IO Ratings
 findRatings = runSql . findRatingsStatement
