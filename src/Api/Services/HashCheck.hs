@@ -23,7 +23,7 @@ import qualified Data.Text.Encoding     as E
 import           Db.DbConversion        (Credentials, signature, userHash)
 import qualified Db.DbConversion        as D
 import           Db.Storage             (findSessionKey, findUser)
-import           General.Types          (Unwrappable, UserHash,
+import           General.Types          (Wrapped, UserHash,
                                          UserName (UserName), unwrap, wrap)
 import           Network.HTTP.Types.URI (Query, QueryItem, renderQuery)
 import           Utils                  (mkHashed)
@@ -45,7 +45,7 @@ verifyHash attempt sessionKey =
 mkAttemptWithMaybe :: Maybe UserName -> Maybe UserHash -> [QueryItem] -> Attempt
 mkAttemptWithMaybe mUser mSig kMvs = Attempt (orEmpty mUser) kMvs (orEmpty mSig)
 
-orEmpty :: Unwrappable t String => Maybe t -> t
+orEmpty :: Wrapped t String => Maybe t -> t
 orEmpty = fromMaybe (wrap "")
 
 mkVerifiedRequest :: Attempt -> IO Bool

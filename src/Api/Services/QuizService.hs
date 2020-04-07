@@ -59,7 +59,7 @@ import           Db.Storage             (createQuizStatement,
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
-                                         Unwrappable (unwrap), wrap)
+                                         Wrapped (unwrap), wrap)
 import           GHC.Natural            (naturalToInt)
 import           Sheet.SheetMaker       (createSheetWith, safeRemoveFile)
 import           Utils                  (randomDistinctHexadecimal, (+>))

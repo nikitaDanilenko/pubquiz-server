@@ -30,7 +30,7 @@ import           General.Types (BackToChartViewLabel, CumulativeLabel,
                                 PlaceAfterRoundLabel, PlaceInRoundLabel,
                                 PlaceLabel, PlacementLabel, PointsLabel,
                                 ProgressionLabel, RoundLabel, RoundWinnerLabel,
-                                TeamLabel, Unwrappable (wrap),
+                                TeamLabel, Wrapped (wrap),
                                 ViewPreviousLabel)
 import           Utils         (elmOptions)
 

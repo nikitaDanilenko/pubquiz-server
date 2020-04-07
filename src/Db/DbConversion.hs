@@ -32,7 +32,7 @@ import           General.Types        (Activity (Active), Code,
                                        NumberOfQuestions, Place, QuizDate,
                                        QuizName, RoundNumber (RoundNumber),
                                        TeamLabel, TeamName,
-                                       TeamNumber (TeamNumber), Unwrappable,
+                                       TeamNumber (TeamNumber), Wrapped,
                                        UserHash, UserName, UserSalt, unwrap,
                                        wrap, fallback)
 import           GHC.Natural          (Natural, intToNatural, naturalToInt)
@@ -114,7 +114,7 @@ adjustHeaderToSize n codeSize teamLabel h
     ts = unwrap h :: [TeamInfo]
     size = intToNatural (length ts)
 
-instance Unwrappable Header [TeamInfo] where
+instance Wrapped Header [TeamInfo] where
   wrap = Header
   unwrap (Header tis) = tis
 
@@ -123,7 +123,7 @@ newtype Ratings =
 
 deriveJSON defaultOptions ''Ratings
 
-instance Unwrappable Ratings [(RoundNumber, RoundRating)] where
+instance Wrapped Ratings [(RoundNumber, RoundRating)] where
   wrap = Ratings
   unwrap (Ratings rs) = rs
 
@@ -160,7 +160,7 @@ newtype QuestionsInQuiz =
 
 deriveJSON defaultOptions ''QuestionsInQuiz
 
-instance Unwrappable QuestionsInQuiz [QuestionsInRound] where
+instance Wrapped QuestionsInQuiz [QuestionsInRound] where
   unwrap (QuestionsInQuiz rqs) = rqs
   wrap = QuestionsInQuiz
 

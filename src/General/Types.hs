@@ -123,144 +123,144 @@ data UserCreation =
     , userCreationPassword :: Password
     }
 
-class Unwrappable t v where
+class Wrapped t v where
   unwrap :: t -> v
   wrap :: v -> t
 
-instance Unwrappable t Text => Unwrappable t String where
+instance Wrapped t Text => Wrapped t String where
   unwrap = T.unpack . unwrap
   wrap = wrap . T.pack
 
-instance Unwrappable t Text => Unwrappable t B.ByteString where
+instance Wrapped t Text => Wrapped t B.ByteString where
   unwrap = E.encodeUtf8 . unwrap
   wrap = wrap . E.decodeUtf8
 
-instance Unwrappable t v => Unwrappable (Maybe t) (Maybe v) where
+instance Wrapped t v => Wrapped (Maybe t) (Maybe v) where
   unwrap = fmap unwrap
   wrap = fmap wrap
 
 class Fallback t where
   fallback :: t
 
-instance Unwrappable TeamNumber Natural where
+instance Wrapped TeamNumber Natural where
   unwrap (TeamNumber tn) = tn
   wrap = TeamNumber
 
-instance Unwrappable RoundNumber Natural where
+instance Wrapped RoundNumber Natural where
   unwrap (RoundNumber rn) = rn
   wrap = RoundNumber
 
-instance Unwrappable Code Text where
+instance Wrapped Code Text where
   unwrap (Code c) = c
   wrap = Code
 
-instance Unwrappable TeamName Text where
+instance Wrapped TeamName Text where
   unwrap (TeamName tn) = tn
   wrap = TeamName
 
-instance Unwrappable QuizName Text where
+instance Wrapped QuizName Text where
   unwrap (QuizName qn) = qn
   wrap = QuizName
 
-instance Unwrappable Place Text where
+instance Wrapped Place Text where
   unwrap (Place p) = p
   wrap = Place
 
-instance Unwrappable Activity Bool where
+instance Wrapped Activity Bool where
   unwrap Active   = True
   unwrap Inactive = False
   wrap False = Inactive
   wrap True  = Active
 
-instance Unwrappable QuizDate Day where
+instance Wrapped QuizDate Day where
   unwrap (QuizDate d) = d
   wrap = QuizDate
 
-instance Unwrappable RoundLabel Text where
+instance Wrapped RoundLabel Text where
   unwrap (RoundLabel l) = l
   wrap = RoundLabel
 
-instance Unwrappable TeamLabel Text where
+instance Wrapped TeamLabel Text where
   unwrap (TeamLabel l) = l
   wrap = TeamLabel
 
-instance Unwrappable OwnPointsLabel Text where
+instance Wrapped OwnPointsLabel Text where
   unwrap (OwnPointsLabel l) = l
   wrap = OwnPointsLabel
 
-instance Unwrappable MaxReachedLabel Text where
+instance Wrapped MaxReachedLabel Text where
   unwrap (MaxReachedLabel l) = l
   wrap = MaxReachedLabel
 
-instance Unwrappable MaxReachableLabel Text where
+instance Wrapped MaxReachableLabel Text where
   unwrap (MaxReachableLabel l) = l
   wrap = MaxReachableLabel
 
-instance Unwrappable BackToChartViewLabel Text where
+instance Wrapped BackToChartViewLabel Text where
   unwrap (BackToChartViewLabel l) = l
   wrap = BackToChartViewLabel
 
-instance Unwrappable OwnPageLabel Text where
+instance Wrapped OwnPageLabel Text where
   unwrap (OwnPageLabel l) = l
   wrap = OwnPageLabel
 
-instance Unwrappable ViewPreviousLabel Text where
+instance Wrapped ViewPreviousLabel Text where
   unwrap (ViewPreviousLabel l) = l
   wrap = ViewPreviousLabel
 
-instance Unwrappable CumulativeLabel Text where
+instance Wrapped CumulativeLabel Text where
   unwrap (CumulativeLabel l) = l
   wrap = CumulativeLabel
 
-instance Unwrappable IndividualRoundsLabel Text where
+instance Wrapped IndividualRoundsLabel Text where
   unwrap (IndividualRoundsLabel l) = l
   wrap = IndividualRoundsLabel
 
-instance Unwrappable ProgressionLabel Text where
+instance Wrapped ProgressionLabel Text where
   unwrap (ProgressionLabel l) = l
   wrap = ProgressionLabel
 
-instance Unwrappable PlacementLabel Text where
+instance Wrapped PlacementLabel Text where
   unwrap (PlacementLabel l) = l
   wrap = PlacementLabel
 
-instance Unwrappable PlaceLabel Text where
+instance Wrapped PlaceLabel Text where
   unwrap (PlaceLabel l) = l
   wrap = PlaceLabel
 
-instance Unwrappable PointsLabel Text where
+instance Wrapped PointsLabel Text where
   unwrap (PointsLabel l) = l
   wrap = PointsLabel
 
-instance Unwrappable RoundWinnerLabel Text where
+instance Wrapped RoundWinnerLabel Text where
   unwrap (RoundWinnerLabel l) = l
   wrap = RoundWinnerLabel
 
-instance Unwrappable PlaceInRoundLabel Text where
+instance Wrapped PlaceInRoundLabel Text where
   unwrap (PlaceInRoundLabel l) = l
   wrap = PlaceInRoundLabel
 
-instance Unwrappable PlaceAfterRoundLabel Text where
+instance Wrapped PlaceAfterRoundLabel Text where
   unwrap (PlaceAfterRoundLabel l) = l
   wrap = PlaceAfterRoundLabel
 
-instance Unwrappable UserName Text where
+instance Wrapped UserName Text where
   unwrap (UserName s) = s
   wrap = UserName
 
-instance Unwrappable UserSalt Text where
+instance Wrapped UserSalt Text where
   unwrap (UserSalt s) = s
   wrap = UserSalt
 
-instance Unwrappable UserHash Text where
+instance Wrapped UserHash Text where
   unwrap (UserHash s) = s
   wrap = UserHash
 
-instance Unwrappable Password Text where
+instance Wrapped Password Text where
   unwrap (Password p) = p
   wrap = Password
 
-instance Unwrappable NumberOfQuestions Natural where
+instance Wrapped NumberOfQuestions Natural where
   unwrap (NumberOfQuestions n) = n
   wrap = NumberOfQuestions
 

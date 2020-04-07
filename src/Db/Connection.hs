@@ -62,7 +62,7 @@ import           General.Types                         (Activity,
                                                         RoundWinnerLabel,
                                                         TeamLabel, TeamName,
                                                         TeamNumber,
-                                                        Unwrappable (unwrap, wrap),
+                                                        Wrapped (unwrap, wrap),
                                                         UserHash, UserName,
                                                         UserSalt,
                                                         ViewPreviousLabel)

@@ -69,7 +69,7 @@ import           General.Types               (Activity (..), Code,
                                               NumberOfQuestions, Place,
                                               QuizDate, QuizName, RoundNumber,
                                               TeamName, TeamNumber,
-                                              Unwrappable (unwrap, wrap),
+                                              Wrapped (unwrap, wrap),
                                               UserHash, UserName, UserSalt,
                                               fallback)
 import           GHC.Natural                 (intToNatural)
@@ -150,7 +150,7 @@ setQuizIdentifierStatement qid quizIdentifier = do
         , DbQuizPlace =. unwrap (place quizIdentifier)
         ]
       pure qid
-    Nothing -> 
+    Nothing ->
       repsertQuiz (mkDbQuiz (place quizIdentifier) (date quizIdentifier) (name quizIdentifier) Active)
 
 setRoundQuestions :: DbQuizId -> RoundNumber -> NumberOfQuestions -> IO (Key DbRoundQuestions)
