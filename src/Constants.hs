@@ -11,8 +11,7 @@ import qualified Data.Map               as M (fromList)
 import           Data.Map.Lazy          ((!?))
 import           Data.Maybe             (fromMaybe)
 import qualified Data.Text              as T (Text, pack)
-import           System.Directory       (createDirectoryIfMissing,
-                                         doesDirectoryExist)
+import           System.Directory       (createDirectoryIfMissing)
 import           System.FilePath        (pathSeparator)
 
 configFile :: String
