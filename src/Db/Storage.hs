@@ -6,10 +6,10 @@ module Db.Storage where
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Control.Monad.Trans.Reader  (ReaderT)
 
-import           Database.Persist            (Entity (Entity), Key,
+import           Database.Persist            (Entity (Entity), Filter, Key,
                                               SelectOpt (Asc), checkUnique,
                                               entityVal, insert, selectFirst,
-                                              selectList, update, (=.), (==.), Filter)
+                                              selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
 import           Constants                   (serverSheetsFolderIO)
@@ -139,8 +139,19 @@ setQuizIdentifier :: DbQuizId -> QuizIdentifier -> IO DbQuizId
 setQuizIdentifier qid quizIdentifier = runSql (setQuizIdentifierStatement qid quizIdentifier)
 
 setQuizIdentifierStatement :: MonadIO m => DbQuizId -> QuizIdentifier -> Statement m DbQuizId
-setQuizIdentifierStatement qid quizIdentifier =
-  repsertQuiz (mkDbQuiz (place quizIdentifier) (date quizIdentifier) (name quizIdentifier) Active)
+setQuizIdentifierStatement qid quizIdentifier = do
+  quizCandidate <- selectFirst [DbQuizId ==. qid] []
+  case quizCandidate of
+    Just quiz -> do
+      update
+        qid
+        [ DbQuizName =. unwrap (name quizIdentifier)
+        , DbQuizDate =. unwrap (date quizIdentifier)
+        , DbQuizPlace =. unwrap (place quizIdentifier)
+        ]
+      pure qid
+    Nothing -> 
+      repsertQuiz (mkDbQuiz (place quizIdentifier) (date quizIdentifier) (name quizIdentifier) Active)
 
 setRoundQuestions :: DbQuizId -> RoundNumber -> NumberOfQuestions -> IO (Key DbRoundQuestions)
 setRoundQuestions qid rn nq = runSql (setRoundQuestionsStatement qid rn nq)
