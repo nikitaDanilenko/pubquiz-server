@@ -32,7 +32,7 @@ import           Constants              (actionParam, allActiveApi,
                                          quizSettingsParam, serverPathIO,
                                          serverQuizzesFolderIO, sheetsFolderIO,
                                          teamQueryParam, teamTableApi,
-                                         updateQuizApi, updateQuizRatingsApi)
+                                         updateQuizApi, updateQuizRatingsApi, allApi)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
@@ -55,7 +55,7 @@ import           Db.Storage             (createQuizStatement,
                                          setMissingTeamRatingsToZeroStatement,
                                          setQuestionsInQuizStatement,
                                          setQuizIdentifierStatement,
-                                         setQuizRatings, setTeamInfo)
+                                         setQuizRatings, setTeamInfo, findAllQuizzes)
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
