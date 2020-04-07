@@ -39,7 +39,7 @@ import           GHC.Natural              (Natural, naturalToInt)
 import           Network.HTTP.Types       (encodePathSegments)
 import           Sheet.Tex                (mkQROnly,
                                            mkSheetWithArbitraryQuestions)
-import           Utils                    (encodePath, separatedFragment)
+import           Utils                    (encodePath)
 
 type ServerPrefix = String
 
