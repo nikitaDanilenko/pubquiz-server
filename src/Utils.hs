@@ -83,3 +83,6 @@ elmOptions = E.defaultOptions {E.unwrapUnaryRecords = True}
 
 encodePath :: [T.Text] -> B.ByteString
 encodePath = Builder.toByteString . encodePathSegments
+
+separatedFragment :: B.ByteString
+separatedFragment = B.pack "/#"

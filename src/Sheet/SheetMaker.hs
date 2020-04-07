@@ -39,7 +39,7 @@ import           GHC.Natural              (Natural, naturalToInt)
 import           Network.HTTP.Types       (encodePathSegments)
 import           Sheet.Tex                (mkQROnly,
                                            mkSheetWithArbitraryQuestions)
-import           Utils                    (encodePath)
+import           Utils                    (encodePath, separatedFragment)
 
 type ServerPrefix = String
 
@@ -82,6 +82,7 @@ mkPath prefix folder teamQuery =
   E.decodeUtf8
     (B.concat
        [ B.pack prefix
+       , separatedFragment
        , encodePath
            (map
               E.decodeUtf8
