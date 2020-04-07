@@ -10,6 +10,10 @@
    1. After installation, there will be an executable file called `pubquiz-server-exe`,
       which can be called from the command line.
       This program needs the usual path and port parameters.
+   1. Creation of missing folders may fail, if the service does not have the privileges to
+      write at the specified location.
+      In such a case: make sure that the target folder exists.
+      Better yet: read the folder during the installation process and create it on the server.
 
 1. The following steps are required, but should be automated:
    1. Run `src/Db/Connection.performMigration`
