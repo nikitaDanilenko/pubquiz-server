@@ -4,42 +4,46 @@ module Sheet.SheetMaker
   , Ending
   ) where
 
-import qualified Blaze.ByteString.Builder as Builder
-import           Control.Exception        (catch)
-import           Control.Exception.Base   (IOException)
-import           Control.Monad            (void)
-import qualified Data.ByteString.Char8    as B
-import qualified Data.ByteString.Lazy     as L
-import           Data.Text                (Text)
-import qualified Data.Text                as T (Text, concat, intercalate, pack,
-                                                unpack)
-import qualified Data.Text.Encoding       as E
-import qualified Data.Text.IO             as I (writeFile)
-import           System.Directory         (getCurrentDirectory, removeFile,
-                                           setCurrentDirectory)
-import           System.Process           (callProcess)
+import           Control.Exception            (catch)
+import           Control.Exception.Base       (IOException)
+import           Control.Monad                (void)
+import qualified Data.ByteString.Char8        as B
+import qualified Data.ByteString.Lazy         as L
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T (Text, concat, intercalate,
+                                                    pack, unpack)
+import qualified Data.Text.Encoding           as E
+import qualified Data.Text.IO                 as I (writeFile)
+import           System.Directory             (getCurrentDirectory, removeFile,
+                                               setCurrentDirectory)
+import           System.Process               (callProcess)
 
-import           Constants                (qrOnlyFileName, quizIdParam,
-                                           sheetFileName, sheetsFolderIO,
-                                           teamCodeParam, teamNumberParam,
-                                           teamQueryParam)
-import           Data.Aeson               (encode)
-import           Data.List                (sortOn)
-import           Data.Time.Calendar       (Day)
-import           Db.Connection            (DbQuizId)
-import           Db.DbConversion          (QuestionsInQuiz,
-                                           TeamQuery (TeamQuery),
-                                           mkPathForQuizSheetWith,
-                                           questionsInRoundNumberOfQuestions,
-                                           questionsInRoundRoundNumber,
-                                           teamQueryQuizId, teamQueryTeamCode,
-                                           teamQueryTeamNumber)
-import           General.Types            (Code, TeamNumber, unwrap)
-import           GHC.Natural              (Natural, naturalToInt)
-import           Network.HTTP.Types       (encodePathSegments)
-import           Sheet.Tex                (mkQROnly,
-                                           mkSheetWithArbitraryQuestions)
-import           Utils                    (encodePath)
+import           Constants                    (qrOnlyFileName, quizIdParam,
+                                               sheetFileName, sheetsFolderIO,
+                                               teamCodeParam, teamNumberParam,
+                                               teamQueryParam)
+import           Control.Monad.Trans.Resource (MonadThrow)
+import           Data.Aeson                   (encode)
+import           Data.List                    (sortOn)
+import           Data.List.NonEmpty           (fromList)
+import           Data.Time.Calendar           (Day)
+import           Db.Connection                (DbQuizId)
+import           Db.DbConversion              (QuestionsInQuiz,
+                                               TeamQuery (TeamQuery),
+                                               mkPathForQuizSheetWith,
+                                               questionsInRoundNumberOfQuestions,
+                                               questionsInRoundRoundNumber,
+                                               teamQueryQuizId,
+                                               teamQueryTeamCode,
+                                               teamQueryTeamNumber)
+import           General.Types                (Code, TeamNumber, unwrap)
+import           GHC.Natural                  (Natural, naturalToInt)
+import           Network.HTTP.Types           (encodePathSegments)
+import           Sheet.Tex                    (mkQROnly,
+                                               mkSheetWithArbitraryQuestions)
+import           Text.URI                     (render)
+import           Utils                        (encodePath,
+                                               mkURIFromSchemePathFragment)
 
 type ServerPrefix = String
 
@@ -57,8 +61,8 @@ createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
   currentDir <- getCurrentDirectory
   let tl = T.pack teamLabel
       endings = sortOn fst numberedCodes
-      paths = map (mkPath prefix folder . uncurry (TeamQuery qid)) endings
-      rounds =
+  paths <- mapM (mkPath prefix folder . uncurry (TeamQuery qid)) endings
+  let rounds =
         map
           snd
           (sortOn
@@ -77,24 +81,21 @@ createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
   writeAndCleanPDF (T.unpack codesFile) qrs
   setCurrentDirectory currentDir
 
-mkPath :: ServerPrefix -> ServerFolder -> TeamQuery -> T.Text
+mkPath :: MonadThrow m => ServerPrefix -> ServerFolder -> TeamQuery -> m T.Text
 mkPath prefix folder teamQuery =
-  E.decodeUtf8
-    (B.concat
-       [ B.pack prefix
-       , encodePath
-           (map
-              E.decodeUtf8
-              [ B.pack folder
-              , B.pack "#"
-              , quizIdParam
-              , L.toStrict (encode (teamQueryQuizId teamQuery))
-              , teamNumberParam
-              , L.toStrict (encode (teamQueryTeamNumber teamQuery))
-              , teamCodeParam
-              , E.encodeUtf8 (unwrap (teamQueryTeamCode teamQuery))
-              ])
-       ])
+  fmap render (mkURIFromSchemePathFragment (T.pack prefix) (fromList [T.pack folder]) (E.decodeUtf8 fragment))
+  where
+    fragment =
+      encodePath
+        (map
+           E.decodeUtf8
+           [ quizIdParam
+           , L.toStrict (encode (teamQueryQuizId teamQuery))
+           , teamNumberParam
+           , L.toStrict (encode (teamQueryTeamNumber teamQuery))
+           , teamCodeParam
+           , E.encodeUtf8 (unwrap (teamQueryTeamCode teamQuery))
+           ])
 
 writeAndCleanPDF :: FilePath -> Text -> IO ()
 writeAndCleanPDF mainPath content = do
