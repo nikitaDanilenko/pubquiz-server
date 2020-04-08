@@ -52,6 +52,7 @@ dependencies:
 - elm-bridge
 - http-types
 - blaze-builder
+- modern-uri
 
 
 library:
