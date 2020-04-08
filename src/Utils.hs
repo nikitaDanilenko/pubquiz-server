@@ -36,7 +36,7 @@ import           Text.URI                            (Authority (Authority),
                                                       mkPathPiece, mkScheme,
                                                       uriAuthority, uriFragment,
                                                       uriPath, uriQuery,
-                                                      uriScheme)
+                                                      uriScheme, mkURI)
 
 (+>) :: B.ByteString -> Handler b service () -> (B.ByteString, Handler b service ())
 (+>) = mkRoute
@@ -98,16 +98,16 @@ elmOptions = E.defaultOptions {E.unwrapUnaryRecords = True}
 encodePath :: [T.Text] -> B.ByteString
 encodePath = Builder.toByteString . encodePathSegments
 
-mkURIFromSchemePathFragment :: MonadThrow m => T.Text -> T.Text -> NonEmpty T.Text -> T.Text -> m URI
-mkURIFromSchemePathFragment scheme domain pathPieces fragment =
+mkURIFromSchemePathFragment :: MonadThrow m => T.Text -> NonEmpty T.Text -> T.Text -> m URI
+mkURIFromSchemePathFragment address pathPieces fragment =
   liftA2
-    (\host pieces ->
+    (\addressURI pieces ->
        URI
-         { uriScheme = mkScheme scheme
-         , uriAuthority = Right (Authority {authUserInfo = Nothing, authHost = host, authPort = Nothing})
+         { uriScheme = uriScheme addressURI
+         , uriAuthority = uriAuthority addressURI
          , uriPath = Just (True, pieces)
          , uriQuery = []
          , uriFragment = mkFragment fragment
          })
-    (mkHost domain)
-    (traverse mkPathPiece pathPieces)
+    (mkURI address)
+    (traverse mkPathPiece pathPieces) 
