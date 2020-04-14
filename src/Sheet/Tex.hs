@@ -14,16 +14,17 @@ import           Data.List.Extra              (chunksOf)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat, pack, unwords)
 
-import           Text.LaTeX.Base.Class        (LaTeXC, braces, comm2,
-                                               fromLaTeX, liftL)
-import           Text.LaTeX.Base.Commands     (centering, centering, document,
-                                               documentclass, hfill, hline,
-                                               huge2, large2, medskip, newline,
-                                               newpage, pagestyle, raw, table,
+import           Text.LaTeX.Base.Class        (LaTeXC, braces, comm2, fromLaTeX,
+                                               liftL)
+import           Text.LaTeX.Base.Commands     (center, centering,
+                                               document, documentclass, hfill,
+                                               hline, huge2, large2, medskip,
+                                               newline, newpage, pagestyle,
+                                               raisebox, raw, table,
                                                tabularnewline, textwidth,
                                                usepackage, vspace, (&))
 import           Text.LaTeX.Base.Render       (render, rendertex)
-import           Text.LaTeX.Base.Syntax       (LaTeX (..), Measure (Mm, Cm),
+import           Text.LaTeX.Base.Syntax       (LaTeX (..), Measure (Cm, Mm),
                                                protectText, (<>))
 import           Text.LaTeX.Base.Types        (Pos (ForcePos, Here), TableSpec (LeftColumn, NameColumn, RightColumn))
 import           Text.LaTeX.Packages.Geometry (geometry)
@@ -38,7 +39,8 @@ import           GHC.Natural                  (Natural, naturalToInt)
 import           Sheet.Interval               (Interval, Size (Size), idrop,
                                                isize, itake, mkBaseInterval,
                                                toList)
-import           Text.LaTeX.Packages.Graphicx (graphicx, includegraphics, IGOption (IGHeight))
+import           Text.LaTeX.Packages.Graphicx (IGOption (IGHeight), graphicx,
+                                               includegraphics)
 
 finish :: LaTeX -> Text
 finish = render . (\l -> rendertex l :: LaTeX)
@@ -88,7 +90,12 @@ mkFullHeader teamLabel heightCm mVspace numbersAndPaths =
                  (map
                     (\teamQuery ->
                        mkSimpleHeader teamLabel (teamNumberOfQuery teamQuery) &
-                       braces (includegraphics [IGHeight (Cm heightQR)] (imagePath teamQuery)))
+                       braces
+                         (raisebox
+                            (Mm offset)
+                            Nothing
+                            Nothing
+                            (includegraphics [IGHeight (Cm heightQR)] (imagePath teamQuery))))
                     numbersAndPaths))))
     ]
   where
@@ -106,6 +113,9 @@ stretch = 2.75
 
 heightQR :: Double
 heightQR = 2
+
+offset :: Double
+offset = -8
 
 mkSingleTeamSheet :: LaTeXC l => Text -> TeamQuery -> [l] -> l
 mkSingleTeamSheet teamLabel teamQuery allRounds = mconcat (mkFullHeader teamLabel heightQR Nothing [teamQuery] : rds)
