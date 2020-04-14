@@ -53,6 +53,9 @@ dependencies:
 - http-types
 - blaze-builder
 - modern-uri
+- qrcode-core
+- qrcode-juicypixels
+- JuicyPixels
 
 
 library:
