@@ -115,13 +115,19 @@ mkPath prefix folder teamQuery =
            , E.encodeUtf8 (unwrap (teamQueryTeamCode teamQuery))
            ])
 
+imageBorder :: Int
+imageBorder = 0
+
+imageScale :: Int
+imageScale = 4
+
 createQRCodes :: [(QRPath, TeamQuery)] -> IO ()
 createQRCodes = mapM_ (uncurry createCode)
   where
     createCode :: QRPath -> TeamQuery -> IO ()
     createCode path teamQuery =
       case QR.encode (defaultQRCodeOptions M) Iso8859_1OrUtf8WithoutECI path of
-        Just image -> savePngImage (imagePath teamQuery) (ImageY8 (toImage 4 4 image))
+        Just image -> savePngImage (imagePath teamQuery) (ImageY8 (toImage imageBorder imageScale image))
         Nothing    -> putStrLn (unwords ["Image creation for", imagePath teamQuery, "failed"])
 
 cleanQRCodes :: [TeamQuery] -> IO ()
