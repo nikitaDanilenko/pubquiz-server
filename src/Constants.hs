@@ -33,9 +33,6 @@ readFromConfigFile param dft = do
 sheetsFolderIO :: IO T.Text
 sheetsFolderIO = fmap T.pack (readFromConfigFile "sheetsFolder" (addSeparator [".", "sheets"]))
 
-quizzesFolderIO :: IO String
-quizzesFolderIO = readFromConfigFile "quizzesFolder" (addSeparator [".", "quizzes"])
-
 serverPathIO :: IO String
 serverPathIO = readFromConfigFile "serverPath" "localhost:9000"
 
