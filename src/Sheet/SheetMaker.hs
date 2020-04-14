@@ -66,9 +66,6 @@ type ServerFolder = String
 
 type Ending = String
 
---todo use proper types?
--- todo: reduce number of conversions?
--- todo: setting the folder vs. setting the file names could be improved?
 createSheetWith ::
      String -> QuestionsInQuiz -> ServerPrefix -> ServerFolder -> [(TeamNumber, Code)] -> Day -> DbQuizId -> IO ()
 createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
