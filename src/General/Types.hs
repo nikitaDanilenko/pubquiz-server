@@ -59,7 +59,6 @@ newtype MaxReachedLabel =
 newtype MaxReachableLabel =
   MaxReachableLabel Text
 
---todo: rename this type and all corresponding functions
 newtype BackToChartViewLabel =
   BackToChartViewLabel Text
 

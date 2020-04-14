@@ -51,7 +51,6 @@ orEmpty = fromMaybe (wrap "")
 mkVerifiedRequest :: Attempt -> IO Bool
 mkVerifiedRequest attempt = fmap (maybe False (verifyHash attempt)) (findSessionKey (userName attempt))
 
--- todo: simplify to avoid conversions and qualified imports
 authenticate :: Maybe Credentials -> Query -> Handler b service Bool
 authenticate credentials params =
   liftIO (mkVerifiedRequest (mkAttemptWithMaybe (fmap D.user credentials) (fmap signature credentials) params))
