@@ -14,7 +14,7 @@ import           Data.List.Extra              (chunksOf)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat, pack, unwords)
 
-import           Text.LaTeX.Base.Class        (LaTeXC, braces, comm1, comm2,
+import           Text.LaTeX.Base.Class        (LaTeXC, braces, comm2,
                                                fromLaTeX, liftL)
 import           Text.LaTeX.Base.Commands     (centering, centering, document,
                                                documentclass, hfill, hline,
@@ -23,7 +23,7 @@ import           Text.LaTeX.Base.Commands     (centering, centering, document,
                                                tabularnewline, textwidth,
                                                usepackage, vspace, (&))
 import           Text.LaTeX.Base.Render       (render, rendertex)
-import           Text.LaTeX.Base.Syntax       (LaTeX (..), Measure (Mm),
+import           Text.LaTeX.Base.Syntax       (LaTeX (..), Measure (Mm, Cm),
                                                protectText, (<>))
 import           Text.LaTeX.Base.Types        (Pos (ForcePos, Here), TableSpec (LeftColumn, NameColumn, RightColumn))
 import           Text.LaTeX.Packages.Geometry (geometry)
@@ -38,7 +38,7 @@ import           GHC.Natural                  (Natural, naturalToInt)
 import           Sheet.Interval               (Interval, Size (Size), idrop,
                                                isize, itake, mkBaseInterval,
                                                toList)
-import           Text.LaTeX.Packages.Graphicx (graphicx, includegraphics)
+import           Text.LaTeX.Packages.Graphicx (graphicx, includegraphics, IGOption (IGHeight))
 
 finish :: LaTeX -> Text
 finish = render . (\l -> rendertex l :: LaTeX)
@@ -88,7 +88,7 @@ mkFullHeader teamLabel heightCm mVspace numbersAndPaths =
                  (map
                     (\teamQuery ->
                        mkSimpleHeader teamLabel (teamNumberOfQuery teamQuery) &
-                       braces (includegraphics [] (imagePath teamQuery)))
+                       braces (includegraphics [IGHeight (Cm heightQR)] (imagePath teamQuery)))
                     numbersAndPaths))))
     ]
   where
