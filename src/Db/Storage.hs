@@ -220,7 +220,7 @@ createQuizStatement identifier = checkUnique newQuiz >>= maybe success (const (e
             (zipWith
                (\k v -> concat [k, "=", v])
                ["place", "date", "name"]
-               [T.unpack (unwrap p), show (unwrap d :: Day), T.unpack (unwrap n)])
+               [unwrap p, show (unwrap d :: Day), unwrap n])
         , "already exists."
         ]
     (p, d, n) = (place identifier, date identifier, name identifier)

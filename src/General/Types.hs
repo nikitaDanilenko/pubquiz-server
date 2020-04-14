@@ -264,55 +264,55 @@ instance Wrapped NumberOfQuestions Natural where
   wrap = NumberOfQuestions
 
 instance Fallback RoundLabel where
-  fallback = wrap (T.pack "Runde")
+  fallback = wrap "Runde"
 
 instance Fallback TeamLabel where
-  fallback = wrap (T.pack "Gruppe")
+  fallback = wrap "Gruppe"
 
 instance Fallback OwnPointsLabel where
-  fallback = wrap (T.pack "Erreichte Punkte")
+  fallback = wrap "Erreichte Punkte"
 
 instance Fallback MaxReachedLabel where
-  fallback = wrap (T.pack "Erreichte Höchstpunktzahl")
+  fallback = wrap "Erreichte Höchstpunktzahl"
 
 instance Fallback MaxReachableLabel where
-  fallback = wrap (T.pack "Erreichbare Punkte")
+  fallback = wrap "Erreichbare Punkte"
 
 instance Fallback BackToChartViewLabel where
-  fallback = wrap (T.pack "Gesamtansicht")
+  fallback = wrap "Gesamtansicht"
 
 instance Fallback OwnPageLabel where
-  fallback = wrap (T.pack "Eigene Punkte")
+  fallback = wrap "Eigene Punkte"
 
 instance Fallback ViewPreviousLabel where
-  fallback = wrap (T.pack "Alle Quizzes")
+  fallback = wrap "Alle Quizzes"
 
 instance Fallback CumulativeLabel where
-  fallback = wrap (T.pack "Gesamtpunkte")
+  fallback = wrap "Gesamtpunkte"
 
 instance Fallback IndividualRoundsLabel where
-  fallback = wrap (T.pack "Punkte pro Runde")
+  fallback = wrap "Punkte pro Runde"
 
 instance Fallback ProgressionLabel where
-  fallback = wrap (T.pack "Verlauf")
+  fallback = wrap "Verlauf"
 
 instance Fallback PlacementLabel where
-  fallback = wrap (T.pack "Platzierungen")
+  fallback = wrap "Platzierungen"
 
 instance Fallback PlaceLabel where
-  fallback = wrap (T.pack "Platz")
+  fallback = wrap "Platz"
 
 instance Fallback PointsLabel where
-  fallback = wrap (T.pack "Punkte")
+  fallback = wrap "Punkte"
 
 instance Fallback RoundWinnerLabel where
-  fallback = wrap (T.pack "Rundensieger")
+  fallback = wrap "Rundensieger"
 
 instance Fallback PlaceInRoundLabel where
-  fallback = wrap (T.pack "Platz in dieser Runde")
+  fallback = wrap "Platz in dieser Runde"
 
 instance Fallback PlaceAfterRoundLabel where
-  fallback = wrap (T.pack "Platz nach dieser Runde")
+  fallback = wrap "Platz nach dieser Runde"
 
 instance Fallback NumberOfQuestions where
   fallback = wrap (intToNatural 8)

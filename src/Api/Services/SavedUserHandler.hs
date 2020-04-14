@@ -21,7 +21,7 @@ import           Utils                  (Hashed, mkHashed, randomStringIO)
 mkUser :: UserName -> Password -> IO SavedUser
 mkUser user pass = do
   randomChars <- randomStringIO
-  let salt = wrap (T.pack (take saltSize randomChars))
+  let salt = wrap (take saltSize randomChars)
       hashValue = mkHash user pass salt
       savedUser = SavedUser user salt hashValue
   return savedUser
@@ -46,4 +46,4 @@ mkUserHashed :: UserName -> Password -> UserSalt -> Hashed
 mkUserHashed user pass salt = mkHashed (E.encodeUtf8 (T.concat [unwrap user, unwrap pass, unwrap salt]))
 
 mkHash :: UserName -> Password -> UserSalt -> UserHash
-mkHash user pass salt = wrap (T.pack (show (mkUserHashed user pass salt)))
+mkHash user pass salt = wrap (show (mkUserHashed user pass salt))
