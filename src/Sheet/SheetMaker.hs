@@ -1,49 +1,64 @@
+{-# LANGUAGE TupleSections #-}
+
 module Sheet.SheetMaker
   ( createSheetWith
   , safeRemoveFile
   , Ending
   ) where
 
-import           Control.Exception            (catch)
-import           Control.Exception.Base       (IOException)
-import           Control.Monad                (void)
-import qualified Data.ByteString.Char8        as B
-import qualified Data.ByteString.Lazy         as L
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T (Text, concat, intercalate,
-                                                    pack, unpack)
-import qualified Data.Text.Encoding           as E
-import qualified Data.Text.IO                 as I (writeFile)
-import           System.Directory             (getCurrentDirectory, removeFile,
-                                               setCurrentDirectory)
-import           System.Process               (callProcess)
+import           Control.Exception               (catch)
+import           Control.Exception.Base          (IOException)
+import           Control.Monad                   (void)
+import qualified Data.ByteString.Char8           as B
+import qualified Data.ByteString.Lazy            as L
+import           Data.Text                       (Text)
+import qualified Data.Text                       as T (Text, concat,
+                                                       intercalate, pack,
+                                                       unpack)
+import qualified Data.Text.Encoding              as E
+import qualified Data.Text.IO                    as I (writeFile)
+import           System.Directory                (getCurrentDirectory,
+                                                  removeFile,
+                                                  setCurrentDirectory)
+import           System.Process                  (callProcess)
 
-import           Constants                    (qrOnlyFileName, quizIdParam,
-                                               sheetFileName, sheetsFolderIO,
-                                               teamCodeParam, teamNumberParam,
-                                               teamQueryParam)
-import           Control.Monad.Trans.Resource (MonadThrow)
-import           Data.Aeson                   (encode)
-import           Data.List                    (sortOn)
-import           Data.List.NonEmpty           (fromList)
-import           Data.Time.Calendar           (Day)
-import           Db.Connection                (DbQuizId)
-import           Db.DbConversion              (QuestionsInQuiz,
-                                               TeamQuery (TeamQuery),
-                                               mkPathForQuizSheetWith,
-                                               questionsInRoundNumberOfQuestions,
-                                               questionsInRoundRoundNumber,
-                                               teamQueryQuizId,
-                                               teamQueryTeamCode,
-                                               teamQueryTeamNumber)
-import           General.Types                (Code, TeamNumber, unwrap)
-import           GHC.Natural                  (Natural, naturalToInt)
-import           Network.HTTP.Types           (encodePathSegments)
-import           Sheet.Tex                    (mkQROnly,
-                                               mkSheetWithArbitraryQuestions)
-import           Text.URI                     (render)
-import           Utils                        (encodePath,
-                                               mkURIFromSchemePathFragment)
+import           Codec.Picture                   (savePngImage)
+import           Codec.Picture.Types             (DynamicImage (ImageY8))
+import qualified Codec.QRCode                    as QR (encode)
+import           Codec.QRCode.Data.ErrorLevel    (ErrorLevel (M))
+import           Codec.QRCode.Data.QRCodeOptions (defaultQRCodeOptions)
+import           Codec.QRCode.Data.TextEncoding  (TextEncoding (Iso8859_1OrUtf8WithoutECI))
+import           Constants                       (qrOnlyFileName, quizIdParam,
+                                                  sheetFileName, sheetsFolderIO,
+                                                  teamCodeParam,
+                                                  teamNumberParam,
+                                                  teamQueryParam)
+import           Control.Monad.Trans.Resource    (MonadThrow)
+import           Data.Aeson                      (encode)
+import           Data.List                       (sortOn)
+import qualified Data.List                       as List (intercalate)
+import           Data.List.NonEmpty              (fromList)
+import           Data.Time.Calendar              (Day)
+import           Db.Connection                   (DbQuizId)
+import           Db.DbConversion                 (QuestionsInQuiz,
+                                                  TeamQuery (TeamQuery),
+                                                  mkPathForQuizSheetWith,
+                                                  questionsInRoundNumberOfQuestions,
+                                                  questionsInRoundRoundNumber,
+                                                  teamQueryQuizId,
+                                                  teamQueryTeamCode,
+                                                  teamQueryTeamNumber)
+import           General.Types                   (Code, TeamNumber, unwrap)
+import           GHC.Natural                     (Natural, naturalToInt)
+import           Network.HTTP.Types              (encodePathSegments)
+import           Sheet.Tex                       (QRPath, mkQROnly,
+                                                  mkSheetWithArbitraryQuestions)
+import           Text.URI                        (render)
+import           Utils                           (encodePath,
+                                                  mkURIFromSchemePathFragment)
+
+import           Codec.QRCode.JuicyPixels        (toImage)
+import           Control.Arrow                   ((&&&))
 
 type ServerPrefix = String
 
@@ -61,7 +76,8 @@ createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
   currentDir <- getCurrentDirectory
   let tl = T.pack teamLabel
       endings = sortOn fst numberedCodes
-  paths <- mapM (mkPath prefix folder . uncurry (TeamQuery qid)) endings
+  pathsAndTeamQueries <- mapM ((\tq -> fmap (, tq) (mkPath prefix folder tq)) . uncurry (TeamQuery qid)) endings
+  let paths = map fst pathsAndTeamQueries
   let rounds =
         map
           snd
@@ -77,8 +93,10 @@ createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
       qrs = mkQROnly tl paths
       codesFile = mkPathForQuizSheetWith (T.pack "") (T.pack ".") qrOnlyFileName day qid
   setCurrentDirectory (T.unpack sheetsFolder)
+  createQRCodes pathsAndTeamQueries
   writeAndCleanPDF (T.unpack sheetFile) sht
   writeAndCleanPDF (T.unpack codesFile) qrs
+  cleanQRCodes (map snd pathsAndTeamQueries)
   setCurrentDirectory currentDir
 
 mkPath :: MonadThrow m => ServerPrefix -> ServerFolder -> TeamQuery -> m T.Text
@@ -96,6 +114,27 @@ mkPath prefix folder teamQuery =
            , teamCodeParam
            , E.encodeUtf8 (unwrap (teamQueryTeamCode teamQuery))
            ])
+
+createQRCodes :: [(QRPath, TeamQuery)] -> IO ()
+createQRCodes = mapM_ (uncurry createCode)
+  where
+    createCode :: QRPath -> TeamQuery -> IO ()
+    createCode path teamQuery =
+      case QR.encode (defaultQRCodeOptions M) Iso8859_1OrUtf8WithoutECI path of
+        Just image -> savePngImage (imagePath teamQuery) (ImageY8 (toImage 4 4 image))
+        Nothing    -> pure ()
+
+imagePath :: TeamQuery -> String
+imagePath teamQuery =
+  List.intercalate
+    "-"
+    [ show (teamQueryQuizId teamQuery)
+    , show (unwrap (teamQueryTeamNumber teamQuery) :: Natural)
+    , show (unwrap (teamQueryTeamCode teamQuery) :: String)
+    ] ++ ".png"
+
+cleanQRCodes :: [TeamQuery] -> IO ()
+cleanQRCodes = mapM_ (safeRemoveFile . imagePath)
 
 writeAndCleanPDF :: FilePath -> Text -> IO ()
 writeAndCleanPDF mainPath content = do
