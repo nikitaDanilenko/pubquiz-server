@@ -3,13 +3,18 @@
 This program consitutes a REST backend for the quiz service.
 It handles various commands corresponding to creating, updating, and locking quizzes.
 There is no deletion option, for future comparability, 
-but deletion can be usually handled manually by someone with access to the actual files.
+but deletion can be usually handled manually by someone with access to the database.
 
 ## Features
 
-1. Creating new quizzes creates empty point pages for the whole quiz, and the individual groups.
-   It also handles the entry on the main front page, 
-   where all quizzes listed in the quiz directory are presented for future reference.
+1. The quizzes are stored in the database with all relevant settings, which include
+   - Name, date, and place of the quiz
+   - The teams, including possibly chosen individual names
+   - Reachable points for each round
+   - Reached points for each round
+   - The number of questions in the regular rounds.
+   The number of questions is only necessary for proper updates of the settings,
+   it does not have any further use.
 
 1. Upon quiz creation, the server also creates two PDF files.
 
@@ -57,6 +62,7 @@ but deletion can be usually handled manually by someone with access to the actua
    but are no longer presented as editable quizzes.
    Attempts to circumvent this feature will fail,
    since every write operation on a quiz is checked for being able to write.
+   Upon locking the corresponding PDF files are deleted to reduce the used space.
 
 1. The program is neither parallel nor distributed.
    In practice, this should not be a problem, 
@@ -76,9 +82,9 @@ but deletion can be usually handled manually by someone with access to the actua
    There are no fixed requirements here, because you can run various servers,
    including localhost, and it all depends on your set-up.
 
-1. To obtain the PDF sheets you shout have `pdflatex` installed and in your environment variable.
+1. To obtain the PDF sheets you should have `pdflatex` installed and in your environment variable.
    Additionally, there are some non-standard packages used along the way,
-   but all of them should be available in a general basic LaTeX package.
+   but all of them should be available in a general basic LaTeX distribution.
    The program will work without `pdflatex` as well,
    but then no sheets and particularly no QR codes will be generated.
 
@@ -86,10 +92,9 @@ but deletion can be usually handled manually by someone with access to the actua
 
 1. Clone this repository.
 
-1. Given that Haskell and Cabal are installed,
-   call `cabal install`.
-   This will install the program in the corresponding Cabal folder.
-   If you are using a sandbox, the executable will be located in the sandboxes `bin` folder.
+1. Given that Haskell and Stack are installed,
+   call `stack install`.
+   This will install the program in the corresponding folder usually used by Stack.
 
 1. Run the program with parameters.
 
@@ -121,39 +126,44 @@ but deletion can be usually handled manually by someone with access to the actua
       To have the capability for secure connections,
       the Haskell dependency `snap` needs to be installed with
       the parameter `-fopenssl`.
-      To do that run `cabal install snap -fopenssl --force-reinstalls`.
+      To do that run `stack build --flag snap-server:openssl`.
       This may require the additional library `libssl-dev`.
-      It is probably already installed,
-      the Haskell bindings can be obtained via
-      `cabal install HsOpenSSL`.
-      Afterwards, you can run `cabal install` again to get the version that
+      It is probably already installed (but may not be),
+      the Haskell bindings for this library can be obtained via
+      `stack install HsOpenSSL`.
+      Afterwards, you can run `stack install` again to get the version that
       can handle secure connections.
 
 1. The `config.txt` should contain values for the parameters described below.
    There are sensible defaults, but these have only little flexibility.
 
-   1. `quizzesFolder`: This is the absolute physical path to the folder that contains
+   1. `serverQuizzesFolder`: This is the relative physical path to the folder that contains
       or shall contain all the quizzes.
-      In local test setting this is usually `./quizzes`, 
-      while in a server setting it is likely something like
-      `var/www/my-home-page.edu/stuff/quizzes`.
-
-   1. `serverRelativePath`: This is the relative path from the main server
-      (e.g. `www.my-home-page.edu`) to the quizzes folder.
-      Technically, it is similar to the `quizzesFolder`, 
-      but they do not have to be related.
-
-   1. `database`: This is where the data is kept. All data is maintained in files (for now).
-      Note that this folder should not be kept in a public location,
-      contrary to the quizzes folder.
+      In local test setting this is usually `quizzes`, 
+      i.e. the part of the URL after the main server path.
+      This folder is only used for addressing the path on the server,
+      nothing is written in the folder.
+      
+   1. `sheetsFolder`: This is the folder in which the quiz sheets will be placed.
+      The path can be absolute or relative.
+   
+   1. `serverSheetsFolder`: This is the folder which will be used in the link for the quiz sheets.
+   
+   1. `serverPath`: The path to the server, usually `localhost` or the actual path to the server.
+   
+   1. `databaseHost`: The host for the database provider.
+   
+   1. `databaseName`: The name of the database that is used.
+   
+   1. `databaseUser`: The user which will be used by the application to access the database.
+   
+   1. `databasePassword`: Self-explanatory.
+   
+   1. `databasePort`: Self-explanatory.
 
 ## Technology
 
 1. The program is written in Haskell entirely.
-
-1. The pages that are generated are static HTML pages,
-   and there are regenerated upon updates.
-   The pages use JavaScript internally to call the Chart.js library for drawing the charts.
 
 1. Sensitive REST requests (i.e. posts) are secured by HMAC.
    This means that you cannot arbitrarily manipulate the quizzes,
@@ -161,3 +171,11 @@ but deletion can be usually handled manually by someone with access to the actua
    You can, however, resend a previous update to post an earlier state,
    if you manage a man in the middle scenario.
    Still, this might prove difficult, if the connection is encrypted.
+
+1. The program has a PostgresQL backend using the `persistent` library.
+
+1. JSON encoding and decoding is handled by `aeson`.
+
+1. `elm-bridge` is used for generating code for the Elm frontend.
+
+1. The PDF files are generated with `HaTeX` and a QR code extension for `JuicyPixels`.
