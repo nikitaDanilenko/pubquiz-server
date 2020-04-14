@@ -144,7 +144,6 @@ DbSessionKey
 mkDbQuiz :: Place -> QuizDate -> QuizName -> Activity -> DbQuiz
 mkDbQuiz p qd qn a = DbQuiz (unwrap p) (unwrap qd) (unwrap qn) (unwrap a)
 
--- todo: This function will become obsolete, once labels are fully typed.
 mkDbLabels ::
      DbQuizId
   -> RoundLabel
@@ -241,7 +240,6 @@ labelsToDbLabels qid lbls =
     (placeInRoundLabel lbls)
     (placeAfterRoundLabel lbls)
 
--- todo: either remove logging or pipe it directly into a log file
 type Statement m k = ReaderT SqlBackend m k
 
 type ResourceMonad = NoLoggingT (ResourceT IO)
