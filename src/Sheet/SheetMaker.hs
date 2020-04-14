@@ -122,7 +122,7 @@ createQRCodes = mapM_ (uncurry createCode)
     createCode path teamQuery =
       case QR.encode (defaultQRCodeOptions M) Iso8859_1OrUtf8WithoutECI path of
         Just image -> savePngImage (imagePath teamQuery) (ImageY8 (toImage 4 4 image))
-        Nothing    -> pure ()
+        Nothing    -> putStrLn (unwords ["Image creation for", imagePath teamQuery, "failed"])
 
 imagePath :: TeamQuery -> String
 imagePath teamQuery =
