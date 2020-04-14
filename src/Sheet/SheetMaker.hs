@@ -52,7 +52,7 @@ import           General.Types                   (Code, TeamNumber, unwrap)
 import           GHC.Natural                     (Natural, naturalToInt)
 import           Network.HTTP.Types              (encodePathSegments)
 import           Sheet.Tex                       (QRPath, mkQROnly,
-                                                  mkSheetWithArbitraryQuestions)
+                                                  mkSheetWithArbitraryQuestions, imagePath)
 import           Text.URI                        (render)
 import           Utils                           (encodePath,
                                                   mkURIFromSchemePathFragment)
@@ -77,7 +77,7 @@ createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
   let tl = T.pack teamLabel
       endings = sortOn fst numberedCodes
   pathsAndTeamQueries <- mapM ((\tq -> fmap (, tq) (mkPath prefix folder tq)) . uncurry (TeamQuery qid)) endings
-  let paths = map fst pathsAndTeamQueries
+  let (paths, teamQueries) = unzip pathsAndTeamQueries
   let rounds =
         map
           snd
@@ -88,15 +88,15 @@ createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
                    ( naturalToInt (unwrap (questionsInRoundRoundNumber qir))
                    , naturalToInt (unwrap (questionsInRoundNumberOfQuestions qir))))
                 (unwrap qirs)))
-      sht = mkSheetWithArbitraryQuestions tl rounds paths
+      sht = mkSheetWithArbitraryQuestions tl rounds teamQueries
       sheetFile = mkPathForQuizSheetWith (T.pack "") (T.pack ".") sheetFileName day qid
-      qrs = mkQROnly tl paths
+      qrs = mkQROnly tl teamQueries
       codesFile = mkPathForQuizSheetWith (T.pack "") (T.pack ".") qrOnlyFileName day qid
   setCurrentDirectory (T.unpack sheetsFolder)
   createQRCodes pathsAndTeamQueries
   writeAndCleanPDF (T.unpack sheetFile) sht
   writeAndCleanPDF (T.unpack codesFile) qrs
-  cleanQRCodes (map snd pathsAndTeamQueries)
+  cleanQRCodes teamQueries
   setCurrentDirectory currentDir
 
 mkPath :: MonadThrow m => ServerPrefix -> ServerFolder -> TeamQuery -> m T.Text
@@ -123,15 +123,6 @@ createQRCodes = mapM_ (uncurry createCode)
       case QR.encode (defaultQRCodeOptions M) Iso8859_1OrUtf8WithoutECI path of
         Just image -> savePngImage (imagePath teamQuery) (ImageY8 (toImage 4 4 image))
         Nothing    -> putStrLn (unwords ["Image creation for", imagePath teamQuery, "failed"])
-
-imagePath :: TeamQuery -> String
-imagePath teamQuery =
-  List.intercalate
-    "-"
-    [ show (teamQueryQuizId teamQuery)
-    , show (unwrap (teamQueryTeamNumber teamQuery) :: Natural)
-    , show (unwrap (teamQueryTeamCode teamQuery) :: String)
-    ] ++ ".png"
 
 cleanQRCodes :: [TeamQuery] -> IO ()
 cleanQRCodes = mapM_ (safeRemoveFile . imagePath)
