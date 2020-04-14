@@ -34,30 +34,6 @@ but deletion can be usually handled manually by someone with access to the datab
       In practice, this file is probably more useful in an ad-hoc scenario than anywhere else,
       but there have been cases, where having the QR codes ready would have been handy.
 
-1. Updating quizzes with points per round creates three different graphs on the main page.
-
-   1. The main bar chart denotes the overall points of all teams.
-
-   1. The second bar chart denotes the points of the teams in the individual rounds.
-      The cumulative chart for a given round is the stack of the individual charts of
-      all rounds up to and including the given round.
-
-   1. The third graph is a line group denoting the linear interpolation of the cumulative points.
-      This chart can be used to view the progress over time, 
-      but is less suited to observe the actual status.
-      In theory, one could use this (and the other graphs) by entering points per question,
-      rather than per round.
-      This would make the interpolation precise, but came with two major down-sides:
-
-      1. The amount of input would be rather large, and one could no longer distinguish
-         between rounds and questions.
-         However, one could change the word for "round" with the word for "question"
-         and thus provide a consistent presentation.
-
-      1. More importantly, this feature would let everyone know,
-         which team knew which answer, and which one did not.
-         This is likely undesired, despite the overall competitive character of the game.
-
 1. Quizzes can be locked. Locked quizzes still appear on the front page,
    but are no longer presented as editable quizzes.
    Attempts to circumvent this feature will fail,
