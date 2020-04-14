@@ -1,4 +1,3 @@
-quizzesFolder=./quizzes
 serverQuizzesFolder=quizzes
 sheetsFolder=./sheets
 serverSheetsFolder=sheets
