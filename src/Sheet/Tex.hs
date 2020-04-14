@@ -1,6 +1,6 @@
 {-# Language OverloadedStrings #-}
 
-module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly ) where
+module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly, QRPath ) where
 
 import Data.List                    ( intersperse )
 import Data.List.Extra              ( chunksOf )
