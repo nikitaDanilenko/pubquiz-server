@@ -1,8 +1,8 @@
 {-# Language OverloadedStrings #-}
 
-module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly, QRPath ) where
+module Sheet.Tex ( mkSheetWithArbitraryQuestions, mkSheetWithConstantQuestions, mkQROnly, QRPath, imagePath ) where
 
-import Data.List                    ( intersperse )
+import Data.List                    ( intersperse, intercalate )
 import Data.List.Extra              ( chunksOf )
 import Data.Text                    ( Text )
 import qualified Data.Text as T     ( pack, unwords, concat )
@@ -18,10 +18,13 @@ import Text.LaTeX.Base.Types        ( Pos ( Here, ForcePos ),
                                       TableSpec ( LeftColumn, NameColumn, RightColumn ) )
 import Text.LaTeX.Packages.Geometry ( geometry )
 import Text.LaTeX.Packages.Inputenc ( inputenc )
-import Text.LaTeX.Packages.QRCode   ( qrcode, qr, ErrorLevel ( Low ), CodeOptions ( .. ) )
 
-import Sheet.Interval               ( Interval, Size ( Size ), 
+import Sheet.Interval               ( Interval, Size ( Size ),
                                       mkBaseInterval, isize, toList, itake, idrop )
+import Text.LaTeX.Packages.Graphicx (graphicx, includegraphics)
+import Db.DbConversion (TeamQuery, teamQueryTeamNumber, teamQueryQuizId, teamQueryTeamCode)
+import GHC.Natural (naturalToInt, Natural)
+import General.Types (unwrap)
 
 finish :: LaTeX -> Text
 finish  = render . (\l -> rendertex l :: LaTeX)
@@ -38,7 +41,7 @@ simpleTabularStar ts content = liftL (TeXEnv "tabular*" []) inner where
               braces (mconcat (map (raw . render) ts)),
               content
             ]
-           
+
 header :: LaTeXC l => l
 header = mconcat [
     documentclass [] "scrartcl",
@@ -49,41 +52,46 @@ header = mconcat [
                                     "textwidth=19cm",
                                     "top=1cm",
                                     "textheight=27cm"]) geometry,
-    usepackage [] qrcode,
+    usepackage [] graphicx,
 
     pagestyle "empty"
     ]
 
-mkFullHeader :: LaTeXC l => Text -> Double -> Maybe Double -> [(Int,  QRPath)] -> l
+imagePath :: TeamQuery -> String
+imagePath teamQuery =
+  intercalate
+    "-"
+    [ show (teamQueryQuizId teamQuery)
+    , show (unwrap (teamQueryTeamNumber teamQuery) :: Natural)
+    , show (unwrap (teamQueryTeamCode teamQuery) :: String)
+    ] ++ ".png"
+
+mkFullHeader :: LaTeXC l => Text -> Double -> Maybe Double -> [TeamQuery] -> l
 mkFullHeader teamLabel heightCm mVspace numbersAndPaths = mconcat [
     table [ForcePos, Here] (
         simpleTabularStar [
             LeftColumn,
-            NameColumn "@{\\extracolsep{\\fill}}", 
+            NameColumn "@{\\extracolsep{\\fill}}",
             RightColumn
         ]
         (mconcat (
           intersperse separator (
-            map (\(i, path) -> mkSimpleHeader teamLabel i
+            map (\teamQuery -> mkSimpleHeader teamLabel (teamNumberOfQuery teamQuery)
                                &
                                braces (
-                                 comm1 "qrset" (raw (T.concat (map T.pack ["height=", 
-                                                                           show heightCm, 
-                                                                           "cm"]
-                                                              )
-                                                     )
-                                               )
-                                 <>
-                                 qr (CodeOptions False False Low) path
+                                 includegraphics [] (imagePath teamQuery)
                               )
                 )
                 numbersAndPaths
           )
-        ) 
+        )
         )
     )
   ]
   where separator = mconcat [maybe mempty (vspace . Mm) mVspace, tabularnewline, hline]
+
+teamNumberOfQuery :: TeamQuery -> Int
+teamNumberOfQuery = naturalToInt . unwrap . teamQueryTeamNumber
 
 mkSimpleHeader :: LaTeXC l => Text -> Int -> l
 mkSimpleHeader teamLabel teamNumber =
@@ -95,10 +103,10 @@ stretch = 2.75
 heightQR :: Double
 heightQR = 2
 
-mkSingleTeamSheet :: LaTeXC l => Text -> QRPath -> [l] -> Int -> l
-mkSingleTeamSheet teamLabel qrPath allRounds teamNumber = 
-    mconcat (mkFullHeader teamLabel heightQR Nothing [(teamNumber, qrPath)] : rds)
-  where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel teamNumber]) allRounds
+mkSingleTeamSheet :: LaTeXC l => Text -> TeamQuery -> [l] -> l
+mkSingleTeamSheet teamLabel teamQuery allRounds =
+    mconcat (mkFullHeader teamLabel heightQR Nothing [teamQuery] : rds)
+  where rds = intersperse (mconcat [newpage, mkSimpleHeader teamLabel (teamNumberOfQuery teamQuery)]) allRounds
 
 fittingPerRound :: Int
 fittingPerRound = 8
@@ -129,21 +137,21 @@ mkIntervals = reverse . (\(x, _, _) -> x) . go ([], [], Full) . map (mkBaseInter
     where sz = isize int
           start = itake fittingOnPage int
   go (is, page, Partial rest) l@(int : ints) = go (reverse newPage : is, [], Full) newInts where
-    (newPage, newInts) 
+    (newPage, newInts)
       | rest >= fittingPerRound && sz <= fittingPerRound = (int : page, ints)
       | rest >= fittingPerRound && sz > fittingPerRound  = (itake fittingPerRound int : page, idrop fittingPerRound int : ints)
       | otherwise = (page, l)
     sz = isize int
 
-mkFullSheet :: LaTeXC l => Text -> [Int] -> [QRPath] -> l
-mkFullSheet teamLabel qns paths =
+mkFullSheet :: LaTeXC l => Text -> [Int] -> [TeamQuery] -> l
+mkFullSheet teamLabel qns teamQueries =
   mconcat
     [ header
     , document
         (mconcat
            (intersperse
               separator
-              (zipWith (\i path -> mkSingleTeamSheet (protectText teamLabel) path allRounds i) [1 ..] paths)))
+              (map (\path -> mkSingleTeamSheet (protectText teamLabel) path allRounds) teamQueries)))
     ]
   where
     grouped = map (map toList) (mkIntervals qns)
@@ -152,20 +160,20 @@ mkFullSheet teamLabel qns paths =
       | even (length grouped) = newpage
       | otherwise = mconcat [newpage, hfill, medskip, newline, newpage]
 
-mkSheetWithArbitraryQuestions :: Text -> [Int] -> [QRPath] -> Text
-mkSheetWithArbitraryQuestions teamLabel qns paths =
-    finish (mkFullSheet teamLabel qns paths :: LaTeX)
+mkSheetWithArbitraryQuestions :: Text -> [Int] -> [TeamQuery] -> Text
+mkSheetWithArbitraryQuestions teamLabel qns teamQueries =
+    finish (mkFullSheet teamLabel qns teamQueries :: LaTeX)
 
-mkSheetWithConstantQuestions :: Text -> Int -> [QRPath] -> Text
-mkSheetWithConstantQuestions teamLabel n = 
+mkSheetWithConstantQuestions :: Text -> Int -> [TeamQuery] -> Text
+mkSheetWithConstantQuestions teamLabel n =
     mkSheetWithArbitraryQuestions teamLabel (replicate n fittingPerRound)
 
 mkAnswerTable :: LaTeXC l => Double -> [Int] -> l
-mkAnswerTable sf qs = 
+mkAnswerTable sf qs =
     table [ForcePos, Here] (
         arraystretch sf
         <>
-        simpleTabularStar 
+        simpleTabularStar
                  [LeftColumn]
                  (
                   centering
@@ -176,7 +184,7 @@ mkAnswerTable sf qs =
                                     tabularnewline,
                                     hline
                                ]
-                        ) 
+                        )
                         qs
                   )
                  )
@@ -197,19 +205,19 @@ extraVspaceQR = 5
 qrFitting :: Int
 qrFitting = 8
 
-mkQROnlyContent :: LaTeXC l => Text -> [QRPath] -> l
-mkQROnlyContent teamLabel paths = mconcat [
+mkQROnlyContent :: LaTeXC l => Text -> [TeamQuery] -> l
+mkQROnlyContent teamLabel teamQueries = mconcat [
     header,
     arraystretch qrOnlyArrayStretch,
     document (
         mconcat (
           intersperse newpage (
               map (mkFullHeader teamLabel qrOnlyHeight (Just extraVspaceQR))
-                  (chunksOf qrFitting (zip [1 ..] paths))
+                  (chunksOf qrFitting teamQueries)
           )
         )
     )
   ]
 
-mkQROnly :: Text -> [QRPath] -> Text
-mkQROnly teamLabel paths = finish (mkQROnlyContent teamLabel paths)
+mkQROnly :: Text -> [TeamQuery] -> Text
+mkQROnly teamLabel = finish . mkQROnlyContent teamLabel
