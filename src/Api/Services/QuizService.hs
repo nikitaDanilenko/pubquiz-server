@@ -208,7 +208,7 @@ updateIdentifierAndSettings qid idf quizSettings =
       setHeaderStatement qid adjustedHeader
       setMissingTeamRatingsToZeroStatement qid
       setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
-      liftIO (createSheetWithSettings qid (quizIdentifier quizInfo) quizSettings adjustedHeader)
+      liftIO (createSheetWithSettings qid idf quizSettings adjustedHeader)
 
 createSheetWithSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> Header -> IO ()
 createSheetWithSettings qid identifier quizSettings header = do
