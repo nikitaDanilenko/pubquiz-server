@@ -23,7 +23,7 @@ import           Api.Services.SnapUtil  (encodeOrEmpty, fKey, fValue,
                                          getJSONParam, getJSONPostParam,
                                          getJSONPostParamWithPure,
                                          setResponseCodeJSON, strictEncodeF)
-import           Constants              (actionParam, allActiveApi,
+import           Constants              (actionParam, allActiveApi, allApi,
                                          credentialsParam, getLabelsApi,
                                          getQuizInfoApi, getQuizRatingsApi,
                                          getQuizSettingsApi, lockApi, newApi,
@@ -32,7 +32,7 @@ import           Constants              (actionParam, allActiveApi,
                                          quizSettingsParam, serverPathIO,
                                          serverQuizzesFolderIO, sheetsFolderIO,
                                          teamQueryParam, teamTableApi,
-                                         updateQuizApi, updateQuizRatingsApi, allApi)
+                                         updateQuizApi, updateQuizRatingsApi)
 import           Data.Aeson             (encode)
 import           Db.Connection          (DbQuizId, runSql)
 import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
@@ -45,8 +45,9 @@ import           Db.DbConversion        (Credentials, Header, QuizIdentifier,
                                          questionsInQuiz, quizId,
                                          quizIdentifier, teamQueryQuizId,
                                          teamQueryTeamNumber)
-import           Db.Storage             (createQuizStatement,
-                                         findAllActiveQuizzes,
+import           Db.Storage             (QuizInfoSheetType (Download, LocalFile),
+                                         createQuizStatement,
+                                         findAllActiveQuizzes, findAllQuizzes,
                                          findHeaderStatement, findLabels,
                                          findQuizInfo, findQuizRatings,
                                          findQuizSettings, findTeamTableInfo,
@@ -55,7 +56,7 @@ import           Db.Storage             (createQuizStatement,
                                          setMissingTeamRatingsToZeroStatement,
                                          setQuestionsInQuizStatement,
                                          setQuizIdentifierStatement,
-                                         setQuizRatings, setTeamInfo, findAllQuizzes)
+                                         setQuizRatings, setTeamInfo)
 import           General.Labels         (teamLabel)
 import           General.Types          (Action (CreateQuizA, LockA, UpdateSettingsA),
                                          Activity (Active, Inactive),
@@ -139,7 +140,7 @@ mkUpdateErrorMessage mQid mQuizRatings =
        [(quizIdParam, encodeOrEmpty mQid), (quizRatingsParam, encodeOrEmpty mQuizRatings)])
 
 updateQuizData :: DbQuizId -> QuizRatings -> IO ()
-updateQuizData qid quizRatings = ifActiveDo qid (pure ()) (\_ -> setQuizRatings qid quizRatings)
+updateQuizData qid quizRatings = ifActiveDo Download qid (pure ()) (\_ -> setQuizRatings qid quizRatings)
 
 updateQuizHandler :: Handler b QuizService ()
 updateQuizHandler = do
@@ -198,7 +199,7 @@ newQuiz = do
 
 updateIdentifierAndSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> IO ()
 updateIdentifierAndSettings qid idf quizSettings =
-  ifActiveDo qid (pure ()) $ \quizInfo ->
+  ifActiveDo LocalFile qid (pure ()) $ \quizInfo ->
     runSql $ do
       setQuizIdentifierStatement qid idf
       let ls = labels quizSettings
@@ -223,8 +224,8 @@ createSheetWithSettings qid identifier quizSettings header = do
     (unwrap (date identifier))
     qid
 
-ifActiveDo :: DbQuizId -> IO a -> (QuizInfo -> IO a) -> IO a
-ifActiveDo qid dft action = findQuizInfo qid >>= maybe dft checkActive
+ifActiveDo :: QuizInfoSheetType -> DbQuizId -> IO a -> (QuizInfo -> IO a) -> IO a
+ifActiveDo qist qid dft action = findQuizInfo qist qid >>= maybe dft checkActive
   where
     checkActive quizInfo =
       case active quizInfo of
@@ -239,7 +240,7 @@ lockHandler = do
   failIfUnverified verified $
     case mQuizId of
       Just (_, qid) -> do
-        mQuizInfo <- liftIO (findQuizInfo qid)
+        mQuizInfo <- liftIO (findQuizInfo LocalFile qid)
         case mQuizInfo of
           Just quizInfo -> do
             liftIO (lockQuiz qid)
@@ -269,7 +270,7 @@ quizInfoHandler = do
   case mQuizId of
     Nothing -> errorInfo "Not a valid quiz id"
     Just qid -> do
-      mQuizInfo <- liftIO (findQuizInfo qid)
+      mQuizInfo <- liftIO (findQuizInfo Download qid)
       case mQuizInfo of
         Nothing -> errorInfo "No quiz with this id found"
         Just quizInfo -> do
