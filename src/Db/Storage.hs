@@ -12,7 +12,7 @@ import           Database.Persist            (Entity (Entity), Filter, Key,
                                               selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
-import           Constants                   (serverSheetsFolderIO)
+import           Constants                   (serverSheetsFolderIO, sheetsFolderIO)
 import           Control.Applicative         (liftA2, liftA3)
 import           Data.Functor                (void)
 import           Data.List                   (intercalate)
@@ -68,10 +68,9 @@ import           General.Labels              (Labels (..), mkLabels)
 import           General.Types               (Activity (..), Code,
                                               NumberOfQuestions, Place,
                                               QuizDate, QuizName, RoundNumber,
-                                              TeamName, TeamNumber,
-                                              Wrapped (unwrap, wrap),
-                                              UserHash, UserName, UserSalt,
-                                              fallback)
+                                              TeamName, TeamNumber, UserHash,
+                                              UserName, UserSalt,
+                                              Wrapped (unwrap, wrap), fallback)
 import           GHC.Natural                 (intToNatural)
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
@@ -150,8 +149,7 @@ setQuizIdentifierStatement qid quizIdentifier = do
         , DbQuizPlace =. unwrap (place quizIdentifier)
         ]
       pure qid
-    Nothing ->
-      repsertQuiz (mkDbQuiz (place quizIdentifier) (date quizIdentifier) (name quizIdentifier) Active)
+    Nothing -> repsertQuiz (mkDbQuiz (place quizIdentifier) (date quizIdentifier) (name quizIdentifier) Active)
 
 setRoundQuestions :: DbQuizId -> RoundNumber -> NumberOfQuestions -> IO (Key DbRoundQuestions)
 setRoundQuestions qid rn nq = runSql (setRoundQuestionsStatement qid rn nq)
@@ -217,10 +215,7 @@ createQuizStatement identifier = checkUnique newQuiz >>= maybe success (const (e
         [ "Quiz with"
         , intercalate
             ","
-            (zipWith
-               (\k v -> concat [k, "=", v])
-               ["place", "date", "name"]
-               [unwrap p, show (unwrap d :: Day), unwrap n])
+            (zipWith (\k v -> concat [k, "=", v]) ["place", "date", "name"] [unwrap p, show (unwrap d :: Day), unwrap n])
         , "already exists."
         ]
     (p, d, n) = (place identifier, date identifier, name identifier)
@@ -282,12 +277,20 @@ findSessionKeyStatement :: MonadIO m => UserName -> Statement m (Maybe UserHash)
 findSessionKeyStatement un =
   fmap (fmap (wrap . dbSessionKeyUserHash . entityVal)) (selectFirst [DbSessionKeyUserName ==. unwrap un] [])
 
-findQuizInfo :: DbQuizId -> IO (Maybe QuizInfo)
-findQuizInfo = runSql . findQuizInfoStatement
+data QuizInfoSheetType
+  = LocalFile
+  | Download
 
-findQuizInfoStatement :: MonadIO m => DbQuizId -> Statement m (Maybe QuizInfo)
-findQuizInfoStatement qid = do
-  sheetsFolder <- liftIO serverSheetsFolderIO
+folderPathIO :: QuizInfoSheetType -> IO T.Text
+folderPathIO LocalFile = sheetsFolderIO
+folderPathIO Download  = serverSheetsFolderIO
+
+findQuizInfo :: QuizInfoSheetType -> DbQuizId -> IO (Maybe QuizInfo)
+findQuizInfo qist = runSql . findQuizInfoStatement qist
+
+findQuizInfoStatement :: MonadIO m => QuizInfoSheetType -> DbQuizId -> Statement m (Maybe QuizInfo)
+findQuizInfoStatement qist qid = do
+  sheetsFolder <- liftIO (folderPathIO qist)
   fmap (fmap (mkQuizInfo sheetsFolder)) (selectFirst [DbQuizId ==. qid] [])
 
 findQuizRatings :: DbQuizId -> IO QuizRatings
