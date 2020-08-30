@@ -4,6 +4,7 @@
 
 module Api.Services.HashCheck
   ( authenticate
+  , authenticateD
   , failIfUnverified
   ) where
 
@@ -54,6 +55,10 @@ mkVerifiedRequest attempt = fmap (maybe False (verifyHash attempt)) (findSession
 authenticate :: Maybe Credentials -> Query -> Handler b service Bool
 authenticate credentials params =
   liftIO (mkVerifiedRequest (mkAttemptWithMaybe (fmap D.user credentials) (fmap signature credentials) params))
+
+authenticateD :: Credentials -> Query -> Handler b service Bool
+authenticateD credentials params =
+  liftIO (mkVerifiedRequest (Attempt (D.user credentials) params (signature credentials)))
 
 failIfUnverified :: Bool -> Handler b service () -> Handler b service ()
 failIfUnverified verified handle =
