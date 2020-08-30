@@ -259,20 +259,21 @@ notFound = flip Failure 404
 
 lockHandler :: Handler b QuizService ()
 lockHandler =
-  let transformer = do
-        (quizIdLbl, qid) <-
-          exceptFromMaybeF (getJSONPostParamWithPure quizIdParam) (notFound "No valid quiz id in parameter.")
-        credentials <- exceptFromMaybeF (getJSONPostParam credentialsParam) (notFound "No credentials supplied")
-        verified <-
-          lift (authenticateD credentials [(quizIdParam, Just quizIdLbl), (actionParam, strictEncodeF (Just LockA))])
-        verify verified $ do
-          quizInfo <- exceptFromMaybeF (liftIO (findQuizInfo LocalFile qid)) (notFound "No quiz with given id.")
-          liftIO (lockQuiz qid)
-          mapM_ (liftIO . safeRemoveFile . T.unpack) [fullSheetPath quizInfo, qrOnlyPath quizInfo]
-          lift (modifyResponse (setResponseCodeJSON 201))
-   in exceptValueOr
-        transformer
-        (\failure -> writeLBS (failureMessage failure) >> modifyResponse (setResponseCodeJSON (failureCode failure)))
+  exceptValueOr
+    transformer
+    (\failure -> writeLBS (failureMessage failure) >> modifyResponse (setResponseCodeJSON (failureCode failure)))
+  where
+    transformer = do
+      (quizIdLbl, qid) <-
+        exceptFromMaybeF (getJSONPostParamWithPure quizIdParam) (notFound "No valid quiz id in parameter.")
+      credentials <- exceptFromMaybeF (getJSONPostParam credentialsParam) (notFound "No credentials supplied")
+      verified <-
+        lift (authenticateD credentials [(quizIdParam, Just quizIdLbl), (actionParam, strictEncodeF (Just LockA))])
+      verify verified $ do
+        quizInfo <- exceptFromMaybeF (liftIO (findQuizInfo LocalFile qid)) (notFound "No quiz with given id.")
+        liftIO (lockQuiz qid)
+        mapM_ (liftIO . safeRemoveFile . T.unpack) [fullSheetPath quizInfo, qrOnlyPath quizInfo]
+        lift (modifyResponse (setResponseCodeJSON 201))
 
 errorInfo :: L.ByteString -> Handler b QuizService ()
 errorInfo str = do
