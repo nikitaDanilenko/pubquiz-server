@@ -218,6 +218,7 @@ updateIdentifierAndSettings qid idf quizSettings =
       setHeaderStatement qid adjustedHeader
       setMissingTeamRatingsToZeroStatement qid
       setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
+      liftIO (removeFiles quizInfo)
       liftIO (createSheetWithSettings qid idf quizSettings adjustedHeader)
 
 createSheetWithSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> Header -> IO ()
@@ -272,8 +273,12 @@ lockHandler =
       verify verified $ do
         quizInfo <- exceptFromMaybeF (liftIO (findQuizInfo LocalFile qid)) (notFound "No quiz with given id.")
         liftIO (lockQuiz qid)
-        mapM_ (liftIO . safeRemoveFile . T.unpack) [fullSheetPath quizInfo, qrOnlyPath quizInfo]
+        liftIO (removeFiles quizInfo)
         lift (modifyResponse (setResponseCodeJSON 201))
+        
+removeFiles :: QuizInfo -> IO ()
+removeFiles quizInfo =
+  mapM_ (safeRemoveFile . T.unpack) [fullSheetPath quizInfo, qrOnlyPath quizInfo]
 
 errorInfo :: L.ByteString -> Handler b QuizService ()
 errorInfo str = do
