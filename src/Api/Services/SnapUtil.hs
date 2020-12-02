@@ -1,62 +1,44 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MonoLocalBinds   #-}
 
 module Api.Services.SnapUtil where
 
-import           Data.Aeson            (ToJSON, decode, encode)
-import           Data.Aeson.Types      (FromJSON)
-import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy  as L
-import           Data.CaseInsensitive  (CI, mk)
-import           Data.Maybe            (fromMaybe)
-import           Snap                  (Handler)
-import           Snap.Core             (Response, getParam, getPostParam,
-                                        setHeader, setResponseCode)
+import           Control.Applicative       (liftA2)
+import           Control.Monad.Trans.Maybe (MaybeT (MaybeT))
+import           Data.Aeson                (decode)
+import           Data.Aeson.Types          (FromJSON)
+import qualified Data.ByteString.Char8     as B
+import           Data.CaseInsensitive      (CI, mk)
+import qualified Data.Text.Encoding        as E (encodeUtf8)
+import           Data.Word                 (Word64)
+import           Db.DbConversion           (Credentials (Credentials))
+import           General.Types             (Wrapped, wrap)
+import           Snap                      (Handler, readRequestBody)
+import           Snap.Core                 (Request, Response, getHeader,
+                                            getRequest, setHeader,
+                                            setResponseCode)
 
+-- todo: Use general constants for header values
 setResponseCodeJSON :: Int -> Response -> Response
 setResponseCodeJSON code = setResponseCode code . setHeader (mkFromString "Content-Type") (B.pack "application/json")
 
 mkFromString :: String -> CI B.ByteString
 mkFromString = mk . B.pack
 
-maybeDecode :: FromJSON a => Maybe B.ByteString -> Maybe a
-maybeDecode = (>>= strictDecode)
+readBody :: FromJSON a => Handler b service (Maybe a)
+readBody = fmap decode (readRequestBody maxRequestSize)
 
-strictDecode :: FromJSON a => B.ByteString -> Maybe a
-strictDecode = decode . L.fromStrict
+readCredentials :: MaybeT (Handler b service) Credentials
+readCredentials = liftA2 Credentials (readHeader userHeader) (readHeader signatureHeader)
 
-strictEncode :: ToJSON a => a -> B.ByteString
-strictEncode = L.toStrict . encode
+userHeader :: CI B.ByteString
+userHeader = mkFromString "User"
 
-strictEncodeF :: (Functor f, ToJSON a) => f a -> f B.ByteString
-strictEncodeF = fmap strictEncode
+signatureHeader :: CI B.ByteString
+signatureHeader = mkFromString "Signature"
 
-encodeOrEmpty :: ToJSON a => Maybe a -> B.ByteString
-encodeOrEmpty = fromMaybe (B.pack "") . strictEncodeF
+maxRequestSize :: Word64
+maxRequestSize = 65536
 
-processJSONWithPure :: (FromJSON a, Functor f) => f (Maybe B.ByteString) -> f (Maybe (B.ByteString, a))
-processJSONWithPure = processJSONWith (\mbs a -> fmap (, a) mbs)
-
-processJSON :: (FromJSON a, Functor f) => f (Maybe B.ByteString) -> f (Maybe a)
-processJSON = processJSONWith (const pure)
-
-processJSONWith ::
-     (FromJSON a, Functor f) => (Maybe B.ByteString -> a -> Maybe b) -> f (Maybe B.ByteString) -> f (Maybe b)
-processJSONWith f = fmap (\mValue -> maybeDecode mValue >>= f mValue)
-
-getJSONPostParamWithPure :: FromJSON a => B.ByteString -> Handler b service (Maybe (B.ByteString, a))
-getJSONPostParamWithPure = processJSONWithPure . getPostParam
-
-getJSONPostParam :: FromJSON a => B.ByteString -> Handler b service (Maybe a)
-getJSONPostParam = processJSON . getPostParam
-
-getJSONParamWithPure :: FromJSON a => B.ByteString -> Handler b service (Maybe (B.ByteString, a))
-getJSONParamWithPure = processJSONWithPure . getParam
-
-getJSONParam :: FromJSON a => B.ByteString -> Handler b service (Maybe a)
-getJSONParam = processJSON . getParam
-
-fKey :: Functor f => f (a, b) -> f a
-fKey = fmap fst
-
-fValue :: Functor f => f (a, b) -> f b
-fValue = fmap snd
+readHeader :: Wrapped v B.ByteString => CI B.ByteString -> MaybeT (Handler b service) v
+readHeader hd = fmap wrap (MaybeT (fmap (getHeader hd) getRequest))
