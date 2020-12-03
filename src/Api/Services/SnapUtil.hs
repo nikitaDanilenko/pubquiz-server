@@ -56,5 +56,8 @@ readHeader hd = fmap wrap (exceptFromMaybeF (fmap (getHeader hd) getRequest) err
 jsonResponseCode :: MonadSnap m => Int -> m ()
 jsonResponseCode = modifyResponse . setResponseCodeJSON
 
+anyResponseCode :: MonadSnap m => Int -> m ()
+anyResponseCode = modifyResponse . setResponseCode
+
 errorWithCode :: MonadSnap m => Int -> L.ByteString -> m ()
 errorWithCode c e = writeLBS e >> modifyResponse (setResponseCodeJSON c)
