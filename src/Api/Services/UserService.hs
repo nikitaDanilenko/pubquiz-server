@@ -5,20 +5,16 @@ module Api.Services.UserService where
 
 import           Control.Monad.IO.Class        (liftIO)
 import qualified Data.ByteString.Char8         as B
-import           Snap.Core                     (Method (POST), method,
-                                                modifyResponse, setResponseCode,
-                                                writeBS)
+import           Snap.Core                     (Method (POST), method)
 import           Snap.Snaplet                  (Handler, SnapletInit, addRoutes,
                                                 makeSnaplet)
 
-import           Api.Services.HashCheck        (authenticate, failIfUnverified)
-import           Api.Services.SavedUserHandler (Status (..), mkAndSaveUser)
-import           Api.Services.SnapUtil         (fKey, getJSONPostParam,
-                                                getJSONPostParamWithPure)
-import           Constants                     (createUserApi, credentialsParam,
-                                                userCreationParam, userPath)
-import           General.Types                 (UserCreation, unwrap,
-                                                userCreationUser)
+import           Api.Services.HashCheck        (authenticate)
+import           Api.Services.SavedUserHandler (mkAndSaveUser)
+import           Api.Services.SnapUtil         (readBody, readCredentials, jsonResponseCode, errorWithCode)
+import           Constants                     (createUserApi, userPath)
+import           Control.Monad.Trans.Except    (ExceptT (ExceptT))
+import           General.EitherT.Extra         (exceptValueOr)
 import           Utils                         ((+>))
 
 data UserService =
@@ -34,21 +30,11 @@ userServiceInit =
     return UserService
 
 createUser :: Handler b UserService ()
-createUser = do
-  mCredentials <- getJSONPostParam credentialsParam
-  mUserCreationWithText <- getJSONPostParamWithPure userCreationParam
-  verified <- authenticate mCredentials [(userCreationParam, fKey mUserCreationWithText)]
-  failIfUnverified verified $
-    case mUserCreationWithText of
-      Just (_, userCreation) -> do
-        status <- liftIO (mkAndSaveUser userCreation)
-        case status of
-          Success -> do
-            writeBS (B.unwords ["Created user", unwrap (userCreationUser userCreation)])
-            modifyResponse (setResponseCode 201)
-          Exists u -> do
-            writeBS (B.unwords ["User", unwrap u, "already exists. Nothing changed."])
-            modifyResponse (setResponseCode 406)
-      _ -> do
-        writeBS "User or password missing. Nothing changed."
-        modifyResponse (setResponseCode 406)
+createUser = exceptValueOr transformer (errorWithCode 500)
+  where
+    transformer = do
+      credentials <- readCredentials
+      (userCreationBS, userCreation) <- readBody
+      authenticate credentials userCreationBS
+      ExceptT (liftIO (mkAndSaveUser userCreation))
+      jsonResponseCode 201
