@@ -1,10 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module General.Requests.QuizUpdateRequest where
+module Api.Requests.QuizUpdateRequest where
 
-import           Data.Aeson.TH   (defaultOptions, deriveJSON)
+import           Data.Aeson.TH   (deriveJSON)
 import           Db.Connection   (DbQuizId)
 import           Db.DbConversion (QuizIdentifier, QuizSettings)
+import           Utils           (elmOptions)
 
 data QuizUpdateRequest =
   QuizUpdateRequest
@@ -13,4 +14,4 @@ data QuizUpdateRequest =
     , quizUpdateRequestQuizSettings   :: QuizSettings
     }
 
-deriveJSON defaultOptions ''QuizUpdateRequest
+deriveJSON elmOptions ''QuizUpdateRequest
