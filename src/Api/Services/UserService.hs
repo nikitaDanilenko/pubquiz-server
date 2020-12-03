@@ -9,9 +9,9 @@ import           Snap.Core                     (Method (POST), method)
 import           Snap.Snaplet                  (Handler, SnapletInit, addRoutes,
                                                 makeSnaplet)
 
-import           Api.Services.HashCheck        (authenticate)
 import           Api.Services.SavedUserHandler (mkAndSaveUser)
-import           Api.Services.SnapUtil         (readBody, readCredentials, jsonResponseCode, errorWithCode, Parsed (Parsed))
+import           Api.Services.SnapUtil         (Parsed (Parsed), errorWithCode,
+                                                jsonResponseCode, readVerified)
 import           Constants                     (createUserApi, userPath)
 import           Control.Monad.Trans.Except    (ExceptT (ExceptT))
 import           General.EitherT.Extra         (exceptValueOr)
@@ -33,8 +33,6 @@ createUser :: Handler b UserService ()
 createUser = exceptValueOr transformer (errorWithCode 500)
   where
     transformer = do
-      credentials <- readCredentials
-      Parsed userCreationBS userCreation <- readBody
-      authenticate credentials userCreationBS
+      userCreation <- readVerified
       ExceptT (liftIO (mkAndSaveUser userCreation))
       jsonResponseCode 201

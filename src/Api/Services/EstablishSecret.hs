@@ -8,8 +8,7 @@ module Api.Services.EstablishSecret
 
 import           Api.Requests.SecretRequest    (SecretRequest (SecretRequest))
 import           Api.Services.SavedUserHandler (Password, mkHash)
-import           Api.Services.SnapUtil         (errorWithCode, okJsonResponse,
-                                                parsedJson, readBody)
+import           Api.Services.SnapUtil         (errorWithCode, okJsonResponse, readBody)
 import           Constants                     (oneWayHashSize, secretApi)
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Except    (ExceptT (ExceptT))
@@ -35,8 +34,7 @@ createSecret :: Handler b SecretService ()
 createSecret = exceptValueOr transformer (errorWithCode 401)
   where
     transformer = do
-      parsed <- readBody
-      let SecretRequest userName password = parsedJson parsed
+      SecretRequest userName password <- readBody
       ExceptT $
         fmap
           (\r ->
