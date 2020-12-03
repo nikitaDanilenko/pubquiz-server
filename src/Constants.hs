@@ -50,29 +50,8 @@ splitOnSetter str = (key, drop 1 preValue)
 addSeparator :: [String] -> String
 addSeparator = intercalate [pathSeparator]
 
-quizRatingsParam :: B.ByteString
-quizRatingsParam = "quizRatings"
-
-actionParam :: B.ByteString
-actionParam = "action"
-
 quizIdParam :: B.ByteString
 quizIdParam = "quizId"
-
-quizIdentifierParam :: B.ByteString
-quizIdentifierParam = "quizIdentifier"
-
-quizSettingsParam :: B.ByteString
-quizSettingsParam = "quizSettings"
-
-credentialsParam :: B.ByteString
-credentialsParam = "credentials"
-
-userParam :: B.ByteString
-userParam = "user"
-
-passwordParam :: B.ByteString
-passwordParam = "pass"
 
 teamQueryParam :: B.ByteString
 teamQueryParam = "teamQuery"
@@ -82,9 +61,6 @@ teamNumberParam = "teamNumber"
 
 teamCodeParam :: B.ByteString
 teamCodeParam = "teamCode"
-
-userCreationParam :: B.ByteString
-userCreationParam = "userCreation"
 
 serverQuizzesFolderIO :: IO String
 serverQuizzesFolderIO = readFromConfigFile "serverQuizzesFolder" "quizzes"

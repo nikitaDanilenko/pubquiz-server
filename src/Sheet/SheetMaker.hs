@@ -6,38 +6,33 @@ module Sheet.SheetMaker
   , Ending
   ) where
 
-import           Control.Exception               (catch)
-import           Control.Exception.Base          (IOException)
-import           Control.Monad                   (void)
-import qualified Data.ByteString.Char8           as B
-import qualified Data.ByteString.Lazy            as L
-import           Data.Text                       (Text)
-import qualified Data.Text                       as T (Text, concat,
-                                                       intercalate, pack,
-                                                       unpack)
-import qualified Data.Text.Encoding              as E
-import qualified Data.Text.IO                    as I (writeFile)
-import           System.Directory                (getCurrentDirectory,
-                                                  removeFile,
-                                                  setCurrentDirectory)
-import           System.Process                  (callProcess)
-
 import           Codec.Picture                   (savePngImage)
 import           Codec.Picture.Types             (DynamicImage (ImageY8))
 import qualified Codec.QRCode                    as QR (encode)
 import           Codec.QRCode.Data.ErrorLevel    (ErrorLevel (M))
 import           Codec.QRCode.Data.QRCodeOptions (defaultQRCodeOptions)
 import           Codec.QRCode.Data.TextEncoding  (TextEncoding (Iso8859_1OrUtf8WithoutECI))
+import           Codec.QRCode.JuicyPixels        (toImage)
 import           Constants                       (qrOnlyFileName, quizIdParam,
                                                   sheetFileName, sheetsFolderIO,
                                                   teamCodeParam,
                                                   teamNumberParam,
                                                   teamQueryParam)
+import           Control.Exception               (catch)
+import           Control.Exception.Base          (IOException)
+import           Control.Monad                   (void)
 import           Control.Monad.Trans.Resource    (MonadThrow)
 import           Data.Aeson                      (encode)
+import qualified Data.ByteString.Char8           as B
+import qualified Data.ByteString.Lazy            as L
 import           Data.List                       (sortOn)
-import qualified Data.List                       as List (intercalate)
 import           Data.List.NonEmpty              (fromList)
+import           Data.Text                       (Text)
+import qualified Data.Text                       as T (Text, concat,
+                                                       intercalate, pack,
+                                                       unpack)
+import qualified Data.Text.Encoding              as E
+import qualified Data.Text.IO                    as I (writeFile)
 import           Data.Time.Calendar              (Day)
 import           Db.Connection                   (DbQuizId)
 import           Db.DbConversion                 (QuestionsInQuiz,
@@ -49,16 +44,17 @@ import           Db.DbConversion                 (QuestionsInQuiz,
                                                   teamQueryTeamCode,
                                                   teamQueryTeamNumber)
 import           General.Types                   (Code, TeamNumber, unwrap)
-import           GHC.Natural                     (Natural, naturalToInt)
+import           GHC.Natural                     (naturalToInt)
 import           Network.HTTP.Types              (encodePathSegments)
-import           Sheet.Tex                       (QRPath, mkQROnly,
-                                                  mkSheetWithArbitraryQuestions, imagePath)
+import           Sheet.Tex                       (QRPath, imagePath, mkQROnly,
+                                                  mkSheetWithArbitraryQuestions)
+import           System.Directory                (getCurrentDirectory,
+                                                  removeFile,
+                                                  setCurrentDirectory)
+import           System.Process                  (callProcess)
 import           Text.URI                        (render)
 import           Utils                           (encodePath,
                                                   mkURIFromSchemePathFragment)
-
-import           Codec.QRCode.JuicyPixels        (toImage)
-import           Control.Arrow                   ((&&&))
 
 type ServerPrefix = String
 
@@ -125,7 +121,7 @@ createQRCodes = mapM_ (uncurry createCode)
     createCode path teamQuery =
       case QR.encode (defaultQRCodeOptions M) Iso8859_1OrUtf8WithoutECI path of
         Just image -> savePngImage (imagePath teamQuery) (ImageY8 (toImage imageBorder imageScale image))
-        Nothing    -> putStrLn (unwords ["Image creation for", imagePath teamQuery, "failed"])
+        Nothing -> putStrLn (unwords ["Image creation for", imagePath teamQuery, "failed"])
 
 cleanQRCodes :: [TeamQuery] -> IO ()
 cleanQRCodes = mapM_ (safeRemoveFile . imagePath)
