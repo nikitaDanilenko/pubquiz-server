@@ -6,7 +6,7 @@ module Api.Services.SnapUtil where
 
 import           Control.Applicative        (liftA2)
 import           Control.Monad.Trans.Except (ExceptT (ExceptT))
-import           Data.Aeson                 (eitherDecode)
+import           Data.Aeson                 (ToJSON, eitherDecode, encode)
 import           Data.Aeson.Types           (FromJSON)
 import qualified Data.ByteString.Char8      as B
 import qualified Data.ByteString.Lazy       as L
@@ -61,3 +61,8 @@ anyResponseCode = modifyResponse . setResponseCode
 
 errorWithCode :: MonadSnap m => Int -> L.ByteString -> m ()
 errorWithCode c e = writeLBS e >> modifyResponse (setResponseCodeJSON c)
+
+okJsonResponse :: (ToJSON v, MonadSnap m) => v -> m ()
+okJsonResponse value = do
+  writeLBS (encode value)
+  jsonResponseCode 200
