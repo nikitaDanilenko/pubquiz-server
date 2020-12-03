@@ -3,6 +3,7 @@
 
 module Api.Services.SnapUtil where
 
+import           Api.Services.HashCheck     (authenticate)
 import           Control.Applicative        (liftA2)
 import           Control.Monad.Trans.Except (ExceptT (ExceptT))
 import           Data.Aeson                 (ToJSON, eitherDecode, encode)
@@ -15,8 +16,8 @@ import           Data.Word                  (Word64)
 import           Db.DbConversion            (Credentials (Credentials))
 import           General.EitherT.Extra      (exceptFromMaybeF)
 import           General.Types              (Wrapped, wrap)
-import           Snap                       (Handler, readRequestBody)
-import           Snap.Core                  (MonadSnap, Request, Response,
+import           Snap                       (readRequestBody)
+import           Snap.Core                  (MonadSnap, Response,
                                              getHeader, getRequest,
                                              modifyResponse, setHeader,
                                              setResponseCode, writeLBS)
@@ -28,14 +29,17 @@ setResponseCodeJSON code = setResponseCode code . setHeader (mkFromString "Conte
 mkFromString :: String -> CI B.ByteString
 mkFromString = mk . B.pack
 
-readBody :: FromJSON a => ExceptT L.ByteString (Handler b service) (Parsed a)
-readBody =
+readParsedBody :: (FromJSON a, MonadSnap m) => ExceptT L.ByteString m (Parsed a)
+readParsedBody =
   ExceptT
     (fmap
        (\a -> fmap (Parsed (L.toStrict a)) (mapLeft (L.fromStrict . B.pack) (eitherDecode a)))
        (readRequestBody maxRequestSize))
 
-readCredentials :: ExceptT L.ByteString (Handler b service) Credentials
+readBody :: (FromJSON a, MonadSnap m) => ExceptT L.ByteString m a
+readBody = fmap parsedJson readParsedBody
+
+readCredentials :: MonadSnap m => ExceptT L.ByteString m Credentials
 readCredentials = liftA2 Credentials (readHeader userHeader) (readHeader signatureHeader)
 
 userHeader :: CI B.ByteString
@@ -47,7 +51,7 @@ signatureHeader = mkFromString "Signature"
 maxRequestSize :: Word64
 maxRequestSize = 65536
 
-readHeader :: Wrapped v B.ByteString => CI B.ByteString -> ExceptT L.ByteString (Handler b service) v
+readHeader :: (Wrapped v B.ByteString, MonadSnap m) => CI B.ByteString -> ExceptT L.ByteString m v
 readHeader hd = fmap wrap (exceptFromMaybeF (fmap (getHeader hd) getRequest) errorMsg)
   where
     errorMsg = L.fromStrict (B.unwords [B.pack "Missing header:", original hd])
@@ -71,3 +75,10 @@ data Parsed a =
     { originalText :: B.ByteString
     , parsedJson   :: a
     }
+
+readVerified :: (FromJSON a, MonadSnap m) => ExceptT L.ByteString m a
+readVerified = do
+  credentials <- readCredentials
+  parsed <- readParsedBody
+  authenticate credentials (originalText parsed)
+  pure (parsedJson parsed)
