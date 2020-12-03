@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds   #-}
-{-# LANGUAGE TupleSections    #-}
 
 module Api.Services.SnapUtil where
 
@@ -29,11 +28,11 @@ setResponseCodeJSON code = setResponseCode code . setHeader (mkFromString "Conte
 mkFromString :: String -> CI B.ByteString
 mkFromString = mk . B.pack
 
-readBody :: FromJSON a => ExceptT L.ByteString (Handler b service) (B.ByteString, a)
+readBody :: FromJSON a => ExceptT L.ByteString (Handler b service) (Parsed a)
 readBody =
   ExceptT
     (fmap
-       (\a -> fmap (L.toStrict a, ) (mapLeft (L.fromStrict . B.pack) (eitherDecode a)))
+       (\a -> fmap (Parsed (L.toStrict a)) (mapLeft (L.fromStrict . B.pack) (eitherDecode a)))
        (readRequestBody maxRequestSize))
 
 readCredentials :: ExceptT L.ByteString (Handler b service) Credentials
@@ -66,3 +65,9 @@ okJsonResponse :: (ToJSON v, MonadSnap m) => v -> m ()
 okJsonResponse value = do
   writeLBS (encode value)
   jsonResponseCode 200
+
+data Parsed a =
+  Parsed
+    { originalText :: B.ByteString
+    , parsedJson   :: a
+    }
