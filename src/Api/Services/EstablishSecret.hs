@@ -6,24 +6,23 @@ module Api.Services.EstablishSecret
   , secretServiceInit
   ) where
 
-import           Control.Monad.IO.Class
-import           Crypto.PubKey.RSA             (PublicKey, generate)
-import qualified Data.ByteString.Char8         as B
-import           Data.Maybe                    (fromMaybe)
-import qualified Data.Text                     as T
-import           Snap.Core                     hiding (pass)
-import           Snap.Snaplet
-
+import           Api.Requests.SecretRequest    (SecretRequest (SecretRequest))
 import           Api.Services.SavedUserHandler (Password, mkHash)
-import           Api.Services.SnapUtil         (getJSONPostParam)
-import           Constants                     (oneWayHashSize, passwordParam,
-                                                userParam, secretApi)
-import           Control.Applicative           (liftA2)
-import           Data.Aeson                    (encode)
+import           Api.Services.SnapUtil         (errorWithCode, okJsonResponse,
+                                                parsedJson, readBody)
+import           Constants                     (oneWayHashSize, secretApi)
+import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Except    (ExceptT (ExceptT))
+import qualified Data.ByteString.Char8         as B
+import qualified Data.ByteString.Lazy          as L
+import qualified Data.Text                     as T
 import           Db.DbConversion               (SavedUser, userHash, userName,
                                                 userSalt)
 import           Db.Storage                    (findUser, setSessionKey)
+import           General.EitherT.Extra         (exceptValueOr)
 import           General.Types                 (UserHash, UserName, wrap)
+import           Snap.Core
+import           Snap.Snaplet
 import           Utils                         (randomStringIO, (+>))
 
 data SecretService =
@@ -33,21 +32,23 @@ secretRoutes :: [(B.ByteString, Handler b SecretService ())]
 secretRoutes = [secretApi +> method POST createSecret]
 
 createSecret :: Handler b SecretService ()
-createSecret = do
-  mUser <- getJSONPostParam userParam
-  mPass <- getJSONPostParam passwordParam
-  valid <- liftIO $ fromMaybe (pure False) (liftA2 verifyUser mUser mPass)
-  if valid
-    then do
-      oneWayHash <- liftIO (createAndWriteHash (fromMaybe (error "Non-existing user (should never occur)") mUser))
-      writeLBS (encode oneWayHash)
-      modifyResponse (setResponseCode 201)
-    else do
-      writeBS authenticationError
-      modifyResponse (setResponseCode 401)
+createSecret = exceptValueOr transformer (errorWithCode 401)
+  where
+    transformer = do
+      parsed <- readBody
+      let SecretRequest userName password = parsedJson parsed
+      ExceptT $
+        fmap
+          (\r ->
+             if r
+               then Right ()
+               else Left authenticationError)
+          (liftIO (verifyUser userName password))
+      oneWayHash <- liftIO (createAndWriteHash userName)
+      okJsonResponse oneWayHash
 
-authenticationError :: B.ByteString
-authenticationError = B.pack "Failed to authenticate: user name or password is wrong."
+authenticationError :: L.ByteString
+authenticationError = L.fromStrict (B.pack "Failed to authenticate: user name or password is wrong.")
 
 verifyUser :: UserName -> Password -> IO Bool
 verifyUser user pass = do

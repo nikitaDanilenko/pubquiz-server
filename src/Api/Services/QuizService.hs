@@ -6,73 +6,108 @@ module Api.Services.QuizService
   , QuizService
   ) where
 
-import           Control.Applicative        (liftA2, liftA3)
-import           Control.Arrow              ((&&&))
-import           Control.Monad.IO.Class     (liftIO)
-import           Control.Monad.Trans.Class  (lift)
-import           Control.Monad.Trans.Except (ExceptT (ExceptT), runExceptT)
-import qualified Data.ByteString.Char8      as B
-import qualified Data.ByteString.Lazy       as L
-import           Data.Maybe                 (fromMaybe, maybe)
-import qualified Data.Text                  as T (unpack)
-import           General.EitherT.Extra      (exceptFromMaybeF, exceptValueOr)
-import           Snap.Core                  (Method (GET, POST), method,
-                                             modifyResponse, writeLBS)
-import           Snap.Snaplet               (Handler, SnapletInit, addRoutes,
-                                             makeSnaplet)
-
-import           Api.Services.HashCheck     (authenticate, authenticateD,
-                                             failIfUnverified)
-import           Api.Services.SnapUtil      (encodeOrEmpty, fKey, fValue,
-                                             getJSONParam, getJSONPostParam,
-                                             getJSONPostParamWithPure,
-                                             setResponseCodeJSON, strictEncodeF)
-import           Constants                  (actionParam, allActiveApi, allApi,
-                                             credentialsParam, getLabelsApi,
-                                             getQuizInfoApi, getQuizRatingsApi,
-                                             getQuizSettingsApi, lockApi,
-                                             newApi, quizIdParam,
-                                             quizIdentifierParam, quizPath,
-                                             quizRatingsParam,
-                                             quizSettingsParam, serverPathIO,
-                                             serverQuizzesFolderIO,
-                                             sheetsFolderIO, teamQueryParam,
-                                             teamTableApi, updateQuizApi,
-                                             updateQuizRatingsApi)
-import           Data.Aeson                 (encode)
-import           Db.Connection              (DbQuizId, runSql)
-import           Db.DbConversion            (Credentials, Header,
-                                             QuizIdentifier, QuizInfo,
-                                             QuizRatings, QuizSettings,
-                                             TeamInfo (teamInfoCode, teamInfoNumber),
-                                             active, adjustHeaderToSize, date,
-                                             fallbackSettings, fullSheetPath,
-                                             labels, mkDefaultTeamInfos,
-                                             numberOfTeams, qrOnlyPath,
-                                             questionsInQuiz, quizId,
-                                             quizIdentifier, teamQueryQuizId,
-                                             teamQueryTeamNumber)
-import           Db.Storage                 (QuizInfoSheetType (Download, LocalFile),
-                                             createQuizStatement,
-                                             findAllActiveQuizzes,
-                                             findAllQuizzes,
-                                             findHeaderStatement, findLabels,
-                                             findQuizInfo, findQuizRatings,
-                                             findQuizSettings,
-                                             findTeamTableInfo, lockQuiz,
-                                             setHeaderStatement,
-                                             setLabelsStatement,
-                                             setMissingTeamRatingsToZeroStatement,
-                                             setQuestionsInQuizStatement,
-                                             setQuizIdentifierStatement,
-                                             setQuizRatings, setTeamInfo)
-import           General.Labels             (teamLabel)
-import           General.Types              (Action (CreateQuizA, LockA, UpdateSettingsA),
-                                             Activity (Active, Inactive),
-                                             Wrapped (unwrap), wrap)
-import           GHC.Natural                (naturalToInt)
-import           Sheet.SheetMaker           (createSheetWith, safeRemoveFile)
-import           Utils                      (randomDistinctHexadecimal, (+>))
+import           Api.Requests.CreateQuizRequest        (createQuizRequestQuizIdentifier,
+                                                        createQuizRequestQuizSettings)
+import           Api.Requests.QuizIdRequest            (quizIdRequestQuizId)
+import           Api.Requests.QuizUpdateRequest        (QuizUpdateRequest,
+                                                        quizUpdateRequestQuizId,
+                                                        quizUpdateRequestQuizIdentifier,
+                                                        quizUpdateRequestQuizSettings)
+import           Api.Requests.UpdateQuizRatingsRequest (UpdateQuizRatingsRequest (UpdateQuizRatingsRequest))
+import           Api.Services.HashCheck                (authenticate)
+import           Api.Services.SnapUtil                 (anyResponseCode,
+                                                        errorWithCode,
+                                                        jsonResponseCode,
+                                                        okJsonResponse,
+                                                        originalText,
+                                                        parsedJson, readBody,
+                                                        readCredentials,
+                                                        setResponseCodeJSON)
+import           Constants                             (actionParam,
+                                                        allActiveApi, allApi,
+                                                        credentialsParam,
+                                                        getLabelsApi,
+                                                        getQuizInfoApi,
+                                                        getQuizRatingsApi,
+                                                        getQuizSettingsApi,
+                                                        lockApi, newApi,
+                                                        quizIdParam,
+                                                        quizIdentifierParam,
+                                                        quizPath,
+                                                        quizRatingsParam,
+                                                        quizSettingsParam,
+                                                        serverPathIO,
+                                                        serverQuizzesFolderIO,
+                                                        sheetsFolderIO,
+                                                        teamQueryParam,
+                                                        teamTableApi,
+                                                        updateQuizApi,
+                                                        updateQuizRatingsApi)
+import           Control.Applicative                   (liftA2, liftA3)
+import           Control.Arrow                         ((&&&))
+import           Control.Monad.IO.Class                (liftIO)
+import           Control.Monad.Trans.Class             (lift)
+import           Control.Monad.Trans.Except            (ExceptT (ExceptT),
+                                                        runExceptT)
+import           Control.Monad.Trans.Except            (ExceptT)
+import           Control.Monad.Trans.Maybe             (runMaybeT)
+import           Data.Aeson                            (encode)
+import qualified Data.ByteString.Char8                 as B
+import qualified Data.ByteString.Lazy                  as L
+import           Data.Maybe                            (fromMaybe, maybe)
+import qualified Data.Text                             as T (unpack)
+import           Db.Connection                         (DbQuizId, runSql)
+import           Db.DbConversion                       (Credentials, Header,
+                                                        QuizIdentifier,
+                                                        QuizInfo, QuizRatings,
+                                                        QuizSettings,
+                                                        TeamInfo (teamInfoCode, teamInfoNumber),
+                                                        active,
+                                                        adjustHeaderToSize,
+                                                        date, fallbackSettings,
+                                                        fullSheetPath, labels,
+                                                        mkDefaultTeamInfos,
+                                                        numberOfTeams,
+                                                        qrOnlyPath,
+                                                        questionsInQuiz, quizId,
+                                                        quizIdentifier,
+                                                        teamQueryQuizId,
+                                                        teamQueryTeamNumber)
+import           Db.Storage                            (QuizInfoSheetType (Download, LocalFile),
+                                                        createQuizStatement,
+                                                        findAllActiveQuizzes,
+                                                        findAllQuizzes,
+                                                        findHeaderStatement,
+                                                        findLabels,
+                                                        findQuizInfo,
+                                                        findQuizRatings,
+                                                        findQuizSettings,
+                                                        findTeamTableInfo,
+                                                        lockQuiz,
+                                                        setHeaderStatement,
+                                                        setLabelsStatement,
+                                                        setMissingTeamRatingsToZeroStatement,
+                                                        setQuestionsInQuizStatement,
+                                                        setQuizIdentifierStatement,
+                                                        setQuizRatings,
+                                                        setTeamInfo)
+import           General.EitherT.Extra                 (exceptFromMaybeF,
+                                                        exceptValueOr)
+import           General.EitherT.Extra                 (exceptValueOr)
+import           General.Labels                        (teamLabel)
+import           General.Types                         (Action (CreateQuizA, LockA, UpdateSettingsA),
+                                                        Activity (Active, Inactive),
+                                                        Wrapped (unwrap), wrap)
+import           GHC.Natural                           (naturalToInt)
+import           Sheet.SheetMaker                      (createSheetWith,
+                                                        safeRemoveFile)
+import           Snap.Core                             (Method (GET, POST),
+                                                        method, modifyResponse,
+                                                        writeLBS)
+import           Snap.Snaplet                          (Handler, SnapletInit,
+                                                        addRoutes, makeSnaplet)
+import           Utils                                 (randomDistinctHexadecimal,
+                                                        (+>))
 
 data QuizService =
   QuizService
@@ -102,112 +137,77 @@ sendAvailableWith :: IO [QuizInfo] -> Handler b QuizService ()
 sendAvailableWith activeInfoListIO = do
   quizInfoList <- liftIO activeInfoListIO
   writeLBS (encode quizInfoList)
-  modifyResponse (setResponseCodeJSON 200)
+  jsonResponseCode 200
 
 getQuizRatingsHandler :: Handler b QuizService ()
-getQuizRatingsHandler = do
-  mQuizId <- getJSONParam quizIdParam
-  case mQuizId of
-    Nothing -> modifyResponse (setResponseCodeJSON 400)
-    Just qid -> do
-      quizRatings <- liftIO (findQuizRatings qid)
-      writeLBS (encode quizRatings)
-      modifyResponse (setResponseCodeJSON 200)
+getQuizRatingsHandler = exceptValueOr transformer (errorWithCode 400)
+  where
+    transformer = do
+      parsed <- readBody
+      quizRatings <- liftIO (findQuizRatings (quizIdRequestQuizId (parsedJson parsed)))
+      okJsonResponse quizRatings
 
 getLabelsHandler :: Handler b QuizService ()
-getLabelsHandler = do
-  mQuizId <- getJSONParam quizIdParam
-  case mQuizId of
-    Nothing -> writeLBS "Invalid quiz id" >> modifyResponse (setResponseCodeJSON 400)
-    Just qid -> do
-      labels <- liftIO (findLabels qid)
-      writeLBS (encode labels)
-      modifyResponse (setResponseCodeJSON 200)
+getLabelsHandler = exceptValueOr transformer (errorWithCode 400)
+  where
+    transformer = do
+      parsed <- readBody
+      labels <- liftIO (findLabels (quizIdRequestQuizId (parsedJson parsed)))
+      okJsonResponse labels
 
 updateQuizRatingsHandler :: Handler b QuizService ()
-updateQuizRatingsHandler = do
-  mQuizRatings <- getJSONPostParamWithPure quizRatingsParam
-  mQuizId <- getJSONPostParamWithPure quizIdParam
-  mCredentials <- getJSONPostParam credentialsParam
-  verified <- authenticate mCredentials [(quizIdParam, fKey mQuizId), (quizRatingsParam, fKey mQuizRatings)]
-  failIfUnverified verified (updateQuizDataLifted (fValue mQuizId) (fValue mQuizRatings))
+updateQuizRatingsHandler = exceptValueOr transformer (errorWithCode 406)
+  where
+    transformer = do
+      credentials <- readCredentials
+      parsed <- readBody
+      authenticate credentials (originalText parsed)
+      liftIO (updateQuizData (parsedJson parsed))
+      anyResponseCode 200
 
-updateQuizDataLifted :: Maybe DbQuizId -> Maybe QuizRatings -> Handler b QuizService ()
-updateQuizDataLifted mQid mQuizRatings =
-  maybe
-    (do writeLBS (L.fromStrict (mkUpdateErrorMessage mQid mQuizRatings))
-        modifyResponse (setResponseCodeJSON 406))
-    liftIO
-    (liftA2 updateQuizData mQid mQuizRatings)
-
-mkUpdateErrorMessage :: Maybe DbQuizId -> Maybe QuizRatings -> B.ByteString
-mkUpdateErrorMessage mQid mQuizRatings =
-  B.unlines
-    ("Malfolmed request:" :
-     map
-       (\(k, v) -> B.intercalate "=" [k, v])
-       [(quizIdParam, encodeOrEmpty mQid), (quizRatingsParam, encodeOrEmpty mQuizRatings)])
-
-updateQuizData :: DbQuizId -> QuizRatings -> IO ()
-updateQuizData qid quizRatings = ifActiveDo Download qid (pure ()) (\_ -> setQuizRatings qid quizRatings)
+updateQuizData :: UpdateQuizRatingsRequest -> IO ()
+updateQuizData (UpdateQuizRatingsRequest qid quizRatings) =
+  ifActiveDo Download qid (pure ()) (\_ -> setQuizRatings qid quizRatings)
 
 updateQuizHandler :: Handler b QuizService ()
-updateQuizHandler = do
-  mQuizId <- getJSONPostParamWithPure quizIdParam
-  mQuizSettings <- getJSONPostParamWithPure quizSettingsParam
-  mQuizIdentifier <- getJSONPostParamWithPure quizIdentifierParam
-  mCredentials <- getJSONPostParam credentialsParam
-  verified <-
-    authenticate
-      mCredentials
-      [ (quizIdParam, fKey mQuizId)
-      , (quizIdentifierParam, fKey mQuizIdentifier)
-      , (quizSettingsParam, fKey mQuizSettings)
-      , (actionParam, strictEncodeF (Just UpdateSettingsA))
-      ]
-  failIfUnverified verified $
-    liftIO
-      (fromMaybe
-         (pure ())
-         (liftA3 updateIdentifierAndSettings (fValue mQuizId) (fValue mQuizIdentifier) (fValue mQuizSettings)))
+updateQuizHandler = exceptValueOr transformer (errorWithCode 500)
+  where
+    transformer = do
+      credentials <- readCredentials
+      parsed <- readBody
+      authenticate credentials (originalText parsed)
+      liftIO (updateIdentifierAndSettings (parsedJson parsed))
+      jsonResponseCode 200
 
 teamCodeLength :: Int
 teamCodeLength = 6
 
 newQuiz :: Handler b QuizService ()
-newQuiz = do
-  mQuizIdentifier <- getJSONPostParamWithPure quizIdentifierParam
-  mCredentials <- getJSONPostParam credentialsParam
-  mSettings <- getJSONPostParamWithPure quizSettingsParam
-  verified <-
-    authenticate
-      mCredentials
-      [ (quizIdentifierParam, fKey mQuizIdentifier)
-      , (quizSettingsParam, fKey mSettings)
-      , (actionParam, strictEncodeF (Just CreateQuizA))
-      ]
-  failIfUnverified verified $
-    case mQuizIdentifier of
-      Nothing -> writeLBS "Could not read quiz info." >> modifyResponse (setResponseCodeJSON 406)
-      Just (_, quizIdentifier) -> do
-        let quizSettings = fromMaybe fallbackSettings (fValue mSettings)
-            gs = numberOfTeams quizSettings
-        endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
-        let header = wrap (mkDefaultTeamInfos 1 (teamLabel (labels quizSettings)) endings)
-        quizInfo <-
-          liftIO $
-          runSql $ do
-            newQuizInfo <- createQuizStatement quizIdentifier
-            let qid = quizId newQuizInfo
-            setHeaderStatement qid header
-            setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
-            pure newQuizInfo
-        liftIO (createSheetWithSettings (quizId quizInfo) quizIdentifier quizSettings header)
-        writeLBS (encode quizInfo)
-        modifyResponse (setResponseCodeJSON 200)
+newQuiz = exceptValueOr transformer (errorWithCode 406)
+  where
+    transformer = do
+      credentials <- readCredentials
+      parsed <- readBody
+      authenticate credentials (originalText parsed)
+      let createQuizRequest = parsedJson parsed
+          quizSettings = createQuizRequestQuizSettings createQuizRequest
+          quizIdentifier = createQuizRequestQuizIdentifier createQuizRequest
+          gs = numberOfTeams quizSettings
+      endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
+      let header = wrap (mkDefaultTeamInfos 1 (teamLabel (labels quizSettings)) endings)
+      quizInfo <-
+        liftIO $
+        runSql $ do
+          newQuizInfo <- createQuizStatement quizIdentifier
+          let qid = quizId newQuizInfo
+          setHeaderStatement qid header
+          setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
+          pure newQuizInfo
+      liftIO (createSheetWithSettings (quizId quizInfo) quizIdentifier quizSettings header)
+      okJsonResponse quizInfo
 
-updateIdentifierAndSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> IO ()
-updateIdentifierAndSettings qid idf quizSettings =
+updateIdentifierAndSettings :: QuizUpdateRequest -> IO ()
+updateIdentifierAndSettings quizUpdateRequest =
   ifActiveDo LocalFile qid (pure ()) $ \quizInfo ->
     runSql $ do
       setQuizIdentifierStatement qid idf
@@ -220,6 +220,10 @@ updateIdentifierAndSettings qid idf quizSettings =
       setQuestionsInQuizStatement qid (questionsInQuiz quizSettings)
       liftIO (removeFiles quizInfo)
       liftIO (createSheetWithSettings qid idf quizSettings adjustedHeader)
+  where
+    qid = quizUpdateRequestQuizId quizUpdateRequest
+    idf = quizUpdateRequestQuizIdentifier quizUpdateRequest
+    quizSettings = quizUpdateRequestQuizSettings quizUpdateRequest
 
 createSheetWithSettings :: DbQuizId -> QuizIdentifier -> QuizSettings -> Header -> IO ()
 createSheetWithSettings qid identifier quizSettings header = do
@@ -242,81 +246,47 @@ ifActiveDo qist qid dft action = findQuizInfo qist qid >>= maybe dft checkActive
         Active   -> action quizInfo
         Inactive -> dft
 
-data Failure =
-  Failure
-    { failureMessage :: L.ByteString
-    , failureCode    :: Int
-    }
-
-verify :: Applicative f => Bool -> ExceptT Failure f a -> ExceptT Failure f a
-verify cond action = inner
-  where
-    inner
-      | cond = action
-      | otherwise = ExceptT (pure (Left (Failure "Authentication failed" 406)))
-
-notFound :: L.ByteString -> Failure
-notFound = flip Failure 404
-
 lockHandler :: Handler b QuizService ()
-lockHandler =
-  exceptValueOr
-    transformer
-    (\failure -> writeLBS (failureMessage failure) >> modifyResponse (setResponseCodeJSON (failureCode failure)))
+lockHandler = exceptValueOr transformer (errorWithCode 406)
   where
     transformer = do
-      (quizIdLbl, qid) <-
-        exceptFromMaybeF (getJSONPostParamWithPure quizIdParam) (notFound "No valid quiz id in parameter.")
-      credentials <- exceptFromMaybeF (getJSONPostParam credentialsParam) (notFound "No credentials supplied")
-      verified <-
-        lift (authenticateD credentials [(quizIdParam, Just quizIdLbl), (actionParam, strictEncodeF (Just LockA))])
-      verify verified $ do
-        quizInfo <- exceptFromMaybeF (liftIO (findQuizInfo LocalFile qid)) (notFound "No quiz with given id.")
-        liftIO (lockQuiz qid)
-        liftIO (removeFiles quizInfo)
-        lift (modifyResponse (setResponseCodeJSON 201))
-        
-removeFiles :: QuizInfo -> IO ()
-removeFiles quizInfo =
-  mapM_ (safeRemoveFile . T.unpack) [fullSheetPath quizInfo, qrOnlyPath quizInfo]
+      credentials <- readCredentials
+      parsed <- readBody
+      authenticate credentials (originalText parsed)
+      let qid = quizIdRequestQuizId (parsedJson parsed)
+      quizInfo <- exceptFromMaybeF (liftIO (findQuizInfo LocalFile qid)) "No quiz with given id."
+      liftIO (lockQuiz qid)
+      liftIO (removeFiles quizInfo)
+      anyResponseCode 201
 
-errorInfo :: L.ByteString -> Handler b QuizService ()
-errorInfo str = do
-  writeLBS str
-  modifyResponse (setResponseCodeJSON 404)
+removeFiles :: QuizInfo -> IO ()
+removeFiles quizInfo = mapM_ (safeRemoveFile . T.unpack) [fullSheetPath quizInfo, qrOnlyPath quizInfo]
 
 teamTableInfoHandler :: Handler b QuizService ()
-teamTableInfoHandler = do
-  mTeamQuery <- getJSONParam teamQueryParam
-  case mTeamQuery of
-    Nothing -> errorInfo "No such team found"
-    Just tq -> do
+teamTableInfoHandler = exceptValueOr transformer (errorWithCode 500)
+  where
+    transformer = do
+      parsed <- readBody
+      let tq = parsedJson parsed
       teamTableInfo <- liftIO (findTeamTableInfo (teamQueryQuizId tq) (teamQueryTeamNumber tq))
-      writeLBS (encode teamTableInfo)
-      modifyResponse (setResponseCodeJSON 201)
+      okJsonResponse teamTableInfo
 
 quizInfoHandler :: Handler b QuizService ()
-quizInfoHandler = do
-  mQuizId <- getJSONParam quizIdParam
-  case mQuizId of
-    Nothing -> errorInfo "Not a valid quiz id"
-    Just qid -> do
-      mQuizInfo <- liftIO (findQuizInfo Download qid)
-      case mQuizInfo of
-        Nothing -> errorInfo "No quiz with this id found"
-        Just quizInfo -> do
-          writeLBS (encode quizInfo)
-          modifyResponse (setResponseCodeJSON 201)
+quizInfoHandler = exceptValueOr transformer (errorWithCode 500)
+  where
+    transformer = do
+      parsed <- readBody
+      let qid = quizIdRequestQuizId (parsedJson parsed)
+      quizInfo <- exceptFromMaybeF (liftIO (findQuizInfo Download qid)) "No such quiz id"
+      okJsonResponse quizInfo
 
 quizSettingsHandler :: Handler b QuizService ()
-quizSettingsHandler = do
-  mQuizId <- getJSONParam quizIdParam
-  case mQuizId of
-    Nothing -> errorInfo "Not a valid quiz id"
-    Just qid -> do
-      quizSettings <- liftIO (findQuizSettings qid)
-      writeLBS (encode quizSettings)
-      modifyResponse (setResponseCodeJSON 201)
+quizSettingsHandler = exceptValueOr transformer (errorWithCode 500)
+  where
+    transformer = do
+      parsed <- readBody
+      quizSettings <- liftIO (findQuizSettings (quizIdRequestQuizId (parsedJson parsed)))
+      okJsonResponse quizSettings
 
 quizServiceInit :: SnapletInit b QuizService
 quizServiceInit =
