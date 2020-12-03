@@ -4,41 +4,68 @@
 
 module General.ElmBridge where
 
-import           Elm.Derive         (deriveElmDef)
-import           Elm.Module         (DefineElm (DefineElm), makeElmModule)
+import           Elm.Derive                            (deriveElmDef)
+import           Elm.Module                            (DefineElm (DefineElm),
+                                                        makeElmModule)
 
-import           Data.Proxy         (Proxy (Proxy))
+import           Data.Proxy                            (Proxy (Proxy))
 
-import           Data.Time.Calendar (Day)
-import           Db.Connection      (DbQuizId)
-import           Db.DbConversion    (Credentials, Header, QuestionsInQuiz,
-                                     QuestionsInRound, QuizIdentifier, QuizInfo,
-                                     QuizRatings, QuizSettings, Ratings,
-                                     RoundRating, TeamInfo, TeamLine, TeamQuery,
-                                     TeamRating, TeamTable, TeamTableInfo)
-import           Elm.TyRep          (EAlias (EAlias), EPrimAlias (EPrimAlias),
-                                     ETCon (ETCon), ETVar (ETVar),
-                                     EType (ETyCon),
-                                     ETypeDef (ETypeAlias, ETypePrimAlias),
-                                     ETypeName (ETypeName),
-                                     IsElmDefinition (compileElmDef), ea_fields,
-                                     ea_name, ea_newtype, ea_omit_null,
-                                     ea_unwrap_unary, epa_name, epa_type)
-import           General.Labels     (Labels)
-import           General.Types      (Action, Activity, BackToChartViewLabel,
-                                     Code, CumulativeLabel,
-                                     IndividualRoundsLabel, MaxReachableLabel,
-                                     MaxReachedLabel, NumberOfQuestions,
-                                     OwnPageLabel, OwnPointsLabel, Password,
-                                     Place, PlaceAfterRoundLabel,
-                                     PlaceInRoundLabel, PlaceLabel,
-                                     PlacementLabel, PointsLabel,
-                                     ProgressionLabel, QuizDate, QuizName,
-                                     RoundLabel, RoundNumber, RoundWinnerLabel,
-                                     TeamLabel, TeamName, TeamNumber,
-                                     UserCreation, UserHash, UserName, UserSalt,
-                                     ViewPreviousLabel)
-import           Utils              (elmOptions)
+import           Api.Requests.CreateQuizRequest        (CreateQuizRequest)
+import           Api.Requests.QuizIdRequest            (QuizIdRequest)
+import           Api.Requests.QuizUpdateRequest        (QuizUpdateRequest)
+import           Api.Requests.SecretRequest            (SecretRequest)
+import           Api.Requests.UpdateQuizRatingsRequest (UpdateQuizRatingsRequest)
+import           Data.Time.Calendar                    (Day)
+import           Db.Connection                         (DbQuizId)
+import           Db.DbConversion                       (Credentials, Header,
+                                                        QuestionsInQuiz,
+                                                        QuestionsInRound,
+                                                        QuizIdentifier,
+                                                        QuizInfo, QuizRatings,
+                                                        QuizSettings, Ratings,
+                                                        RoundRating, TeamInfo,
+                                                        TeamLine, TeamQuery,
+                                                        TeamRating, TeamTable,
+                                                        TeamTableInfo)
+import           Elm.TyRep                             (EAlias (EAlias),
+                                                        EPrimAlias (EPrimAlias),
+                                                        ETCon (ETCon),
+                                                        ETVar (ETVar),
+                                                        EType (ETyCon),
+                                                        ETypeDef (ETypeAlias, ETypePrimAlias),
+                                                        ETypeName (ETypeName),
+                                                        IsElmDefinition (compileElmDef),
+                                                        ea_fields, ea_name,
+                                                        ea_newtype,
+                                                        ea_omit_null,
+                                                        ea_unwrap_unary,
+                                                        epa_name, epa_type)
+import           General.Labels                        (Labels)
+import           General.Types                         (Action, Activity,
+                                                        BackToChartViewLabel,
+                                                        Code, CumulativeLabel,
+                                                        IndividualRoundsLabel,
+                                                        MaxReachableLabel,
+                                                        MaxReachedLabel,
+                                                        NumberOfQuestions,
+                                                        OwnPageLabel,
+                                                        OwnPointsLabel,
+                                                        Password, Place,
+                                                        PlaceAfterRoundLabel,
+                                                        PlaceInRoundLabel,
+                                                        PlaceLabel,
+                                                        PlacementLabel,
+                                                        PointsLabel,
+                                                        ProgressionLabel,
+                                                        QuizDate, QuizName,
+                                                        RoundLabel, RoundNumber,
+                                                        RoundWinnerLabel,
+                                                        TeamLabel, TeamName,
+                                                        TeamNumber,
+                                                        UserCreation, UserHash,
+                                                        UserName, UserSalt,
+                                                        ViewPreviousLabel)
+import           Utils                                 (elmOptions)
 
 deriveElmDef elmOptions ''TeamNumber
 
@@ -138,6 +165,16 @@ deriveElmDef elmOptions ''QuestionsInQuiz
 
 deriveElmDef elmOptions ''QuestionsInRound
 
+deriveElmDef elmOptions ''CreateQuizRequest
+
+deriveElmDef elmOptions ''QuizIdRequest
+
+deriveElmDef elmOptions ''QuizUpdateRequest
+
+deriveElmDef elmOptions ''SecretRequest
+
+deriveElmDef elmOptions ''UpdateQuizRatingsRequest
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -200,6 +237,11 @@ main path =
     , DefineElm (Proxy :: Proxy NumberOfQuestions)
     , DefineElm (Proxy :: Proxy QuestionsInQuiz)
     , DefineElm (Proxy :: Proxy QuestionsInRound)
+    , DefineElm (Proxy :: Proxy CreateQuizRequest)
+    , DefineElm (Proxy :: Proxy QuizIdRequest)
+    , DefineElm (Proxy :: Proxy QuizUpdateRequest)
+    , DefineElm (Proxy :: Proxy SecretRequest)
+    , DefineElm (Proxy :: Proxy UpdateQuizRatingsRequest)
     ]
 
 pathToElm :: String
