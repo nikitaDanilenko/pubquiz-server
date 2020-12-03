@@ -36,7 +36,7 @@ import           General.Types        (Activity (Active), Code,
                                        UserHash, UserName, UserSalt, unwrap,
                                        wrap, fallback)
 import           GHC.Natural          (Natural, intToNatural, naturalToInt)
-import           Utils                (randomDistinctHexadecimal)
+import           Utils                (randomDistinctHexadecimal, elmOptions)
 
 data TeamRating =
   TeamRating
@@ -141,7 +141,7 @@ data Credentials =
     , signature :: UserHash
     }
 
-deriveJSON defaultOptions ''Credentials
+deriveJSON elmOptions ''Credentials
 
 data QuestionsInRound =
   QuestionsInRound
