@@ -1,67 +1,45 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE MonoLocalBinds    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Api.Services.HashCheck
   ( authenticate
-  , authenticateD
-  , failIfUnverified
   ) where
 
-import           Control.Arrow          (second)
-import           Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString.Char8  as B
-import qualified Data.ByteString.Lazy   as L
-import           Data.Maybe             (fromJust, fromMaybe, maybe)
-import           Data.Text.Encoding     (decodeUtf8)
-import           Snap.Core              (modifyResponse, setResponseCode,
-                                         writeBS)
-import           Snap.Snaplet           (Handler)
-
-import           Data.Aeson             (encode, object, (.=))
-import qualified Data.Text              as T
-import qualified Data.Text.Encoding     as E
-import           Db.DbConversion        (Credentials, signature, userHash)
-import qualified Db.DbConversion        as D
-import           Db.Storage             (findSessionKey, findUser)
-import           General.Types          (Wrapped, UserHash,
-                                         UserName (UserName), unwrap, wrap)
-import           Network.HTTP.Types.URI (Query, QueryItem, renderQuery)
-import           Utils                  (mkHashed)
+import           Control.Monad.IO.Class     (liftIO)
+import           Control.Monad.Trans.Except (ExceptT (ExceptT))
+import qualified Data.ByteString.Base64     as B64 (encode)
+import qualified Data.ByteString.Char8      as B
+import qualified Data.ByteString.Lazy       as L
+import           Data.Maybe                 (maybe)
+import           Db.DbConversion            (Credentials, signature)
+import qualified Db.DbConversion            as D
+import           Db.Storage                 (findSessionKey)
+import           General.Types              (UserHash, UserName (UserName),
+                                             unwrap)
+import           Snap.Snaplet               (Handler)
+import           Utils                      (mkHashed)
 
 data Attempt =
   Attempt
     { userName :: UserName
-    , query    :: Query
+    , body     :: B.ByteString
     , claim    :: UserHash
     }
 
 mkHash :: B.ByteString -> B.ByteString
 mkHash = B.pack . show . mkHashed
 
-verifyHash :: Attempt -> UserHash -> Bool
+verifyHash :: Attempt -> UserHash -> Either L.ByteString ()
 verifyHash attempt sessionKey =
-  mkHash (B.concat [unwrap sessionKey, renderQuery False (query attempt)]) == unwrap (claim attempt)
+  if condition
+    then Right ()
+    else Left "Authentication failed"
+  where
+    condition = mkHash (B.concat [unwrap sessionKey, B64.encode (body attempt)]) == unwrap (claim attempt)
 
-mkAttemptWithMaybe :: Maybe UserName -> Maybe UserHash -> [QueryItem] -> Attempt
-mkAttemptWithMaybe mUser mSig kMvs = Attempt (orEmpty mUser) kMvs (orEmpty mSig)
+mkVerifiedRequest :: Attempt -> IO (Either L.ByteString ())
+mkVerifiedRequest attempt =
+  fmap (maybe (Left "User not found") (verifyHash attempt)) (findSessionKey (userName attempt))
 
-orEmpty :: Wrapped t String => Maybe t -> t
-orEmpty = fromMaybe (wrap "")
-
-mkVerifiedRequest :: Attempt -> IO Bool
-mkVerifiedRequest attempt = fmap (maybe False (verifyHash attempt)) (findSessionKey (userName attempt))
-
-authenticate :: Maybe Credentials -> Query -> Handler b service Bool
-authenticate credentials params =
-  liftIO (mkVerifiedRequest (mkAttemptWithMaybe (fmap D.user credentials) (fmap signature credentials) params))
-
-authenticateD :: Credentials -> Query -> Handler b service Bool
-authenticateD credentials params =
-  liftIO (mkVerifiedRequest (Attempt (D.user credentials) params (signature credentials)))
-
-failIfUnverified :: Bool -> Handler b service () -> Handler b service ()
-failIfUnverified verified handle =
-  if verified
-    then handle
-    else writeBS "Authentication failed" >> modifyResponse (setResponseCode 406)
+authenticate :: Credentials -> B.ByteString -> ExceptT L.ByteString (Handler b service) ()
+authenticate credentials bd =
+  ExceptT (liftIO (mkVerifiedRequest (Attempt (D.user credentials) bd (signature credentials))))
