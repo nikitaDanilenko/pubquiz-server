@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds   #-}
+{-# LANGUAGE TemplateHaskell  #-}
 
 module Api.Services.SnapUtil where
 
@@ -7,6 +8,7 @@ import           Api.Services.HashCheck     (authenticate)
 import           Control.Applicative        (liftA2)
 import           Control.Monad.Trans.Except (ExceptT (ExceptT))
 import           Data.Aeson                 (ToJSON, eitherDecode, encode)
+import           Data.Aeson.TH              (defaultOptions, deriveJSON)
 import           Data.Aeson.Types           (FromJSON)
 import qualified Data.ByteString.Char8      as B
 import qualified Data.ByteString.Lazy       as L
@@ -17,10 +19,10 @@ import           Db.DbConversion            (Credentials (Credentials))
 import           General.EitherT.Extra      (exceptFromMaybeF)
 import           General.Types              (Wrapped, wrap)
 import           Snap                       (readRequestBody)
-import           Snap.Core                  (MonadSnap, Response,
-                                             getHeader, getRequest,
-                                             modifyResponse, setHeader,
-                                             setResponseCode, writeLBS)
+import           Snap.Core                  (MonadSnap, Response, getHeader,
+                                             getRequest, modifyResponse,
+                                             setHeader, setResponseCode,
+                                             writeLBS)
 
 -- todo: Use general constants for header values
 setResponseCodeJSON :: Int -> Response -> Response
@@ -63,7 +65,8 @@ anyResponseCode :: MonadSnap m => Int -> m ()
 anyResponseCode = modifyResponse . setResponseCode
 
 errorWithCode :: MonadSnap m => Int -> L.ByteString -> m ()
-errorWithCode c e = writeLBS e >> modifyResponse (setResponseCodeJSON c)
+errorWithCode c e =
+  writeLBS (encode (ErrorResponse (B.unpack (L.toStrict e)))) >> modifyResponse (setResponseCodeJSON c)
 
 okJsonResponse :: (ToJSON v, MonadSnap m) => v -> m ()
 okJsonResponse value = do
@@ -75,6 +78,13 @@ data Parsed a =
     { originalText :: B.ByteString
     , parsedJson   :: a
     }
+
+newtype ErrorResponse =
+  ErrorResponse
+    { errorResponse :: String
+    }
+
+deriveJSON defaultOptions ''ErrorResponse
 
 readVerified :: (FromJSON a, MonadSnap m) => ExceptT L.ByteString m a
 readVerified = do
