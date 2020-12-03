@@ -15,7 +15,7 @@ import qualified Db.DbConversion            as D
 import           Db.Storage                 (findSessionKey)
 import           General.Types              (UserHash, UserName (UserName),
                                              unwrap)
-import           Snap.Snaplet               (Handler)
+import           Snap.Core                  (MonadSnap)
 import           Utils                      (mkHashed)
 
 data Attempt =
@@ -40,6 +40,6 @@ mkVerifiedRequest :: Attempt -> IO (Either L.ByteString ())
 mkVerifiedRequest attempt =
   fmap (maybe (Left "User not found") (verifyHash attempt)) (findSessionKey (userName attempt))
 
-authenticate :: Credentials -> B.ByteString -> ExceptT L.ByteString (Handler b service) ()
+authenticate :: MonadSnap m => Credentials -> B.ByteString -> ExceptT L.ByteString m ()
 authenticate credentials bd =
   ExceptT (liftIO (mkVerifiedRequest (Attempt (D.user credentials) bd (signature credentials))))
