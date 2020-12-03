@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 38dccda632855f26318ca15f3f297f4ebcce5dcf8aec7b47b33ea5fc00cb8f37
+-- hash: 2a656d0ab1396dad939ec2875fe9607c0b1fa9b066af3af233d2efdc2ba2fc69
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -30,6 +30,11 @@ source-repository head
 library
   exposed-modules:
       Api.Core
+      Api.Requests.CreateQuizRequest
+      Api.Requests.QuizIdRequest
+      Api.Requests.QuizUpdateRequest
+      Api.Requests.SecretRequest
+      Api.Requests.UpdateQuizRatingsRequest
       Api.Services.EstablishSecret
       Api.Services.HashCheck
       Api.Services.QuizService
@@ -62,6 +67,7 @@ library
     , JuicyPixels
     , aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , blaze-builder
     , bytestring >=0.10 && <0.11
     , case-insensitive
@@ -69,6 +75,7 @@ library
     , containers >=0.1 && <1
     , cryptonite >=0.2 && <1
     , directory >=1 && <2
+    , either
     , elm-bridge
     , extra >=1 && <2
     , filepath >=1.4 && <2.0
@@ -100,6 +107,11 @@ executable pubquiz-server-exe
   main-is: Main.hs
   other-modules:
       Api.Core
+      Api.Requests.CreateQuizRequest
+      Api.Requests.QuizIdRequest
+      Api.Requests.QuizUpdateRequest
+      Api.Requests.SecretRequest
+      Api.Requests.UpdateQuizRatingsRequest
       Api.Services.EstablishSecret
       Api.Services.HashCheck
       Api.Services.QuizService
@@ -131,6 +143,7 @@ executable pubquiz-server-exe
     , JuicyPixels
     , aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , blaze-builder
     , bytestring >=0.10 && <0.11
     , case-insensitive
@@ -138,6 +151,7 @@ executable pubquiz-server-exe
     , containers >=0.1 && <1
     , cryptonite >=0.2 && <1
     , directory >=1 && <2
+    , either
     , elm-bridge
     , extra >=1 && <2
     , filepath >=1.4 && <2.0
