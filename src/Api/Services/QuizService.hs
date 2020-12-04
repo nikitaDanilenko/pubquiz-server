@@ -72,7 +72,7 @@ import           General.Types                         (Activity (Active, Inacti
 import           GHC.Natural                           (naturalToInt)
 import           Sheet.SheetMaker                      (createSheetWith,
                                                         safeRemoveFile)
-import           Snap.Core                             (Method (GET, POST),
+import           Snap.Core                             (Method (GET, POST, PUT),
                                                         method)
 import           Snap.Snaplet                          (Handler, SnapletInit,
                                                         addRoutes, makeSnaplet)
@@ -86,15 +86,15 @@ quizRoutes :: [(B.ByteString, Handler b QuizService ())]
 quizRoutes =
   [ allActiveApi +> method GET sendAvailableActiveHandler
   , allApi +> method GET sendAllAvailableHandler
-  , getQuizRatingsApi +> method GET getQuizRatingsHandler
-  , getLabelsApi +> method GET getLabelsHandler
+  , getQuizRatingsApi +> method PUT getQuizRatingsHandler
+  , getLabelsApi +> method PUT getLabelsHandler
   , updateQuizApi +> method POST updateQuizHandler
   , updateQuizRatingsApi +> method POST updateQuizRatingsHandler
   , lockApi +> method POST lockHandler
   , newApi +> method POST newQuiz
-  , teamTableApi +> method GET teamTableInfoHandler
-  , getQuizInfoApi +> method GET quizInfoHandler
-  , getQuizSettingsApi +> method GET quizSettingsHandler
+  , teamTableApi +> method PUT teamTableInfoHandler
+  , getQuizInfoApi +> method PUT quizInfoHandler
+  , getQuizSettingsApi +> method PUT quizSettingsHandler
   ]
 
 sendAvailableActiveHandler :: Handler b QuizService ()
