@@ -17,14 +17,16 @@ import           Api.Requests.SecretRequest            (SecretRequest)
 import           Api.Requests.UpdateQuizRatingsRequest (UpdateQuizRatingsRequest)
 import           Data.Time.Calendar                    (Day)
 import           Db.Connection                         (DbQuizId)
-import           Db.DbConversion                       (Header,
+import           Db.DbConversion                       (Credentials, Header,
                                                         QuestionsInQuiz,
                                                         QuestionsInRound,
                                                         QuizIdentifier,
                                                         QuizInfo, QuizRatings,
                                                         QuizSettings, Ratings,
                                                         RoundRating, TeamInfo,
-                                                        TeamRating)
+                                                        TeamLine, TeamQuery,
+                                                        TeamRating, TeamTable,
+                                                        TeamTableInfo)
 import           Elm.TyRep                             (EAlias (EAlias),
                                                         EPrimAlias (EPrimAlias),
                                                         ETCon (ETCon),
@@ -159,6 +161,16 @@ deriveElmDef elmOptions ''SecretRequest
 
 deriveElmDef elmOptions ''UpdateQuizRatingsRequest
 
+deriveElmDef elmOptions ''Credentials
+
+deriveElmDef elmOptions ''TeamQuery
+
+deriveElmDef elmOptions ''TeamLine
+
+deriveElmDef elmOptions ''TeamTableInfo
+
+deriveElmDef elmOptions ''TeamTable
+
 instance IsElmDefinition Day where
   compileElmDef _ = ETypePrimAlias (EPrimAlias {epa_name = ETypeName "Day" [], epa_type = ETyCon (ETCon "String")})
 
@@ -219,6 +231,11 @@ main path =
     , DefineElm (Proxy :: Proxy QuizUpdateRequest)
     , DefineElm (Proxy :: Proxy SecretRequest)
     , DefineElm (Proxy :: Proxy UpdateQuizRatingsRequest)
+    , DefineElm (Proxy :: Proxy Credentials)
+    , DefineElm (Proxy :: Proxy TeamQuery)
+    , DefineElm (Proxy :: Proxy TeamLine)
+    , DefineElm (Proxy :: Proxy TeamTableInfo)
+    , DefineElm (Proxy :: Proxy TeamTable)
     ]
 
 pathToElm :: String
