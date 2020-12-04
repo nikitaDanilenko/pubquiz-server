@@ -17,16 +17,14 @@ import           Api.Requests.SecretRequest            (SecretRequest)
 import           Api.Requests.UpdateQuizRatingsRequest (UpdateQuizRatingsRequest)
 import           Data.Time.Calendar                    (Day)
 import           Db.Connection                         (DbQuizId)
-import           Db.DbConversion                       (Credentials, Header,
+import           Db.DbConversion                       (Header,
                                                         QuestionsInQuiz,
                                                         QuestionsInRound,
                                                         QuizIdentifier,
                                                         QuizInfo, QuizRatings,
                                                         QuizSettings, Ratings,
                                                         RoundRating, TeamInfo,
-                                                        TeamLine, TeamQuery,
-                                                        TeamRating, TeamTable,
-                                                        TeamTableInfo)
+                                                        TeamRating)
 import           Elm.TyRep                             (EAlias (EAlias),
                                                         EPrimAlias (EPrimAlias),
                                                         ETCon (ETCon),
@@ -41,7 +39,7 @@ import           Elm.TyRep                             (EAlias (EAlias),
                                                         ea_unwrap_unary,
                                                         epa_name, epa_type)
 import           General.Labels                        (Labels)
-import           General.Types                         (Action, Activity,
+import           General.Types                         (Activity,
                                                         BackToChartViewLabel,
                                                         Code, CumulativeLabel,
                                                         IndividualRoundsLabel,
@@ -63,7 +61,7 @@ import           General.Types                         (Action, Activity,
                                                         TeamLabel, TeamName,
                                                         TeamNumber,
                                                         UserCreation, UserHash,
-                                                        UserName, UserSalt,
+                                                        UserName,
                                                         ViewPreviousLabel)
 import           Utils                                 (elmOptions)
 
@@ -117,8 +115,6 @@ deriveElmDef elmOptions ''PlaceAfterRoundLabel
 
 deriveElmDef elmOptions ''UserName
 
-deriveElmDef elmOptions ''UserSalt
-
 deriveElmDef elmOptions ''UserHash
 
 deriveElmDef elmOptions ''TeamRating
@@ -126,8 +122,6 @@ deriveElmDef elmOptions ''TeamRating
 deriveElmDef elmOptions ''RoundRating
 
 deriveElmDef elmOptions ''Ratings
-
-deriveElmDef elmOptions ''Credentials
 
 deriveElmDef elmOptions ''QuizSettings
 
@@ -145,17 +139,7 @@ deriveElmDef elmOptions ''Header
 
 deriveElmDef elmOptions ''Activity
 
-deriveElmDef elmOptions ''Action
-
 deriveElmDef elmOptions ''QuizRatings
-
-deriveElmDef elmOptions ''TeamLine
-
-deriveElmDef elmOptions ''TeamTable
-
-deriveElmDef elmOptions ''TeamQuery
-
-deriveElmDef elmOptions ''TeamTableInfo
 
 deriveElmDef elmOptions ''UserCreation
 
@@ -211,13 +195,11 @@ main path =
     , DefineElm (Proxy :: Proxy PlaceInRoundLabel)
     , DefineElm (Proxy :: Proxy PlaceAfterRoundLabel)
     , DefineElm (Proxy :: Proxy UserName)
-    , DefineElm (Proxy :: Proxy UserSalt)
     , DefineElm (Proxy :: Proxy UserHash)
     , DefineElm (Proxy :: Proxy Day)
     , DefineElm (Proxy :: Proxy TeamRating)
     , DefineElm (Proxy :: Proxy RoundRating)
     , DefineElm (Proxy :: Proxy Ratings)
-    , DefineElm (Proxy :: Proxy Credentials)
     , DefineElm (Proxy :: Proxy QuizSettings)
     , DefineElm (Proxy :: Proxy QuizIdentifier)
     , DefineElm (Proxy :: Proxy QuizInfo)
@@ -227,12 +209,7 @@ main path =
     , DefineElm (Proxy :: Proxy TeamInfo)
     , DefineElm (Proxy :: Proxy Header)
     , DefineElm (Proxy :: Proxy Activity)
-    , DefineElm (Proxy :: Proxy Action)
     , DefineElm (Proxy :: Proxy QuizRatings)
-    , DefineElm (Proxy :: Proxy TeamLine)
-    , DefineElm (Proxy :: Proxy TeamTable)
-    , DefineElm (Proxy :: Proxy TeamQuery)
-    , DefineElm (Proxy :: Proxy TeamTableInfo)
     , DefineElm (Proxy :: Proxy UserCreation)
     , DefineElm (Proxy :: Proxy NumberOfQuestions)
     , DefineElm (Proxy :: Proxy QuestionsInQuiz)

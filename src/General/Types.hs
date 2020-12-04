@@ -108,11 +108,6 @@ newtype UserHash =
 newtype Password =
   Password Text
 
-data Action
-  = CreateQuizA
-  | LockA
-  | UpdateSettingsA
-
 newtype NumberOfQuestions =
   NumberOfQuestions Natural
 
@@ -374,8 +369,6 @@ deriveJSON elmOptions ''UserHash
 deriveJSON elmOptions ''Password
 
 deriveJSON elmOptions ''Activity
-
-deriveJSON elmOptions ''Action
 
 deriveJSON elmOptions ''UserCreation
 
