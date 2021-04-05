@@ -280,7 +280,7 @@ instance Fallback OwnPageLabel where
   fallback = wrap "Eigene Punkte"
 
 instance Fallback ViewPreviousLabel where
-  fallback = wrap "Alle Quizzes"
+  fallback = wrap "Alle Quizze"
 
 instance Fallback CumulativeLabel where
   fallback = wrap "Gesamtpunkte"
