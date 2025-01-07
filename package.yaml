@@ -33,10 +33,7 @@ dependencies:
 - cryptonite
 - process >= 1 && < 2
 - random
-#- split >= 0.2 && < 1
-##- parsec >= 3.1 && < 4
 - extra
-#- colour >= 2.1 && < 3
 - HaTeX >= 3 && < 4
 - persistent
 - persistent-postgresql
@@ -58,9 +55,6 @@ dependencies:
 - JuicyPixels
 - base64-bytestring
 - either
-#- heist
-#- map-syntax
-
 
 library:
   source-dirs: src
