@@ -30,35 +30,15 @@ resolver: lts-21.7
 #   - wai
 packages:
 - .
+
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
 #
 extra-deps:
-#  - snap-1.1.3.3
   - snap-loader-static-1.0.0.1
-##  - heist-1.1.0.1@sha256:7355cf8c1a7ef84c0c800c0539f7b99e7e540cace697238009a2dea1f05231f1,9311
-##  - map-syntax-0.3@sha256:ca8b449615fa57419c16a5e98844624a6ac758692b87b3cfae8c74c87c56f1b2,2420
-#  - pwstore-fast-2.4.4@sha256:9b6a37510d8b9f37f409a8ab3babac9181afcaaa3fce8ba1c131a7ed3de30698,1351
-##  - xmlhtml-0.2.5.2@sha256:3f0990f725551985d777e8edb5563fe99aee998f1fde6a7633f720f76df54701,46997
   - snap-server-1.1.2.1@sha256:8ea05b9b068c1e86be77073107eadc177d7eec93724963c063877478a062b229,15471
-#  - ghc-prim-0.9.0@sha256:7207672ba12a3356b29428a65b8315ad5033bd4f4fb20f8e2b6912984ab7ce61,2698
-#  - Cabal-3.10.2.1@sha256:b5c520bb4f11e1f11283ddad8cfa6b65f85f5dc6cac2f4838b7760e20e8fce79,12316
-#  - binary-0.8.9.1@sha256:81f468c1c75fd6535152ab69b2d32ac6cfcc03e345267b069abe4da56ec95801,6523
-#  - bytestring-0.12.0.2@sha256:9fc077ff5b7ed2246773c3ac4370ef8822e4834d4587522b68ae551a5968fb86,7891
-#  - containers-0.7@sha256:e9b5fdcc609159410d408c47e0be13663bb0b4a42a5183b52aa0ac9c99e1dfec,2668
-##  - deepseq-1.5.0.0@sha256:5385b345570a579e7ee5c8abfe180b7c21e608b30fbaa38274c9608e61a833ac,2227
-#  - directory-1.3.8.1@sha256:bd3b0a0947a365d2da80b9f4a960a864d42ffa7a46577fdc7a0611703486a7f9,3071
-#  - parsec-3.1.17.0@sha256:6cf18e59d9f1c5b40385457b82ab679dc18d3c5bd3c2c67b2f94e1e8732e6624,5119
-#  - process-1.6.18.0@sha256:cd0a3e0376b5a8525983d3131a31e52f9ffefc278ce635eec45a9d3987b8be3e,3025
-#  - text-2.1@sha256:471b9a22f88b1d51bc343e7d1db7bf88b84e1582eb6d5fbe643fe7afc683c256,9422
-#  - time-1.12.2@sha256:88e8493d9130038d3b9968a2530a0900141cd3d938483c83dde56e12b875ebc8,6510
-#  - unix-2.8.3.0@sha256:6dfdbb57fcfe5b0b6ecdaf633bc1cceb98a87800a22544f42354375016c6e66c,9351
-#  - Cabal-syntax-3.10.2.0@sha256:e745710a77525a6a03d5eecbe00e894d36f05432caa6946778dae464eba1593a,7434
-#  - filepath-1.4.100.4@sha256:2de84756d3907308230e34fcc7c1917a73f218f6d53838618b7d5b95dd33e2c3,5536
-#  - pretty-1.1.3.6@sha256:e16ffc733e816cfc09e99cc7f2398805f1f4c872d238a6b81668b5527284b382,2482
   - snap-1.1.3.3@sha256:24ba77345d3ac991e98c3d0fd66d0ee52f2f78c6041d3e3476e98ba3355f21b2,8514
-
 
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
