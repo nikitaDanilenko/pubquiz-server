@@ -12,16 +12,17 @@ import           Database.Persist            (Entity (Entity), Filter, Key,
                                               selectList, update, (=.), (==.))
 import           Database.Persist.Postgresql (SqlBackend)
 
-import           Constants                   (serverSheetsFolderIO, sheetsFolderIO)
+import           Constants                   (serverSheetsFolderIO,
+                                              sheetsFolderIO)
 import           Control.Applicative         (liftA2, liftA3)
 import           Data.Functor                (void)
 import           Data.List                   (intercalate)
 import           Data.Maybe                  (isJust)
 import qualified Data.Text                   as T
 import           Data.Time.Calendar          (Day)
-import           Db.Connection               (DbLabels (dbLabelsQuizId), DbQuiz (dbQuizDate, dbQuizName, dbQuizPlace),
-                                              DbQuiz (DbQuiz), DbQuizId,
-                                              DbRoundQuestions,
+import           Db.Connection               (DbLabels (dbLabelsQuizId),
+                                              DbQuiz (DbQuiz, dbQuizDate, dbQuizName, dbQuizPlace),
+                                              DbQuizId, DbRoundQuestions,
                                               DbRoundReachable (dbRoundReachableQuizId, dbRoundReachableRoundNumber),
                                               DbRoundReached (dbRoundReachedQuizId, dbRoundReachedRoundNumber, dbRoundReachedTeamNumber),
                                               DbSessionKey (DbSessionKey),
@@ -71,7 +72,6 @@ import           General.Types               (Activity (..), Code,
                                               TeamName, TeamNumber, UserHash,
                                               UserName, UserSalt,
                                               Wrapped (unwrap, wrap), fallback)
-import           GHC.Natural                 (intToNatural)
 
 setTeamRating :: DbQuizId -> RoundNumber -> TeamRating -> IO (Key DbRoundReached)
 setTeamRating qid rn tr = runSql (setTeamRatingStatement qid rn tr)
@@ -323,7 +323,7 @@ findTeamTableInfoStatement qid tn = do
   teamTable <- findTeamTableStatement qid tn
   let unwrappedHeader = unwrap header
       name = teamInfoName (head (filter (\ti -> teamInfoNumber ti == tn) unwrappedHeader))
-  pure (TeamTableInfo teamTable name (intToNatural (length unwrappedHeader)) tn)
+  pure (TeamTableInfo teamTable name (length unwrappedHeader) tn)
 
 findTeamTableInfo :: DbQuizId -> TeamNumber -> IO TeamTableInfo
 findTeamTableInfo qid tn = runSql (findTeamTableInfoStatement qid tn)

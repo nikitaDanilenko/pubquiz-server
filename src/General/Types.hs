@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
 module General.Types where
@@ -14,15 +13,14 @@ import           Data.Text             (Text)
 import qualified Data.Text             as T
 import qualified Data.Text.Encoding    as E
 import           Data.Time.Calendar    (Day)
-import           GHC.Natural           (Natural, intToNatural)
 import           Utils                 (elmOptions)
 
 newtype TeamNumber =
-  TeamNumber Natural
+  TeamNumber Int
   deriving (Eq, Ord)
 
 newtype RoundNumber =
-  RoundNumber Natural
+  RoundNumber Int
   deriving (Eq, Ord)
 
 newtype Code =
@@ -109,7 +107,7 @@ newtype Password =
   Password Text
 
 newtype NumberOfQuestions =
-  NumberOfQuestions Natural
+  NumberOfQuestions Int
 
 data UserCreation =
   UserCreation
@@ -136,11 +134,11 @@ instance Wrapped t v => Wrapped (Maybe t) (Maybe v) where
 class Fallback t where
   fallback :: t
 
-instance Wrapped TeamNumber Natural where
+instance Wrapped TeamNumber Int where
   unwrap (TeamNumber tn) = tn
   wrap = TeamNumber
 
-instance Wrapped RoundNumber Natural where
+instance Wrapped RoundNumber Int where
   unwrap (RoundNumber rn) = rn
   wrap = RoundNumber
 
@@ -254,7 +252,7 @@ instance Wrapped Password Text where
   unwrap (Password p) = p
   wrap = Password
 
-instance Wrapped NumberOfQuestions Natural where
+instance Wrapped NumberOfQuestions Int where
   unwrap (NumberOfQuestions n) = n
   wrap = NumberOfQuestions
 
@@ -310,7 +308,7 @@ instance Fallback PlaceAfterRoundLabel where
   fallback = wrap "Platz nach dieser Runde"
 
 instance Fallback NumberOfQuestions where
-  fallback = wrap (intToNatural 8)
+  fallback = wrap (8 :: Int)
 
 deriveJSON elmOptions ''TeamNumber
 

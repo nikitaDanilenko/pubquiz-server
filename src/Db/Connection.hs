@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE ExplicitForAll             #-}
 {-# LANGUAGE FlexibleContexts           #-}
@@ -8,8 +10,11 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module Db.Connection where
 
@@ -26,6 +31,7 @@ import           Database.Persist.Postgresql           (BaseBackend,
                                                         PersistField,
                                                         PersistQueryRead,
                                                         PersistStoreWrite,
+                                                        SafeToInsert,
                                                         SqlBackend, entityKey,
                                                         insert, repsert,
                                                         runMigration,
@@ -40,7 +46,7 @@ import           Database.Persist.TH                   (mkMigrate, mkPersist,
 import           Db.Configuration                      (readConfiguration,
                                                         toConnection)
 import           Db.Instances
-import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious, placeInRoundLabel, placeAfterRoundLabel),
+import           General.Labels                        (Labels (backToChartView, cumulativeLabel, individualRoundsLabel, maxReachableLabel, maxReachedLabel, ownPageLabel, ownPointsLabel, placeAfterRoundLabel, placeInRoundLabel, placeLabel, placementLabel, pointsLabel, progressionLabel, roundLabel, roundWinnerLabel, teamLabel, viewPrevious),
                                                         mkLabels)
 import           General.Types                         (Activity,
                                                         BackToChartViewLabel,
@@ -61,12 +67,10 @@ import           General.Types                         (Activity,
                                                         RoundLabel, RoundNumber,
                                                         RoundWinnerLabel,
                                                         TeamLabel, TeamName,
-                                                        TeamNumber,
-                                                        Wrapped (unwrap, wrap),
-                                                        UserHash, UserName,
-                                                        UserSalt,
-                                                        ViewPreviousLabel)
-import           GHC.Natural                           (Natural)
+                                                        TeamNumber, UserHash,
+                                                        UserName, UserSalt,
+                                                        ViewPreviousLabel,
+                                                        Wrapped (unwrap, wrap))
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
@@ -101,7 +105,7 @@ DbLabels
   deriving Show
 DbTeamNameCode
   quizId DbQuizId
-  teamNumber Natural
+  teamNumber Int
   teamCode String
   teamName String
   active Bool
@@ -109,21 +113,21 @@ DbTeamNameCode
   deriving Show
 DbRoundReachable
   quizId DbQuizId
-  roundNumber Natural
+  roundNumber Int
   points Double
   Primary quizId roundNumber
   deriving Show
 DbRoundReached
   quizId DbQuizId
-  roundNumber Natural
-  teamNumber Natural
+  roundNumber Int
+  teamNumber Int
   points Double
   Primary quizId roundNumber teamNumber
   deriving Show
 DbRoundQuestions
   quizId DbQuizId
-  roundNumber Natural
-  questions Natural
+  roundNumber Int
+  questions Int
   Primary quizId roundNumber
   deriving Show
 DbUser
@@ -258,6 +262,7 @@ insertOrReplace ::
      , PersistEntity record
      , PersistEntityBackend record ~ BaseBackend backend
      , PersistStoreWrite backend
+     , SafeToInsert record
      )
   => [record -> Filter record]
   -> record

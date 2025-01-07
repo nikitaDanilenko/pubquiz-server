@@ -16,17 +16,18 @@ import qualified Data.Text                    as T (concat, pack, unwords)
 
 import           Text.LaTeX.Base.Class        (LaTeXC, braces, comm2, fromLaTeX,
                                                liftL)
-import           Text.LaTeX.Base.Commands     (center, centering,
-                                               document, documentclass, hfill,
-                                               hline, huge2, large2, medskip,
-                                               newline, newpage, pagestyle,
-                                               raisebox, raw, table,
-                                               tabularnewline, textwidth,
-                                               usepackage, vspace, (&))
+import           Text.LaTeX.Base.Commands     (center, centering, document,
+                                               documentclass, hfill, hline,
+                                               huge2, large2, medskip, newline,
+                                               newpage, pagestyle, raisebox,
+                                               raw, table, tabularnewline,
+                                               textwidth, usepackage, vspace,
+                                               (&))
 import           Text.LaTeX.Base.Render       (render, rendertex)
 import           Text.LaTeX.Base.Syntax       (LaTeX (..), Measure (Cm, Mm),
                                                protectText, (<>))
-import           Text.LaTeX.Base.Types        (Pos (ForcePos, Here), TableSpec (LeftColumn, NameColumn, RightColumn))
+import           Text.LaTeX.Base.Types        (Pos (ForcePos, Here),
+                                               TableSpec (LeftColumn, NameColumn, RightColumn))
 import           Text.LaTeX.Packages.Geometry (geometry)
 import           Text.LaTeX.Packages.Inputenc (inputenc)
 
@@ -35,7 +36,6 @@ import           Db.DbConversion              (TeamQuery, teamQueryQuizId,
                                                teamQueryTeamCode,
                                                teamQueryTeamNumber)
 import           General.Types                (unwrap)
-import           GHC.Natural                  (Natural, naturalToInt)
 import           Sheet.Interval               (Interval, Size (Size), idrop,
                                                isize, itake, mkBaseInterval,
                                                toList)
@@ -102,7 +102,7 @@ mkFullHeader teamLabel heightCm mVspace numbersAndPaths =
     separator = mconcat [maybe mempty (vspace . Mm) mVspace, tabularnewline, hline]
 
 teamNumberOfQuery :: TeamQuery -> Int
-teamNumberOfQuery = naturalToInt . unwrap . teamQueryTeamNumber
+teamNumberOfQuery = unwrap . teamQueryTeamNumber
 
 mkSimpleHeader :: LaTeXC l => Text -> Int -> l
 mkSimpleHeader teamLabel teamNumber =

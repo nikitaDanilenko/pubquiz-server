@@ -69,7 +69,6 @@ import           General.EitherT.Extra                 (exceptFromMaybeF,
 import           General.Labels                        (teamLabel)
 import           General.Types                         (Activity (Active, Inactive),
                                                         Wrapped (unwrap), wrap)
-import           GHC.Natural                           (naturalToInt)
 import           Sheet.SheetMaker                      (createSheetWith,
                                                         safeRemoveFile)
 import           Snap.Core                             (Method (GET, POST, PUT),
@@ -153,7 +152,7 @@ newQuiz = exceptValueOr transformer (errorWithCode 406)
     transformer = do
       CreateQuizRequest quizIdentifier quizSettings  <- readVerified
       let gs = numberOfTeams quizSettings
-      endings <- liftIO (randomDistinctHexadecimal (naturalToInt gs) teamCodeLength)
+      endings <- liftIO (randomDistinctHexadecimal gs teamCodeLength)
       let header = wrap (mkDefaultTeamInfos 1 (teamLabel (labels quizSettings)) endings)
       quizInfo <-
         liftIO $

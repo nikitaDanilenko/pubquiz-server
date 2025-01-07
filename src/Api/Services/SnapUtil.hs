@@ -24,6 +24,13 @@ import           Snap.Core                  (MonadSnap, Response, getHeader,
                                              setHeader, setResponseCode,
                                              writeLBS)
 
+newtype ErrorResponse =
+  ErrorResponse
+    { errorResponse :: String
+    }
+
+deriveJSON defaultOptions ''ErrorResponse
+
 -- todo: Use general constants for header values
 setResponseCodeJSON :: Int -> Response -> Response
 setResponseCodeJSON code = setResponseCode code . setHeader (mkFromString "Content-Type") (B.pack "application/json")
@@ -78,13 +85,6 @@ data Parsed a =
     { originalText :: B.ByteString
     , parsedJson   :: a
     }
-
-newtype ErrorResponse =
-  ErrorResponse
-    { errorResponse :: String
-    }
-
-deriveJSON defaultOptions ''ErrorResponse
 
 readVerified :: (FromJSON a, MonadSnap m) => ExceptT L.ByteString m a
 readVerified = do

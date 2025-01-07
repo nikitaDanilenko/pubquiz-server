@@ -7,3 +7,6 @@ quizzes/*
 sheets/*
 
 !quizzes/style.css
+
+.idea/*
+.stack-work/*

@@ -44,7 +44,6 @@ import           Db.DbConversion                 (QuestionsInQuiz,
                                                   teamQueryTeamCode,
                                                   teamQueryTeamNumber)
 import           General.Types                   (Code, TeamNumber, unwrap)
-import           GHC.Natural                     (naturalToInt)
 import           Network.HTTP.Types              (encodePathSegments)
 import           Sheet.Tex                       (QRPath, imagePath, mkQROnly,
                                                   mkSheetWithArbitraryQuestions)
@@ -78,8 +77,8 @@ createSheetWith teamLabel qirs prefix folder numberedCodes day qid = do
              fst
              (map
                 (\qir ->
-                   ( naturalToInt (unwrap (questionsInRoundRoundNumber qir))
-                   , naturalToInt (unwrap (questionsInRoundNumberOfQuestions qir))))
+                   ( unwrap (questionsInRoundRoundNumber qir) :: Int
+                   , unwrap (questionsInRoundNumberOfQuestions qir)))
                 (unwrap qirs)))
       sht = mkSheetWithArbitraryQuestions tl rounds teamQueries
       sheetFile = mkPathForQuizSheetWith (T.pack "") (T.pack ".") sheetFileName day qid

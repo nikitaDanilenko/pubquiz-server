@@ -32,11 +32,10 @@ import           General.Types        (Activity (Active), Code,
                                        NumberOfQuestions, Place, QuizDate,
                                        QuizName, RoundNumber (RoundNumber),
                                        TeamLabel, TeamName,
-                                       TeamNumber (TeamNumber), Wrapped,
-                                       UserHash, UserName, UserSalt, unwrap,
-                                       wrap, fallback)
-import           GHC.Natural          (Natural, intToNatural, naturalToInt)
-import           Utils                (randomDistinctHexadecimal, elmOptions)
+                                       TeamNumber (TeamNumber), UserHash,
+                                       UserName, UserSalt, Wrapped, fallback,
+                                       unwrap, wrap)
+import           Utils                (elmOptions, randomDistinctHexadecimal)
 
 data TeamRating =
   TeamRating
@@ -89,9 +88,9 @@ newtype Header =
 deriveJSON defaultOptions ''Header
 
 defaultTeamName :: TeamNumber -> TeamLabel -> TeamName
-defaultTeamName tn tl = wrap (T.unwords [unwrap tl, T.pack (show (unwrap tn :: Natural))])
+defaultTeamName tn tl = wrap (T.unwords [unwrap tl, T.pack (show (unwrap tn :: Int))])
 
-mkDefaultTeamInfos :: Natural -> TeamLabel -> [String] -> [TeamInfo]
+mkDefaultTeamInfos :: Int -> TeamLabel -> [String] -> [TeamInfo]
 mkDefaultTeamInfos lowestTeamNumber teamLabel =
   zipWith
     (\n e ->
@@ -103,16 +102,16 @@ mkDefaultTeamInfos lowestTeamNumber teamLabel =
          })
     [lowestTeamNumber ..]
 
-adjustHeaderToSize :: Natural -> Int -> TeamLabel -> Header -> IO Header
+adjustHeaderToSize :: Int -> Int -> TeamLabel -> Header -> IO Header
 adjustHeaderToSize n codeSize teamLabel h
-  | n <= size = pure (wrap (take (naturalToInt n) ts))
+  | n <= size = pure (wrap (take n ts))
   | otherwise =
     fmap
       (wrap . (unwrap h ++) . mkDefaultTeamInfos (1 + size) teamLabel)
-      (randomDistinctHexadecimal (naturalToInt (n - size)) codeSize)
+      (randomDistinctHexadecimal (n - size) codeSize)
   where
     ts = unwrap h :: [TeamInfo]
-    size = intToNatural (length ts)
+    size = length ts
 
 instance Wrapped Header [TeamInfo] where
   wrap = Header
@@ -167,7 +166,7 @@ instance Wrapped QuestionsInQuiz [QuestionsInRound] where
 data QuizSettings =
   QuizSettings
     { questionsInQuiz :: QuestionsInQuiz
-    , numberOfTeams   :: Natural
+    , numberOfTeams   :: Int
     , labels          :: Labels
     }
 
@@ -178,16 +177,16 @@ fallbackSettings =
   QuizSettings
     { questionsInQuiz =
         wrap
-          (zipWith (\rn q -> QuestionsInRound (wrap (intToNatural rn)) (wrap (intToNatural q))) [1 ..] (replicate 4 8))
+          (zipWith (\rn q -> QuestionsInRound (wrap rn) (wrap q)) [(1 :: Int) ..] (replicate 4 (8 :: Int)))
     , numberOfTeams = 20
     , labels = fallback :: Labels
     }
 
 mkQuizSettings :: QuestionsInQuiz -> Header -> Labels -> QuizSettings
-mkQuizSettings qs h ls = 
+mkQuizSettings qs h ls =
   QuizSettings {
     questionsInQuiz = qs,
-    numberOfTeams = intToNatural (length (unwrap h :: [TeamInfo])),
+    numberOfTeams = length (unwrap h :: [TeamInfo]),
     labels = ls
   }
 
@@ -279,7 +278,7 @@ data TeamTableInfo =
   TeamTableInfo
     { teamTable                  :: TeamTable
     , teamTableInfoTeamName      :: TeamName
-    , teamTableInfoNumberOfTeams :: Natural
+    , teamTableInfoNumberOfTeams :: Int
     , teamTableInfoTeamNumber    :: TeamNumber
     }
 

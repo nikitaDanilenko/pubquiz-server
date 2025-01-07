@@ -20,24 +20,23 @@ category:            Web
 description:         Please see the README on GitHub at <https://github.com/githubuser/pubquiz-server-stack#readme>
 
 dependencies:
-- base >= 4.7 && < 5
-- bytestring >=0.10 && <0.11
-- containers >=0.1 && < 1
-- snap >=1.1 && <1.2
-- text >=1.2 && <1.3
-- snap-server >=1.1 && <1.2
-- snap-core >=1.0 && <2
-- snap-loader-static >= 0.9 && < 1.1
-- lens >=4.17 && <4.18
-- filepath >= 1.4 && < 2.0
-- cryptonite >= 0.2 && < 1
-- directory >= 1 && < 2
+- base
+- bytestring
+- containers
+- snap
+- text
+- snap-server
+- snap-core
+- snap-loader-static
+- lens
+- filepath
+- cryptonite
 - process >= 1 && < 2
-- random >= 1 && < 2
-- split >= 0.2 && < 1
-- parsec >= 3.1 && < 4
-- extra >= 1 && < 2
-- colour >= 2.1 && < 3
+- random
+#- split >= 0.2 && < 1
+##- parsec >= 3.1 && < 4
+- extra
+#- colour >= 2.1 && < 3
 - HaTeX >= 3 && < 4
 - persistent
 - persistent-postgresql
@@ -52,12 +51,15 @@ dependencies:
 - elm-bridge
 - http-types
 - blaze-builder
+- directory
 - modern-uri
 - qrcode-core
 - qrcode-juicypixels
 - JuicyPixels
 - base64-bytestring
 - either
+#- heist
+#- map-syntax
 
 
 library:
