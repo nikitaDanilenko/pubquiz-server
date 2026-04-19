@@ -22,6 +22,8 @@ ghc-options:
 
 dependencies:
   - base
+  - dhall
+  - text
   - transformers
 
 library:
