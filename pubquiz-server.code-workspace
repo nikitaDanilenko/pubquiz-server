@@ -4,5 +4,15 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"haskell.hlintOn": true,
+		"haskell.formattingProvider": "stylish-haskell",
+		"[haskell]": {
+			"editor.defaultFormatter": "vigoo.stylish-haskell",
+			"editor.formatOnSave": true
+		},
+		"haskell.serverEnvironment": {
+			"PATH": "/Users/nikita/.local/bin/bin:/Users/nikita/.local/bin:${PATH}"
+		}
+	}
 }

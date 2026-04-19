@@ -1,65 +1,37 @@
-name:                pubquiz-server
-version:             0.1.0.0
-github:              "nikitaDanilenko/pubquiz-server"
-license:             BSD3
-author:              "Nikita Danilenko"
-maintainer:          "nikita.danilenko.is@gmail.com"
-copyright:           "2026 Nikita Danilenko"
+name: pubquiz-server
+version: 0.1.0.0
+github: "nikitaDanilenko/pubquiz-server"
+license: BSD3
+author: "Nikita Danilenko"
+maintainer: "nikita.danilenko.is@gmail.com"
+copyright: "2026 Nikita Danilenko"
 
 extra-source-files:
-- Readme.md
+  - Readme.md
 
 # Metadata used when publishing your package
-synopsis:            Host server for pub quiz application.
-category:            Web
+synopsis: Host server for pub quiz application.
+category: Web
 
-description:         Please see the README on GitHub at <https://github.com/nikitaDanilenko/pubquiz-server#readme>
+description: Please see the README on GitHub at <https://github.com/nikitaDanilenko/pubquiz-server#readme>
+
+# Generate .hie files for better HLS navigation
+ghc-options:
+  - -fwrite-ide-info
+  - -hiedir=.hie
 
 dependencies:
-- base
-- bytestring
-- containers
-- snap
-- text
-- snap-server
-- snap-core
-- snap-loader-static
-- lens
-- filepath
-- cryptonite
-- process >= 1 && < 2
-- random
-- extra
-- HaTeX >= 3 && < 4
-- persistent
-- persistent-postgresql
-- persistent-template
-- monad-logger
-- time
-- path-pieces
-- transformers
-- resourcet
-- aeson
-- case-insensitive
-- elm-bridge
-- http-types
-- blaze-builder
-- directory
-- modern-uri
-- qrcode-core
-- qrcode-juicypixels
-- JuicyPixels
-- base64-bytestring
-- either
+  - base
+  - transformers
 
 library:
   source-dirs: src
 
 executables:
   pubquiz-server-exe:
-    main:                Main.hs
-    source-dirs:         src
+    main: Main.hs
+    source-dirs: src
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
