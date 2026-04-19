@@ -10,5 +10,6 @@ sheets/*
 
 .idea/*
 .stack-work/*
+.hie/*
 
 .DS_Store
