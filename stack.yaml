@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-21.7
+resolver: lts-24.37
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -39,6 +39,12 @@ extra-deps:
   - snap-loader-static-1.0.0.1
   - snap-server-1.1.2.1@sha256:8ea05b9b068c1e86be77073107eadc177d7eec93724963c063877478a062b229,15471
   - snap-1.1.3.3@sha256:24ba77345d3ac991e98c3d0fd66d0ee52f2f78c6041d3e3476e98ba3355f21b2,8514
+  - filepath-1.4.200.1
+  - hashable-1.4.7.0
+  - lens-5.2.3
+  - network-3.1.4.0
+  - qrcode-core-0.9.9
+  - qrcode-juicypixels-0.8.5
 
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
@@ -69,3 +75,8 @@ extra-deps:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+build:
+  library-profiling: true
+  haddock: true
+  haddock-hyperlink-source: true

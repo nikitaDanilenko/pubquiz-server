@@ -4,20 +4,16 @@ github:              "nikitaDanilenko/pubquiz-server"
 license:             BSD3
 author:              "Nikita Danilenko"
 maintainer:          "nikita.danilenko.is@gmail.com"
-copyright:           "2020 Nikita Danilenko"
+copyright:           "2026 Nikita Danilenko"
 
 extra-source-files:
 - Readme.md
-- ChangeLog.md
 
 # Metadata used when publishing your package
 synopsis:            Host server for pub quiz application.
 category:            Web
 
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/pubquiz-server-stack#readme>
+description:         Please see the README on GitHub at <https://github.com/nikitaDanilenko/pubquiz-server#readme>
 
 dependencies:
 - base
@@ -67,5 +63,3 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - pubquiz-server
