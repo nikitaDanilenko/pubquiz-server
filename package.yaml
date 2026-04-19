@@ -25,6 +25,11 @@ dependencies:
   - dhall
   - text
   - transformers
+  - persistent
+  - persistent-postgresql
+  - persistent-template
+  - resource-pool
+  - monad-logger
 
 library:
   source-dirs: src
