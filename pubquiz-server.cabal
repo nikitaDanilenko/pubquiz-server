@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4fba762a89094459a61fa79a5ccb06f1a27d56de23a700b97c0d7c0f21ae5c5f
+-- hash: 6212551b56888b371b44269112a0985fe92d9ce16ec44f289462ba725a1f4efd
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -28,7 +28,10 @@ source-repository head
 
 library
   exposed-modules:
+      Api.BackOffice.Types
+      Api.Public.Types
       Config
+      Core.Domain
       Db.Schema
       General.EitherT.Extra
   other-modules:
@@ -38,6 +41,7 @@ library
   ghc-options: -fwrite-ide-info -hiedir=.hie
   build-depends:
       base
+    , containers
     , dhall
     , monad-logger
     , persistent
@@ -58,6 +62,7 @@ executable pubquiz-server
   ghc-options: -fwrite-ide-info -hiedir=.hie -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
+    , containers
     , dhall
     , monad-logger
     , persistent
