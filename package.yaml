@@ -23,13 +23,14 @@ ghc-options:
 dependencies:
   - base
   - dhall
-  - text
-  - transformers
+  - monad-logger
   - persistent
   - persistent-postgresql
   - persistent-template
   - resource-pool
-  - monad-logger
+  - text
+  - time
+  - transformers
 
 library:
   source-dirs: src
