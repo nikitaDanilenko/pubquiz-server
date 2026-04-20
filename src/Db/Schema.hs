@@ -1,9 +1,25 @@
+-- All these are necessary for the schema definition.
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+---
 
 module Db.Schema where
 
-import Data.Time (Day, UTCTime)
+import Data.Time.Calendar (Day)
+import Data.Time.Clock (UTCTime)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
 
 share
@@ -47,9 +63,10 @@ Organizer
   UniqueOrganizerName name
   deriving Show
 LoginThrottle
-  organizerName OrganizerName
+  organizerName String
   failedAttempts Int
   lastAttemptAt UTCTime
   Primary organizerName
+  Foreign Organizer fkLoginThrottleOrganizer organizerName References name
   deriving Show
 |]
