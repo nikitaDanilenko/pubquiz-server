@@ -35,9 +35,9 @@ library:
   source-dirs: src
 
 executables:
-  pubquiz-server-exe:
+  pubquiz-server:
     main: Main.hs
-    source-dirs: src
+    source-dirs: app
     ghc-options:
       - -threaded
       - -rtsopts
