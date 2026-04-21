@@ -19,7 +19,6 @@
 module Db.Schema where
 
 import Data.Time.Calendar (Day)
-import Data.Time.Clock (UTCTime)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
 
 share
@@ -54,19 +53,5 @@ TeamRoundScore
   Primary quizId roundNumber teamNumber
   Foreign Round fkTeamRoundScoreRound quizId roundNumber
   Foreign Team fkTeamRoundScoreTeam quizId teamNumber
-  deriving Show
-Organizer
-  name String
-  salt String
-  hash String
-  Primary name
-  UniqueOrganizerName name
-  deriving Show
-LoginThrottle
-  organizerName String
-  failedAttempts Int
-  lastAttemptAt UTCTime
-  Primary organizerName
-  Foreign Organizer fkLoginThrottleOrganizer organizerName References name
   deriving Show
 |]
