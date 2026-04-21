@@ -6,9 +6,16 @@ let DatabaseConfig =
       , port : Natural
       }
 
+let Organizer =
+      { organizerName : Text
+      , passwordHash : Text
+      , isAdmin : Bool
+      }
+
 let Config =
       { serverPath : Text
       , database : DatabaseConfig
+      , organizers : List Organizer
       }
 
 let config : Config =
@@ -20,6 +27,16 @@ let config : Config =
           , password = env:DATABASE_PASSWORD as Text ? "pubquiz"
           , port = env:DATABASE_PORT ? 5432
           }
+      , organizers =
+          [ { organizerName = env:ORGANIZER_ADMIN_NAME as Text ? "admin"
+            , passwordHash = env:ORGANIZER_ADMIN_HASH as Text
+            , isAdmin = True
+            }
+          , { organizerName = env:ORGANIZER_USER_NAME as Text ? "organizer"
+            , passwordHash = env:ORGANIZER_USER_HASH as Text
+            , isAdmin = False
+            }
+          ]
       }
 
 in  config

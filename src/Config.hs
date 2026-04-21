@@ -16,9 +16,17 @@ data DatabaseConfig = DatabaseConfig
   }
   deriving (Show, Generic, FromDhall)
 
+data Organizer = Organizer
+  { organizerName :: Text,
+    passwordHash :: Text,
+    isAdmin :: Bool
+  }
+  deriving (Show, Generic, FromDhall)
+
 data Config = Config
   { serverPath :: Text,
-    database :: DatabaseConfig
+    database :: DatabaseConfig,
+    organizers :: [Organizer]
   }
   deriving (Show, Generic, FromDhall)
 
