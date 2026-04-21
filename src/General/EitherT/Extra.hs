@@ -1,6 +1,6 @@
 module General.EitherT.Extra where
 
-import           Control.Monad.Trans.Except (ExceptT (..), runExceptT)
+import Control.Monad.Trans.Except (ExceptT (..), runExceptT)
 
 exceptFromMaybe :: Applicative f => Maybe a -> e -> ExceptT e f a
 exceptFromMaybe fa e = ExceptT (pure (maybe (Left e) Right fa))

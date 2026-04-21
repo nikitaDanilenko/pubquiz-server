@@ -16,6 +16,7 @@ let Config =
       { serverPath : Text
       , database : DatabaseConfig
       , organizers : List Organizer
+      , jwtSecret : Text
       }
 
 let config : Config =
@@ -37,6 +38,7 @@ let config : Config =
             , isAdmin = False
             }
           ]
+      , jwtSecret = env:JWT_SECRET as Text
       }
 
 in  config

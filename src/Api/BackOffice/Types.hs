@@ -1,5 +1,3 @@
-{-# LANGUAGE DuplicateRecordFields #-}
-
 module Api.BackOffice.Types where
 
 import Core.Domain (QuizIdentifier)

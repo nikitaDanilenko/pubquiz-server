@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6212551b56888b371b44269112a0985fe92d9ce16ec44f289462ba725a1f4efd
+-- hash: a5369160e59fb62c45f9cda9cffb6b4628d5c7fc1a65b6031ec8afb598277192
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -28,8 +28,13 @@ source-repository head
 
 library
   exposed-modules:
+      Api
+      Api.Auth
+      Api.BackOffice.Routes
       Api.BackOffice.Types
+      Api.Public.Routes
       Api.Public.Types
+      Api.Util
       Config
       Core.Domain
       Db.Schema
@@ -40,17 +45,25 @@ library
       src
   ghc-options: -fwrite-ide-info -hiedir=.hie
   build-depends:
-      base
+      aeson
+    , base
     , containers
     , dhall
+    , jose
     , monad-logger
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template
     , resource-pool
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-server
     , text
     , time
     , transformers
+    , warp
   default-language: Haskell2010
 
 executable pubquiz-server
@@ -61,15 +74,23 @@ executable pubquiz-server
       app
   ghc-options: -fwrite-ide-info -hiedir=.hie -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base
+      aeson
+    , base
     , containers
     , dhall
+    , jose
     , monad-logger
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template
     , resource-pool
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-server
     , text
     , time
     , transformers
+    , warp
   default-language: Haskell2010

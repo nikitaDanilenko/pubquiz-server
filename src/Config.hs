@@ -26,7 +26,8 @@ data Organizer = Organizer
 data Config = Config
   { serverPath :: Text,
     database :: DatabaseConfig,
-    organizers :: [Organizer]
+    organizers :: [Organizer],
+    jwtSecret :: Text
   }
   deriving (Show, Generic, FromDhall)
 
