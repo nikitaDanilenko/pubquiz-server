@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE GADTs          #-}
 {-# LANGUAGE KindSignatures #-}
@@ -14,58 +15,35 @@ import           Numeric.Natural    (Natural)
 
 data QuizState = Active | Locked
 
-newtype QuizName = QuizName {unQuizName :: Text} deriving (Show, Eq, Generic)
+newtype QuizName = QuizName {unQuizName :: Text} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-instance FromJSON QuizName
-instance ToJSON QuizName
+newtype Place = Place {unPlace :: Text} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-newtype Place = Place {unPlace :: Text} deriving (Show, Eq, Generic)
-instance FromJSON Place
-instance ToJSON Place
+newtype TeamName = TeamName {unTeamName :: Text} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-newtype TeamName = TeamName {unTeamName :: Text} deriving (Show, Eq, Generic)
-instance FromJSON TeamName
-instance ToJSON TeamName
+newtype RoundNumber = RoundNumber {unRoundNumber :: Int} deriving (Show, Eq, Ord, Generic, FromJSON, ToJSON)
 
-newtype RoundNumber = RoundNumber {unRoundNumber :: Int} deriving (Show, Eq, Ord, Generic)
-instance FromJSON RoundNumber
-instance ToJSON RoundNumber
+newtype Points = Points {unPoints :: Double} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-newtype Points = Points {unPoints :: Double} deriving (Show, Eq, Generic)
-instance FromJSON Points
-instance ToJSON Points
+newtype QuizId = QuizId {unQuizId :: Int} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-newtype QuizId = QuizId {unQuizId :: Int} deriving (Show, Eq, Generic)
-instance FromJSON QuizId
-instance ToJSON QuizId
+newtype TeamNumber = TeamNumber {unTeamNumber :: Int} deriving (Show, Eq, Ord, Generic, FromJSON, ToJSON)
 
-newtype TeamNumber = TeamNumber {unTeamNumber :: Int} deriving (Show, Eq, Ord, Generic)
-instance FromJSON TeamNumber
-instance ToJSON TeamNumber
-
-newtype NumberOfQuestions = NumberOfQuestions {unNumberOfQuestions :: Natural} deriving (Show, Eq, Generic)
-instance FromJSON NumberOfQuestions
-instance ToJSON NumberOfQuestions
+newtype NumberOfQuestions = NumberOfQuestions {unNumberOfQuestions :: Natural} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data QuizIdentifier = QuizIdentifier
   { name  :: QuizName,
     place :: Place,
     date  :: Day
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON QuizIdentifier
-instance ToJSON QuizIdentifier
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data QuizSettings = QuizSettings
   { -- The number of the round is the index in the list + 1
     questionsPerRound :: [NumberOfQuestions],
     numberOfTeams     :: Int
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON QuizSettings
-instance ToJSON QuizSettings
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 -- Core domain types
 data Quiz (state :: QuizState) = Quiz
@@ -82,28 +60,19 @@ data Round = Round
     displayMaxPoints  :: Points,
     numberOfQuestions :: Int
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON Round
-instance ToJSON Round
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data Team = Team
   { number   :: TeamNumber,
     teamName :: TeamName,
     active   :: Bool
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON Team
-instance ToJSON Team
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 newtype ScoreBoard = ScoreBoard
   { unScoreBoard :: Map (TeamNumber, RoundNumber) Points
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON ScoreBoard
-instance ToJSON ScoreBoard
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data SomeQuiz where
   SomeActive :: Quiz Active -> SomeQuiz

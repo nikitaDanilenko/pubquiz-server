@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedRecordDot   #-}
@@ -33,39 +34,25 @@ data AuthenticatedUser = AuthenticatedUser
   { organizerName :: Text
   , isAdmin       :: Bool
   }
-  deriving (Show, Eq, Generic)
-
-instance ToJSON AuthenticatedUser
-
-instance FromJSON AuthenticatedUser
-
-instance ToJWT AuthenticatedUser
-
-instance FromJWT AuthenticatedUser
+  deriving (Show, Eq, Generic, FromJSON, ToJSON, ToJWT, FromJWT)
 
 data CreateQuizRequest = CreateQuizRequest
   { identifier :: QuizIdentifier
   , settings   :: QuizSettings
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON CreateQuizRequest
+  deriving (Show, Eq, Generic, FromJSON)
 
 newtype UpdateQuizSettingsRequest = UpdateQuizSettingsRequest
   { settings :: QuizSettings
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON UpdateQuizSettingsRequest
+  deriving (Show, Eq, Generic, FromJSON)
 
 data UpdateScoreRequest = UpdateScoreRequest
   { teamNumber  :: TeamNumber
   , roundNumber :: RoundNumber
   , points      :: Points
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON UpdateScoreRequest
+  deriving (Show, Eq, Generic, FromJSON)
 
 -- GET  /backoffice                → list quizzes
 -- POST /backoffice                → create quiz

@@ -1,31 +1,28 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module Api.Auth where
 
-import Data.Aeson (FromJSON, ToJSON)
-import Data.Text (Text)
-import GHC.Generics (Generic)
-import Servant
-import Servant.Auth.Server
+import           Data.Aeson          (FromJSON, ToJSON)
+import           Data.Text           (Text)
+import           GHC.Generics        (Generic)
+import           Servant
+import           Servant.Auth.Server
 
 -- Login request
 data LoginRequest = LoginRequest
   { username :: Text,
     password :: Text
   }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON LoginRequest
+  deriving (Show, Eq, Generic, FromJSON)
 
 -- Login response (JWT token)
 data LoginResponse = LoginResponse
   { token :: Text
   }
-  deriving (Show, Eq, Generic)
-
-instance ToJSON LoginResponse
+  deriving (Show, Eq, Generic, ToJSON)
 
 -- Auth API (public - for obtaining JWT)
 type AuthApi =
