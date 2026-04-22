@@ -10,7 +10,7 @@ module Api.BackOffice.Routes where
 
 import           Api.BackOffice.Types        (QuizSummary (..))
 import           Api.Util                    (runDb)
-import           Control.Monad               (forM_, unless)
+import           Control.Monad               (forM, forM_, unless)
 import           Core.Domain                 (NumberOfQuestions (..),
                                               Place (..), Points (..),
                                               Quiz (..), QuizId (..),
@@ -21,6 +21,7 @@ import           Core.Domain                 (NumberOfQuestions (..),
                                               SomeQuiz (..), Team (..),
                                               TeamName (..), TeamNumber (..))
 import           Data.Aeson                  (FromJSON, ToJSON)
+import           Data.List                   (nub)
 import qualified Data.Map.Strict             as Map
 import           Data.Maybe                  (isJust)
 import           Data.Pool                   (Pool)
@@ -46,10 +47,12 @@ data CreateQuizRequest = CreateQuizRequest
   }
   deriving (Show, Eq, Generic, FromJSON)
 
-newtype UpdateQuizSettingsRequest = UpdateQuizSettingsRequest
-  { settings :: QuizSettings
+data QuizMetaData = QuizMetaData
+  {
+    identifier :: QuizIdentifier,
+    settings   :: QuizSettings
   }
-  deriving (Show, Eq, Generic, FromJSON)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data UpdateScoreRequest = UpdateScoreRequest
   { teamNumber  :: TeamNumber
@@ -70,7 +73,7 @@ type BackOfficeRoutes =
   Get '[JSON] [QuizSummary]
     :<|> ReqBody '[JSON] CreateQuizRequest :> Post '[JSON] (Quiz 'Active)
     :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
-    :<|> Capture "quizId" QuizId :> "settings" :> ReqBody '[JSON] UpdateQuizSettingsRequest :> Put '[JSON] (Quiz 'Active)
+    :<|> Capture "quizId" QuizId :> "settings" :> ReqBody '[JSON] QuizMetaData :> Put '[JSON] QuizMetaData
     :<|> Capture "quizId" QuizId :> "scores" :> ReqBody '[JSON] UpdateScoreRequest :> Post '[JSON] ScoreBoard
     :<|> Capture "quizId" QuizId :> "lock" :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "unlock" :> Post '[JSON] NoContent
@@ -183,120 +186,89 @@ createQuiz pool request = do
     pure quizId
 
 getQuiz :: Pool SqlBackend -> QuizId -> Handler SomeQuiz
-getQuiz pool quizId = do
-  maybeResult <- runDb pool statement
-  case maybeResult of
-    Nothing -> throwError err404
-    Just (quizIdentifier, domainRounds, domainTeams, scoreBoard, isActive) ->
+getQuiz pool quizId = runDb pool statement >>= maybe (throwError err404) pure
+ where
+  dbQuizId = quizIdToKey quizId
+  statement = do
+    maybeQuiz <- get dbQuizId
+    forM maybeQuiz $ \quiz -> do
+      teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
+      roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
+      scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
+
       let mkQuiz :: Quiz state
           mkQuiz =
             Quiz
               { quizId = quizId
-              , identifier = quizIdentifier
-              , rounds = domainRounds
-              , teams = domainTeams
-              , scoreBoard = scoreBoard
+              , identifier = quizToIdentifier quiz
+              , rounds = map (dbRoundToRound . entityVal) roundEntities
+              , teams = map (dbTeamToTeam . entityVal) teamEntities
+              , scoreBoard = dbScoresToScoreBoard scoreEntities
               }
-       in if isActive
-            then pure $ SomeActive mkQuiz
-            else pure $ SomeLocked mkQuiz
- where
-  statement = do
-    let dbQuizId = quizIdToKey quizId
-    maybeQuiz <- get dbQuizId
-    case maybeQuiz of
-      Nothing -> pure Nothing
-      Just quiz -> do
-        teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-        roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
-        scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
 
-        let domainTeams = map (dbTeamToTeam . entityVal) teamEntities
+      pure $ if Db.quizActive quiz then SomeActive mkQuiz else SomeLocked mkQuiz
 
-        let domainRounds = map (dbRoundToRound . entityVal) roundEntities
 
-        let scoreBoard = dbScoresToScoreBoard scoreEntities
+data UpdateResult a = NotFound | NotEditable | Success a
 
-        let quizIdentifier = quizToIdentifier quiz
-
-        pure $ Just (quizIdentifier, domainRounds, domainTeams, scoreBoard, Db.quizActive quiz)
-
-updateSettings :: Pool SqlBackend -> QuizId -> UpdateQuizSettingsRequest -> Handler (Quiz 'Active)
+updateSettings :: Pool SqlBackend -> QuizId -> QuizMetaData -> Handler QuizMetaData
 updateSettings pool quizId request = do
   result <- runDb pool statement
   case result of
-    Nothing           -> throwError err404
-    Just (Left ())    -> throwError err409
-    Just (Right quiz) -> pure quiz
+    NotFound         -> throwError err404
+    NotEditable      -> throwError err409
+    Success metaData -> pure metaData
  where
+  dbQuizId = quizIdToKey quizId
   statement = do
-    let dbQuizId = quizIdToKey quizId
     maybeQuiz <- get dbQuizId
     case maybeQuiz of
-      Nothing -> pure Nothing
+      Nothing -> pure NotFound
       Just quiz
-        | not (Db.quizActive quiz) -> pure $ Just (Left ())
+        | not (Db.quizActive quiz) -> pure NotEditable
         | otherwise -> do
-            -- Delete existing rounds and recreate
-            existingRounds <- selectList [Db.RoundQuizId ==. dbQuizId] []
-            forM_ existingRounds $ \(Entity _ _) -> pure () -- Rounds have composite PK, handle separately
+            -- Update quiz identifier
+            update dbQuizId
+              [ Db.QuizName =. unQuizName (name request.identifier)
+              , Db.QuizPlace =. unPlace (place request.identifier)
+              , Db.QuizDate =. date request.identifier
+              ]
 
-            -- Insert new rounds based on questionsPerRound
-            forM_ (zip [1 ..] (questionsPerRound request.settings)) $ \(roundNum, numberOfQuestions) -> do
-              upsert
-                Db.Round
-                  { roundQuizId = dbQuizId
-                  , roundRoundNumber = roundNum
-                  , roundReachablePoints = 0 -- Default, can be updated later
-                  , roundNumberOfQuestions = fromIntegral $ unNumberOfQuestions numberOfQuestions
-                  }
-                [Db.RoundNumberOfQuestions =. fromIntegral (unNumberOfQuestions numberOfQuestions)]
-
-            -- Adjust team count
-            existingTeams <- selectList [Db.TeamQuizId ==. dbQuizId] []
-            let currentTeamCount = length existingTeams
-            let targetTeamCount = numberOfTeams request.settings
-
-            -- Add new teams if needed
-            forM_ [currentTeamCount + 1 .. targetTeamCount] $ \teamNumber -> do
-              insert $
-                Db.Team
-                  { teamQuizId = dbQuizId
-                  , teamNumber = teamNumber
-                  , teamName = ""
-                  , teamActive = True
-                  }
-
-            -- Fetch updated data
+            -- Get max team number from Team table
+            -- Todo: This looks more complicated than it should be. Check again.
             teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-            roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
+            let maxTeamInDb = if null teamEntities
+                              then 0
+                              else maximum $ map (Db.teamNumber . entityVal) teamEntities
+
+            -- Get which rounds have score entries
             scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
+            let roundsWithScores = nub $ map (Db.teamRoundScoreRoundNumber . entityVal) scoreEntities
 
-            let domainTeams = map (dbTeamToTeam . entityVal) teamEntities
+            let requestedTeams = numberOfTeams request.settings
+            let finalTeamCount = max maxTeamInDb requestedTeams
 
-            let domainRounds = map (dbRoundToRound . entityVal) roundEntities
-
-            let scoreBoard = dbScoresToScoreBoard scoreEntities
-
-            pure $
-              Just $
-                Right
-                  Quiz
-                    { quizId = quizId
-                    , identifier = quizToIdentifier quiz
-                    , rounds = domainRounds
-                    , teams = domainTeams
-                    , scoreBoard = scoreBoard
+            -- If we need more teams, add zero scores for rounds that have entries
+            forM_ [maxTeamInDb + 1 .. finalTeamCount] $ \teamNum ->
+              forM_ roundsWithScores $ \roundNum ->
+                insert $
+                  Db.TeamRoundScore
+                    { teamRoundScoreQuizId = dbQuizId
+                    , teamRoundScoreTeamNumber = teamNum
+                    , teamRoundScoreRoundNumber = roundNum
+                    , teamRoundScorePoints = 0
                     }
 
-data UpdateResult = NotFound | Locked | Success ScoreBoard
+            let updatedSettings = request.settings { numberOfTeams = finalTeamCount }
+            pure $ Success request { settings = updatedSettings }
+
 
 updateScore :: Pool SqlBackend -> QuizId -> UpdateScoreRequest -> Handler ScoreBoard
 updateScore pool quizId request = do
   result <- runDb pool statement
   case result of
     NotFound      -> throwError err404
-    Locked        -> throwError err409
+    NotEditable   -> throwError err409
     Success board -> pure board
  where
   dbQuizId = quizIdToKey quizId
@@ -305,9 +277,9 @@ updateScore pool quizId request = do
     case maybeQuiz of
       Nothing -> pure NotFound
       Just quiz
-        | not (Db.quizActive quiz) -> pure Locked
+        | not (Db.quizActive quiz) -> pure NotEditable
         | otherwise -> do
-            -- Upsert the score
+            -- Todo: This is completely wrong - We want to update the score board, not a single score!
             _ <-
               upsert
                 Db.TeamRoundScore
