@@ -10,7 +10,7 @@ module Api.BackOffice.Routes where
 
 import           Api.BackOffice.Types        (QuizSummary (..))
 import           Api.Util                    (runDb)
-import           Control.Monad               (forM, forM_, unless)
+import           Control.Monad               (forM_, unless)
 import           Core.Domain                 (NumberOfQuestions (..),
                                               Place (..), Points (..),
                                               Quiz (..), QuizId (..),
@@ -22,6 +22,7 @@ import           Core.Domain                 (NumberOfQuestions (..),
                                               TeamName (..), TeamNumber (..))
 import           Data.Aeson                  (FromJSON, ToJSON)
 import qualified Data.Map.Strict             as Map
+import           Data.Maybe                  (isJust)
 import           Data.Pool                   (Pool)
 import           Data.Text                   (Text)
 import           Database.Persist            (Entity (..), (=.), (==.))
@@ -71,8 +72,8 @@ type BackOfficeRoutes =
     :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
     :<|> Capture "quizId" QuizId :> "settings" :> ReqBody '[JSON] UpdateQuizSettingsRequest :> Put '[JSON] (Quiz 'Active)
     :<|> Capture "quizId" QuizId :> "scores" :> ReqBody '[JSON] UpdateScoreRequest :> Post '[JSON] ScoreBoard
-    :<|> Capture "quizId" QuizId :> "lock" :> Post '[JSON] (Quiz 'Locked)
-    :<|> Capture "quizId" QuizId :> "unlock" :> Post '[JSON] (Quiz 'Active)
+    :<|> Capture "quizId" QuizId :> "lock" :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "unlock" :> Post '[JSON] NoContent
 
 -- Wrap routes with JWT authentication
 type BackOfficeApi = "backoffice" :> Auth '[JWT] AuthenticatedUser :> BackOfficeRoutes
@@ -325,74 +326,20 @@ updateScore pool quizId request = do
                       ]
             pure $ Just (Right board)
 
-lockQuiz :: Pool SqlBackend -> QuizId -> Handler (Quiz 'Locked)
-lockQuiz pool quizId = do
-  maybeQuiz <- runDb pool statement
-  case maybeQuiz of
-    Nothing   -> throwError err404
-    Just quiz -> pure quiz
- where
-  statement = do
+setQuizActiveHandler :: Pool SqlBackend -> QuizId -> Bool -> Handler NoContent
+setQuizActiveHandler pool quizId active = do
+  found <- runDb pool $ do
     let dbQuizId = quizIdToKey quizId
     maybeQuiz <- get dbQuizId
-    case maybeQuiz of
-      Nothing -> pure Nothing
-      Just quiz -> do
-        update dbQuizId [Db.QuizActive =. False]
+    forM_ maybeQuiz $ \_ -> update dbQuizId [Db.QuizActive =. active]
+    pure (isJust maybeQuiz)
+  unless found $ throwError err404
+  pure NoContent
 
-        teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-        roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
-        scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
+lockQuiz :: Pool SqlBackend -> QuizId -> Handler NoContent
+lockQuiz pool quizId = setQuizActiveHandler pool quizId False
 
-        let domainTeams = map (dbTeamToTeam . entityVal) teamEntities
-
-        let domainRounds = map (dbRoundToRound . entityVal) roundEntities
-
-        let scoreBoard = dbScoresToScoreBoard scoreEntities
-
-        pure $
-          Just
-            Quiz
-              { quizId = quizId
-              , identifier = quizToIdentifier quiz
-              , rounds = domainRounds
-              , teams = domainTeams
-              , scoreBoard = scoreBoard
-              }
-
-unlockQuiz :: Pool SqlBackend -> AuthenticatedUser -> QuizId -> Handler (Quiz 'Active)
+unlockQuiz :: Pool SqlBackend -> AuthenticatedUser -> QuizId -> Handler NoContent
 unlockQuiz pool user quizId = do
-  unless user.isAdmin $
-    throwError err403
-  maybeQuiz <- runDb pool statement
-  case maybeQuiz of
-    Nothing   -> throwError err404
-    Just quiz -> pure quiz
- where
-  statement = do
-    let dbQuizId = quizIdToKey quizId
-    maybeQuiz <- get dbQuizId
-    case maybeQuiz of
-      Nothing -> pure Nothing
-      Just quiz -> do
-        update dbQuizId [Db.QuizActive =. True]
-
-        teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-        roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
-        scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
-
-        let domainTeams = map (dbTeamToTeam . entityVal) teamEntities
-
-        let domainRounds = map (dbRoundToRound . entityVal) roundEntities
-
-        let scoreBoard = dbScoresToScoreBoard scoreEntities
-
-        pure $
-          Just
-            Quiz
-              { quizId = quizId
-              , identifier = quizToIdentifier quiz
-              , rounds = domainRounds
-              , teams = domainTeams
-              , scoreBoard = scoreBoard
-              }
+  unless user.isAdmin $ throwError err403
+  setQuizActiveHandler pool quizId True
