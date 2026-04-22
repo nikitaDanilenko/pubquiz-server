@@ -289,21 +289,23 @@ updateSettings pool quizId request = do
                     , scoreBoard = scoreBoard
                     }
 
+data UpdateResult = NotFound | Locked | Success ScoreBoard
+
 updateScore :: Pool SqlBackend -> QuizId -> UpdateScoreRequest -> Handler ScoreBoard
 updateScore pool quizId request = do
   result <- runDb pool statement
   case result of
-    Nothing            -> throwError err404
-    Just (Left ())     -> throwError err409
-    Just (Right board) -> pure board
+    NotFound      -> throwError err404
+    Locked        -> throwError err409
+    Success board -> pure board
  where
+  dbQuizId = quizIdToKey quizId
   statement = do
-    let dbQuizId = quizIdToKey quizId
     maybeQuiz <- get dbQuizId
     case maybeQuiz of
-      Nothing -> pure Nothing
+      Nothing -> pure NotFound
       Just quiz
-        | not (Db.quizActive quiz) -> pure $ Just (Left ())
+        | not (Db.quizActive quiz) -> pure Locked
         | otherwise -> do
             -- Upsert the score
             _ <-
@@ -318,13 +320,7 @@ updateScore pool quizId request = do
 
             -- Fetch updated scoreboard
             scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
-            let board =
-                  ScoreBoard $
-                    Map.fromList
-                      [ ((TeamNumber (Db.teamRoundScoreTeamNumber score), RoundNumber (Db.teamRoundScoreRoundNumber score)), Points (Db.teamRoundScorePoints score))
-                      | Entity _ score <- scoreEntities
-                      ]
-            pure $ Just (Right board)
+            pure $ Success (dbScoresToScoreBoard scoreEntities)
 
 setQuizActiveHandler :: Pool SqlBackend -> QuizId -> Bool -> Handler NoContent
 setQuizActiveHandler pool quizId active = do
