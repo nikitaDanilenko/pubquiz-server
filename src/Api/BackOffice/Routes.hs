@@ -11,28 +11,25 @@ module Api.BackOffice.Routes where
 import           Api.BackOffice.Types        (QuizSummary (..))
 import           Api.Util                    (runDb)
 import           Control.Monad               (forM, forM_, unless)
-import           Core.Domain                 (NumberOfQuestions (..),
-                                              Place (..), Points (..),
+import           Core.Domain                 (Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
-                                              QuizState (..), Round (..),
-                                              RoundNumber (..), ScoreBoard (..),
-                                              SomeQuiz (..), Team (..),
-                                              TeamName (..), TeamNumber (..),
-                                              fromActivity)
+                                              QuizState (..), RoundNumber (..),
+                                              ScoreBoard (..), SomeQuiz (..),
+                                              Team (..), TeamName (..),
+                                              TeamNumber (..), fromActivity)
 import           Core.FromDb                 (dbRoundToRound, dbToScoreBoard,
                                               quizIdToKey, quizKeyToId,
                                               quizToIdentifier)
 import           Data.Aeson                  (FromJSON, ToJSON)
 import           Data.List                   (nub)
-import qualified Data.Map.Strict             as Map
 import           Data.Maybe                  (isJust)
 import           Data.Pool                   (Pool)
 import           Database.Persist            (Entity (..), (=.), (==.))
 import           Database.Persist.Postgresql (get, insert, selectList, update,
                                               upsert)
-import           Database.Persist.Sql        (SqlBackend)
+import           Database.Persist.Sql        (SqlBackend, SqlPersistT)
 import qualified Db.Schema                   as Db
 import           GHC.Generics                (Generic)
 import           Servant
@@ -51,20 +48,72 @@ data QuizMetaData = QuizMetaData
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
--- GET  /backoffice                → list quizzes
--- POST /backoffice                → create quiz
--- GET  /backoffice/:id            → view quiz
--- PUT  /backoffice/:id/settings   → update quiz setup
--- POST /backoffice/:id/scoreboard → update scoreboard
--- POST /backoffice/:id/lock       → lock quiz
--- POST /backoffice/:id/unlock     → unlock quiz
+-- Command types for DDD-style endpoints.
+-- We use POST for commands (not PATCH) because these represent domain actions/intents,
+-- not partial resource updates. The URI names the action, the body carries the command payload.
+
+newtype ChangeSettingsCommand = ChangeSettingsCommand
+  { newIdentifier :: QuizIdentifier
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+newtype AddTeamsCommand = AddTeamsCommand
+  { additionalTeams :: Int
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+data RecordRoundScoresCommand = RecordRoundScoresCommand
+  { roundNumber :: RoundNumber
+  , scores      :: [(TeamNumber, Points)]
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+data CorrectScoreCommand = CorrectScoreCommand
+  { teamNumber  :: TeamNumber
+  , roundNumber :: RoundNumber
+  , points      :: Points
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+data RenameTeamCommand = RenameTeamCommand
+  { teamNumber :: TeamNumber
+  , newName    :: TeamName
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+data SetTeamActiveCommand = SetTeamActiveCommand
+  { teamNumber :: TeamNumber
+  , active     :: Bool
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+-- Queries (read operations)
+-- GET  /backoffice                         → list quizzes
+-- GET  /backoffice/:id                     → view quiz
+--
+-- Commands (domain actions)
+-- POST /backoffice                         → create quiz
+-- POST /backoffice/:id/change-settings     → change quiz settings (name, place, date)
+-- POST /backoffice/:id/add-teams           → add teams
+-- POST /backoffice/:id/record-round-scores → record scores for a round
+-- POST /backoffice/:id/correct-score       → fix a single score entry
+-- POST /backoffice/:id/rename-team         → rename a team
+-- POST /backoffice/:id/set-team-active     → activate/deactivate team
+-- POST /backoffice/:id/lock                → lock quiz
+-- POST /backoffice/:id/unlock              → unlock quiz
 
 type BackOfficeRoutes =
+  -- Queries
   Get '[JSON] [QuizSummary]
-    :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
     :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
-    :<|> Capture "quizId" QuizId :> "settings" :> ReqBody '[JSON] QuizMetaData :> Put '[JSON] QuizMetaData
-    :<|> Capture "quizId" QuizId :> "scoreboard" :> ReqBody '[JSON] ScoreBoard :> Put '[JSON] ScoreBoard
+  -- Commands
+    :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
+    :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] ChangeSettingsCommand :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "add-teams" :> ReqBody '[JSON] AddTeamsCommand :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "record-round-scores" :> ReqBody '[JSON] RecordRoundScoresCommand :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "correct-score" :> ReqBody '[JSON] CorrectScoreCommand :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "rename-team" :> ReqBody '[JSON] RenameTeamCommand :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "set-team-active" :> ReqBody '[JSON] SetTeamActiveCommand :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "lock" :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "unlock" :> Post '[JSON] NoContent
 
@@ -74,15 +123,21 @@ type BackOfficeApi = "backoffice" :> Auth '[JWT] AuthenticatedUser :> BackOffice
 backOfficeApi :: Proxy BackOfficeApi
 backOfficeApi = Proxy
 
--- Handlers (placeholder implementations)
+-- Handlers
 
 backOfficeServer :: Pool SqlBackend -> AuthResult AuthenticatedUser -> Server BackOfficeRoutes
 backOfficeServer pool (Authenticated user) =
+  -- Queries
   listQuizzes pool
-    :<|> createQuiz pool
     :<|> getQuiz pool
-    :<|> updateSettings pool
-    :<|> updateScoreBoard pool
+  -- Commands
+    :<|> createQuiz pool
+    :<|> changeSettings pool
+    :<|> addTeams pool
+    :<|> recordRoundScores pool
+    :<|> correctScore pool
+    :<|> renameTeam pool
+    :<|> setTeamActive pool
     :<|> lockQuiz pool
     :<|> unlockQuiz pool user
 backOfficeServer _ _ = throwAll err401
@@ -110,7 +165,7 @@ createQuiz pool request = do
       { quizId = quizKeyToId quizKey
       , identifier = request.identifier
       , rounds = []
-      , scoreBoard = ScoreBoard { teams = initialTeams, scores = Map.empty }
+      , scoreBoard = ScoreBoard { teams = initialTeams, scores = mempty }
       }
  where
   statement = do
@@ -159,98 +214,101 @@ getQuiz pool quizId = runDb pool statement >>= maybe (throwError err404) pure
       pure $ fromActivity (Db.quizActive quizRecord) quiz
 
 
-data UpdateResult a = NotFound | NotEditable | Success a
+data CommandResult = QuizNotFound | QuizLocked | CommandSuccess
 
-updateSettings :: Pool SqlBackend -> QuizId -> QuizMetaData -> Handler QuizMetaData
-updateSettings pool quizId request = do
-  result <- runDb pool statement
-  case result of
-    NotFound         -> throwError err404
-    NotEditable      -> throwError err409
-    Success metaData -> pure metaData
- where
-  dbQuizId = quizIdToKey quizId
-  statement = do
-    maybeQuiz <- get dbQuizId
+-- Helper for command handlers that require an active quiz
+withActiveQuiz :: Pool SqlBackend -> QuizId -> SqlPersistT IO CommandResult -> Handler NoContent
+withActiveQuiz pool quizId action = do
+  result <- runDb pool $ do
+    maybeQuiz <- get (quizIdToKey quizId)
     case maybeQuiz of
-      Nothing -> pure NotFound
+      Nothing -> pure QuizNotFound
       Just quiz
-        | not (Db.quizActive quiz) -> pure NotEditable
-        | otherwise -> do
-            -- Update quiz identifier
-            update dbQuizId
-              [ Db.QuizName =. unQuizName (name request.identifier)
-              , Db.QuizPlace =. unPlace (place request.identifier)
-              , Db.QuizDate =. date request.identifier
-              ]
-
-            -- Get max team number from Team table
-            -- Todo: This looks more complicated than it should be. Check again.
-            teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-            let maxTeamInDb = if null teamEntities
-                              then 0
-                              else maximum $ map (Db.teamNumber . entityVal) teamEntities
-
-            -- Get which rounds have score entries
-            scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
-            let roundsWithScores = nub $ map (Db.teamRoundScoreRoundNumber . entityVal) scoreEntities
-
-            let requestedTeams = numberOfTeams request.settings
-            let finalTeamCount = max maxTeamInDb requestedTeams
-
-            -- If we need more teams, add zero scores for rounds that have entries
-            forM_ [maxTeamInDb + 1 .. finalTeamCount] $ \teamNum ->
-              forM_ roundsWithScores $ \roundNum ->
-                insert $
-                  Db.TeamRoundScore
-                    { teamRoundScoreQuizId = dbQuizId
-                    , teamRoundScoreTeamNumber = teamNum
-                    , teamRoundScoreRoundNumber = roundNum
-                    , teamRoundScorePoints = 0
-                    }
-
-            let updatedSettings = request.settings { numberOfTeams = finalTeamCount }
-            pure $ Success request { settings = updatedSettings }
-
-
-updateScoreBoard :: Pool SqlBackend -> QuizId -> ScoreBoard -> Handler ScoreBoard
-updateScoreBoard pool quizId request = do
-  result <- runDb pool statement
+        | not (Db.quizActive quiz) -> pure QuizLocked
+        | otherwise -> action
   case result of
-    NotFound      -> throwError err404
-    NotEditable   -> throwError err409
-    Success board -> pure board
- where
-  dbQuizId = quizIdToKey quizId
-  statement = do
-    maybeQuiz <- get dbQuizId
-    case maybeQuiz of
-      Nothing -> pure NotFound
-      Just quiz
-        | not (Db.quizActive quiz) -> pure NotEditable
-        | otherwise -> do
-            -- Update teams (name and active status, but numbers are fixed)
-            forM_ request.teams $ \team ->
-              update (Db.TeamKey dbQuizId (unTeamNumber team.number))
-                [ Db.TeamName =. unTeamName team.teamName
-                , Db.TeamActive =. team.active
-                ]
+    QuizNotFound   -> throwError err404
+    QuizLocked     -> throwError err409
+    CommandSuccess -> pure NoContent
 
-            -- Update scores
-            forM_ (Map.toList request.scores) $ \((teamNum, roundNum), pts) ->
-              upsert
-                Db.TeamRoundScore
-                  { teamRoundScoreQuizId = dbQuizId
-                  , teamRoundScoreTeamNumber = unTeamNumber teamNum
-                  , teamRoundScoreRoundNumber = unRoundNumber roundNum
-                  , teamRoundScorePoints = unPoints pts
-                  }
-                [Db.TeamRoundScorePoints =. unPoints pts]
+changeSettings :: Pool SqlBackend -> QuizId -> ChangeSettingsCommand -> Handler NoContent
+changeSettings pool quizId cmd = withActiveQuiz pool quizId $ do
+  update (quizIdToKey quizId)
+    [ Db.QuizName =. unQuizName (name cmd.newIdentifier)
+    , Db.QuizPlace =. unPlace (place cmd.newIdentifier)
+    , Db.QuizDate =. date cmd.newIdentifier
+    ]
+  pure CommandSuccess
 
-            -- Fetch updated scoreboard
-            teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-            scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
-            pure $ Success (dbToScoreBoard teamEntities scoreEntities)
+addTeams :: Pool SqlBackend -> QuizId -> AddTeamsCommand -> Handler NoContent
+addTeams pool quizId cmd = withActiveQuiz pool quizId $ do
+  let dbQuizId = quizIdToKey quizId
+
+  -- Find current max team number
+  teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
+  let maxTeamInDb = if null teamEntities
+                    then 0
+                    else maximum $ map (Db.teamNumber . entityVal) teamEntities
+
+  -- Add new teams
+  forM_ [maxTeamInDb + 1 .. maxTeamInDb + cmd.additionalTeams] $ \teamNum ->
+    insert $ Db.Team
+      { teamQuizId = dbQuizId
+      , teamNumber = teamNum
+      , teamName = ""
+      , teamActive = True
+      }
+
+  -- Add zero scores for new teams in rounds that already have scores
+  scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
+  let roundsWithScores = nub $ map (Db.teamRoundScoreRoundNumber . entityVal) scoreEntities
+  forM_ [maxTeamInDb + 1 .. maxTeamInDb + cmd.additionalTeams] $ \teamNum ->
+    forM_ roundsWithScores $ \roundNum ->
+      insert $ Db.TeamRoundScore
+        { teamRoundScoreQuizId = dbQuizId
+        , teamRoundScoreTeamNumber = teamNum
+        , teamRoundScoreRoundNumber = roundNum
+        , teamRoundScorePoints = 0
+        }
+
+  pure CommandSuccess
+
+recordRoundScores :: Pool SqlBackend -> QuizId -> RecordRoundScoresCommand -> Handler NoContent
+recordRoundScores pool quizId cmd = withActiveQuiz pool quizId $ do
+  let dbQuizId = quizIdToKey quizId
+  forM_ cmd.scores $ \(teamNum, pts) ->
+    insert $ Db.TeamRoundScore
+      { teamRoundScoreQuizId = dbQuizId
+      , teamRoundScoreTeamNumber = unTeamNumber teamNum
+      , teamRoundScoreRoundNumber = unRoundNumber cmd.roundNumber
+      , teamRoundScorePoints = unPoints pts
+      }
+  pure CommandSuccess
+
+correctScore :: Pool SqlBackend -> QuizId -> CorrectScoreCommand -> Handler NoContent
+correctScore pool quizId cmd = withActiveQuiz pool quizId $ do
+  let dbQuizId = quizIdToKey quizId
+  upsert
+    Db.TeamRoundScore
+      { teamRoundScoreQuizId = dbQuizId
+      , teamRoundScoreTeamNumber = unTeamNumber cmd.teamNumber
+      , teamRoundScoreRoundNumber = unRoundNumber cmd.roundNumber
+      , teamRoundScorePoints = unPoints cmd.points
+      }
+    [Db.TeamRoundScorePoints =. unPoints cmd.points]
+  pure CommandSuccess
+
+renameTeam :: Pool SqlBackend -> QuizId -> RenameTeamCommand -> Handler NoContent
+renameTeam pool quizId cmd = withActiveQuiz pool quizId $ do
+  update (Db.TeamKey (quizIdToKey quizId) (unTeamNumber cmd.teamNumber))
+    [Db.TeamName =. unTeamName cmd.newName]
+  pure CommandSuccess
+
+setTeamActive :: Pool SqlBackend -> QuizId -> SetTeamActiveCommand -> Handler NoContent
+setTeamActive pool quizId cmd = withActiveQuiz pool quizId $ do
+  update (Db.TeamKey (quizIdToKey quizId) (unTeamNumber cmd.teamNumber))
+    [Db.TeamActive =. cmd.active]
+  pure CommandSuccess
 
 setQuizActiveHandler :: Pool SqlBackend -> QuizId -> Bool -> Handler NoContent
 setQuizActiveHandler pool quizId active = do
