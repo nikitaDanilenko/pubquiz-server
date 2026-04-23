@@ -8,20 +8,20 @@
 
 module Api.BackOffice.Routes where
 
-import           Api.BackOffice.Types        (QuizSummary (..))
 import           Api.Util                    (runDb)
 import           Control.Monad               (forM, forM_, unless)
 import           Core.Domain                 (Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
-                                              QuizState (..), RoundNumber (..),
-                                              ScoreBoard (..), SomeQuiz (..),
-                                              Team (..), TeamName (..),
-                                              TeamNumber (..), fromActivity)
-import           Core.FromDb                 (dbRoundToRound, dbToScoreBoard,
-                                              quizIdToKey, quizKeyToId,
-                                              quizToIdentifier)
+                                              QuizState (..), QuizSummary,
+                                              RoundNumber (..), ScoreBoard (..),
+                                              SomeQuiz (..), Team (..),
+                                              TeamName (..), TeamNumber (..),
+                                              fromActivity)
+import           Core.FromDb                 (dbRoundToRound, dbToQuizSummary,
+                                              dbToScoreBoard, quizIdToKey,
+                                              quizKeyToId, quizToIdentifier)
 import           Data.Aeson                  (FromJSON, ToJSON)
 import           Data.List                   (nub)
 import           Data.Maybe                  (isJust)
@@ -143,18 +143,9 @@ backOfficeServer pool (Authenticated user) =
 backOfficeServer _ _ = throwAll err401
 
 listQuizzes :: Pool SqlBackend -> Handler [QuizSummary]
-listQuizzes pool = runDb pool statement
- where
-  statement = do
-    quizEntities <- selectList [] []
-    pure $ map toQuizSummary quizEntities
-   where
-    toQuizSummary (Entity quizKey quiz) =
-      QuizSummary
-        { quizId = quizKeyToId quizKey
-        , identifier = quizToIdentifier quiz
-        , active = Db.quizActive quiz
-        }
+listQuizzes pool = runDb pool $ do
+  quizEntities <- selectList [] []
+  pure $ map dbToQuizSummary quizEntities
 
 createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler (Quiz 'Active)
 createQuiz pool request = do

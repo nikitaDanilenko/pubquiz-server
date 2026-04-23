@@ -1,15 +1,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
-module Api.BackOffice.Types where
+module Api.BackOffice.Types
+  ( module Core.Domain
+  )
+where
 
-import           Core.Domain  (QuizId, QuizIdentifier)
-import           Data.Aeson   (ToJSON)
-import           GHC.Generics (Generic)
-
-data QuizSummary = QuizSummary
-  { quizId     :: QuizId
-  , identifier :: QuizIdentifier
-  , active     :: Bool
-  }
-  deriving (Show, Eq, Generic, ToJSON)
+-- Re-export QuizSummary from Core.Domain for backwards compatibility
+import           Core.Domain (QuizSummary (..))

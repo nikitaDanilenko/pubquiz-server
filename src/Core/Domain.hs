@@ -1,9 +1,10 @@
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE GADTs          #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE RankNTypes     #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE RankNTypes            #-}
 
 module Core.Domain where
 
@@ -82,3 +83,11 @@ data SomeQuiz where
 fromActivity :: Bool -> (forall state . Quiz state) -> SomeQuiz
 fromActivity True  quiz = SomeActive quiz
 fromActivity False quiz = SomeLocked quiz
+
+-- Read model for quiz listings
+data QuizSummary = QuizSummary
+  { quizId     :: QuizId
+  , identifier :: QuizIdentifier
+  , active     :: Bool
+  }
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
