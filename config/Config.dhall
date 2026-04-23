@@ -18,6 +18,7 @@ let Config =
       , database : DatabaseConfig
       , organizers : List Organizer
       , jwtSecret : Text
+      , jwtExpirationSeconds : Natural
       }
 
 let config : Config =
@@ -41,6 +42,7 @@ let config : Config =
             }
           ]
       , jwtSecret = env:JWT_SECRET as Text
+      , jwtExpirationSeconds = env:JWT_EXPIRATION_SECONDS ? 259200
       }
 
 in  config

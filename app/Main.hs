@@ -10,6 +10,7 @@ import           Control.Monad.Reader        (runReaderT)
 import           Data.Pool                   (Pool, withResource)
 import           Data.Text                   (pack, unpack)
 import           Data.Text.Encoding          (encodeUtf8)
+import           Data.Time                   (secondsToNominalDiffTime)
 import           Database.Persist.Postgresql (createPostgresqlPool)
 import           Database.Persist.Sql        (SqlBackend, runMigration)
 import           Db.Schema                   (migrateAll)
@@ -30,12 +31,13 @@ main = do
   -- Create JWT settings from secret
   let jwtKey = fromSecret (encodeUtf8 config.jwtSecret)
       jwtSettings = defaultJWTSettings jwtKey
+      jwtExpiration = secondsToNominalDiffTime (fromIntegral config.jwtExpirationSeconds)
       cookieSettings = defaultCookieSettings
       ctx = cookieSettings :. jwtSettings :. EmptyContext
       appPort = fromIntegral config.port
 
   putStrLn $ unwords ["Starting server on port", show appPort]
-  run appPort $ serveWithContext api ctx (server pool config.organizers jwtSettings)
+  run appPort $ serveWithContext api ctx (server pool config.organizers jwtSettings jwtExpiration)
 
 createPool :: DatabaseConfig -> IO (Pool SqlBackend)
 createPool dbConfig = runStdoutLoggingT $ do

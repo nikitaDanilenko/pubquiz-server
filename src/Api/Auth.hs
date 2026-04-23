@@ -3,7 +3,6 @@
 {-# LANGUAGE DeriveGeneric            #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE OverloadedRecordDot      #-}
-{-# LANGUAGE OverloadedStrings        #-}
 {-# LANGUAGE TypeOperators            #-}
 
 module Api.Auth where
@@ -17,6 +16,8 @@ import qualified Data.ByteString.Lazy   as LBS
 import           Data.List              (find)
 import           Data.Text              (Text)
 import           Data.Text.Encoding     (decodeUtf8, encodeUtf8)
+import           Data.Time              (NominalDiffTime, addUTCTime,
+                                         getCurrentTime)
 import           GHC.Generics           (Generic)
 import           Servant
 import           Servant.Auth.Server
@@ -47,18 +48,20 @@ verifyPassword plaintext hash =
   validatePassword (encodeUtf8 hash) (encodeUtf8 plaintext)
 
 -- Login handler
-authServer :: [Organizer] -> JWTSettings -> Server AuthApi
-authServer organizers jwtSettings = login
+authServer :: [Organizer] -> JWTSettings -> NominalDiffTime -> Server AuthApi
+authServer organizers jwtSettings expirationSeconds = login
  where
   login :: LoginRequest -> Handler LoginResponse
-  login req = do
+  login req =
     case find (\o -> o.name == req.username) organizers of
       Nothing -> throwError err401
       Just org
         | not (verifyPassword req.password org.passwordHash) -> throwError err401
         | otherwise -> do
-            let user = AuthenticatedUser { isAdmin = org.isAdmin }
-            eToken <- liftIO $ makeJWT user jwtSettings Nothing
+            now <- liftIO getCurrentTime
+            let expiry = addUTCTime expirationSeconds now
+                user = AuthenticatedUser { isAdmin = org.isAdmin }
+            eToken <- liftIO $ makeJWT user jwtSettings (Just expiry)
             case eToken of
               Left _  -> throwError err500
               Right t -> pure $ LoginResponse (decodeUtf8 $ LBS.toStrict t)
