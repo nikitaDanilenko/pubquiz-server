@@ -19,7 +19,8 @@ import           Core.Domain                 (NumberOfQuestions (..),
                                               QuizState (..), Round (..),
                                               RoundNumber (..), ScoreBoard (..),
                                               SomeQuiz (..), Team (..),
-                                              TeamName (..), TeamNumber (..))
+                                              TeamName (..), TeamNumber (..),
+                                              fromActivity)
 import           Data.Aeson                  (FromJSON, ToJSON)
 import           Data.List                   (nub)
 import qualified Data.Map.Strict             as Map
@@ -40,12 +41,6 @@ newtype AuthenticatedUser = AuthenticatedUser
   {    isAdmin       :: Bool
    }
   deriving (Show, Eq, Generic, FromJSON, ToJSON, ToJWT, FromJWT)
-
-data CreateQuizRequest = CreateQuizRequest
-  { identifier :: QuizIdentifier
-  , settings   :: QuizSettings
-  }
-  deriving (Show, Eq, Generic, FromJSON)
 
 data QuizMetaData = QuizMetaData
   {
@@ -71,7 +66,7 @@ data UpdateScoreRequest = UpdateScoreRequest
 
 type BackOfficeRoutes =
   Get '[JSON] [QuizSummary]
-    :<|> ReqBody '[JSON] CreateQuizRequest :> Post '[JSON] (Quiz 'Active)
+    :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
     :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
     :<|> Capture "quizId" QuizId :> "settings" :> ReqBody '[JSON] QuizMetaData :> Put '[JSON] QuizMetaData
     :<|> Capture "quizId" QuizId :> "scores" :> ReqBody '[JSON] UpdateScoreRequest :> Post '[JSON] ScoreBoard
@@ -149,7 +144,7 @@ listQuizzes pool = runDb pool statement
         , active = Db.quizActive quiz
         }
 
-createQuiz :: Pool SqlBackend -> CreateQuizRequest -> Handler (Quiz 'Active)
+createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler (Quiz 'Active)
 createQuiz pool request = do
   quizKey <- runDb pool statement
   pure $
