@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass         #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE OverloadedStrings      #-}
 
 module Config where
 
@@ -17,7 +18,7 @@ data DatabaseConfig = DatabaseConfig
   deriving (Show, Generic, FromDhall)
 
 data Organizer = Organizer
-  { organizerName :: Text,
+  { name :: Text,
     passwordHash :: Text,
     isAdmin :: Bool
   }

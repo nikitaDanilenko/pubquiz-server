@@ -7,7 +7,7 @@ let DatabaseConfig =
       }
 
 let Organizer =
-      { organizerName : Text
+      { name : Text
       , passwordHash : Text
       , isAdmin : Bool
       }
@@ -29,11 +29,11 @@ let config : Config =
           , port = env:DATABASE_PORT ? 5432
           }
       , organizers =
-          [ { organizerName = env:ORGANIZER_ADMIN_NAME as Text ? "admin"
+          [ { name = env:ORGANIZER_ADMIN_NAME as Text ? "admin"
             , passwordHash = env:ORGANIZER_ADMIN_HASH as Text
             , isAdmin = True
             }
-          , { organizerName = env:ORGANIZER_USER_NAME as Text ? "organizer"
+          , { name = env:ORGANIZER_USER_NAME as Text ? "organizer"
             , passwordHash = env:ORGANIZER_USER_HASH as Text
             , isAdmin = False
             }
