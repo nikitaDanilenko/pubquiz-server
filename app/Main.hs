@@ -4,7 +4,7 @@ module Main where
 
 import           Api                         (api, server)
 import           Config                      (Config (..), DatabaseConfig (..),
-                                              loadConfig)
+                                              JwtConfig (..), loadConfig)
 import           Control.Monad.Logger        (runStdoutLoggingT)
 import           Control.Monad.Reader        (runReaderT)
 import           Data.Pool                   (Pool, withResource)
@@ -29,9 +29,9 @@ main = do
   withResource pool $ runReaderT $ runMigration migrateAll
 
   -- Create JWT settings from secret
-  let jwtKey = fromSecret (encodeUtf8 config.jwtSecret)
+  let jwtKey = fromSecret (encodeUtf8 config.jwt.secret)
       jwtSettings = defaultJWTSettings jwtKey
-      jwtExpiration = secondsToNominalDiffTime (fromIntegral config.jwtExpirationSeconds)
+      jwtExpiration = secondsToNominalDiffTime (fromIntegral config.jwt.expirationSeconds)
       cookieSettings = defaultCookieSettings
       ctx = cookieSettings :. jwtSettings :. EmptyContext
       appPort = fromIntegral config.port

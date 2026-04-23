@@ -12,13 +12,17 @@ let Organizer =
       , isAdmin : Bool
       }
 
+let JwtConfig =
+      { secret : Text
+      , expirationSeconds : Natural
+      }
+
 let Config =
       { serverPath : Text
       , port : Natural
       , database : DatabaseConfig
       , organizers : List Organizer
-      , jwtSecret : Text
-      , jwtExpirationSeconds : Natural
+      , jwt : JwtConfig
       }
 
 let config : Config =
@@ -41,8 +45,10 @@ let config : Config =
             , isAdmin = False
             }
           ]
-      , jwtSecret = env:JWT_SECRET as Text
-      , jwtExpirationSeconds = env:JWT_EXPIRATION_SECONDS ? 259200
+      , jwt =
+          { secret = env:JWT_SECRET as Text
+          , expirationSeconds = env:JWT_EXPIRATION_SECONDS ? 259200
+          }
       }
 
 in  config

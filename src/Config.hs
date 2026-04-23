@@ -24,13 +24,18 @@ data Organizer = Organizer
   }
   deriving (Show, Generic, FromDhall)
 
+data JwtConfig = JwtConfig
+  { secret            :: Text,
+    expirationSeconds :: Natural
+  }
+  deriving (Show, Generic, FromDhall)
+
 data Config = Config
-  { serverPath           :: Text,
-    port                 :: Natural,
-    database             :: DatabaseConfig,
-    organizers           :: [Organizer],
-    jwtSecret            :: Text,
-    jwtExpirationSeconds :: Natural
+  { serverPath :: Text,
+    port       :: Natural,
+    database   :: DatabaseConfig,
+    organizers :: [Organizer],
+    jwt        :: JwtConfig
   }
   deriving (Show, Generic, FromDhall)
 
