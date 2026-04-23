@@ -191,22 +191,22 @@ getQuiz pool quizId = runDb pool statement >>= maybe (throwError err404) pure
   dbQuizId = quizIdToKey quizId
   statement = do
     maybeQuiz <- get dbQuizId
-    forM maybeQuiz $ \quiz -> do
+    forM maybeQuiz $ \quizRecord -> do
       teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
       roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
       scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
 
-      let mkQuiz :: Quiz state
-          mkQuiz =
+      let quiz :: Quiz state
+          quiz =
             Quiz
               { quizId = quizId
-              , identifier = quizToIdentifier quiz
+              , identifier = quizToIdentifier quizRecord
               , rounds = map (dbRoundToRound . entityVal) roundEntities
               , teams = map (dbTeamToTeam . entityVal) teamEntities
               , scoreBoard = dbScoresToScoreBoard scoreEntities
               }
 
-      pure $ if Db.quizActive quiz then SomeActive mkQuiz else SomeLocked mkQuiz
+      pure $ fromActivity (Db.quizActive quizRecord) quiz
 
 
 data UpdateResult a = NotFound | NotEditable | Success a

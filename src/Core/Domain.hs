@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE GADTs          #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RankNTypes     #-}
 
 module Core.Domain where
 
@@ -77,3 +78,7 @@ newtype ScoreBoard = ScoreBoard
 data SomeQuiz where
   SomeActive :: Quiz Active -> SomeQuiz
   SomeLocked :: Quiz Locked -> SomeQuiz
+
+fromActivity :: Bool -> (forall state . Quiz state) -> SomeQuiz
+fromActivity True  quiz = SomeActive quiz
+fromActivity False quiz = SomeLocked quiz
