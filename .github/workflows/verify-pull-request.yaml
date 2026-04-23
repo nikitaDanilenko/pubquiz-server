@@ -30,6 +30,10 @@ jobs:
           key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
           restore-keys: |
             ${{ runner.os }}-stack-
+          save-always: true
+
+      - name: Install dependencies
+        run: stack build --only-dependencies --fast
 
       - name: Build project
         run: stack build --fast
