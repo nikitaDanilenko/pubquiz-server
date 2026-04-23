@@ -26,6 +26,7 @@ data Organizer = Organizer
 
 data Config = Config
   { serverPath :: Text,
+    port :: Natural,
     database :: DatabaseConfig,
     organizers :: [Organizer],
     jwtSecret :: Text

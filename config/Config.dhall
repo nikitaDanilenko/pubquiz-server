@@ -14,6 +14,7 @@ let Organizer =
 
 let Config =
       { serverPath : Text
+      , port : Natural
       , database : DatabaseConfig
       , organizers : List Organizer
       , jwtSecret : Text
@@ -21,6 +22,7 @@ let Config =
 
 let config : Config =
       { serverPath = env:SERVER_PATH as Text ? "http://localhost:8080"
+      , port = env:PORT ? 8080
       , database =
           { host = env:DATABASE_HOST as Text ? "localhost"
           , name = env:DATABASE_NAME as Text ? "pubquiz"

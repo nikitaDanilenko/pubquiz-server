@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE OverloadedStrings   #-}
 
 module Main where
 
@@ -33,9 +32,10 @@ main = do
       jwtSettings = defaultJWTSettings jwtKey
       cookieSettings = defaultCookieSettings
       ctx = cookieSettings :. jwtSettings :. EmptyContext
+      appPort = fromIntegral config.port
 
-  putStrLn "Starting server on port 8080..."
-  run 8080 $ serveWithContext api ctx (server pool config.organizers jwtSettings)
+  putStrLn $ unwords ["Starting server on port", show appPort]
+  run appPort $ serveWithContext api ctx (server pool config.organizers jwtSettings)
 
 createPool :: DatabaseConfig -> IO (Pool SqlBackend)
 createPool dbConfig = runStdoutLoggingT $ do
