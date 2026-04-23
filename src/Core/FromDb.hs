@@ -4,7 +4,7 @@ module Core.FromDb
   , quizToIdentifier
   , dbRoundToRound
   , dbTeamToTeam
-  , dbScoresToScoreBoard
+  , dbToScoreBoard
   )
 where
 
@@ -48,10 +48,13 @@ dbTeamToTeam team =
     , active = Db.teamActive team
     }
 
-dbScoresToScoreBoard :: [Entity Db.TeamRoundScore] -> ScoreBoard
-dbScoresToScoreBoard scoreEntities =
-  ScoreBoard $
-    Map.fromList
-      [ ((TeamNumber (Db.teamRoundScoreTeamNumber score), RoundNumber (Db.teamRoundScoreRoundNumber score)), Points (Db.teamRoundScorePoints score))
-      | Entity _ score <- scoreEntities
-      ]
+dbToScoreBoard :: [Entity Db.Team] -> [Entity Db.TeamRoundScore] -> ScoreBoard
+dbToScoreBoard teamEntities scoreEntities =
+  ScoreBoard
+    { teams = map (dbTeamToTeam . entityVal) teamEntities
+    , scores =
+        Map.fromList
+          [ ((TeamNumber (Db.teamRoundScoreTeamNumber score), RoundNumber (Db.teamRoundScoreRoundNumber score)), Points (Db.teamRoundScorePoints score))
+          | Entity _ score <- scoreEntities
+          ]
+    }

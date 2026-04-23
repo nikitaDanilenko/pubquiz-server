@@ -51,7 +51,6 @@ data Quiz (state :: QuizState) = Quiz
   { quizId     :: QuizId,
     identifier :: QuizIdentifier,
     rounds     :: [Round],
-    teams      :: [Team],
     scoreBoard :: ScoreBoard
   }
   deriving (Show, Eq, Generic)
@@ -70,8 +69,9 @@ data Team = Team
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
-newtype ScoreBoard = ScoreBoard
-  { unScoreBoard :: Map (TeamNumber, RoundNumber) Points
+data ScoreBoard = ScoreBoard
+  { teams  :: [Team]
+  , scores :: Map (TeamNumber, RoundNumber) Points
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
