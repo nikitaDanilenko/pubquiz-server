@@ -21,16 +21,19 @@ import           Core.Domain                 (NumberOfQuestions (..),
                                               SomeQuiz (..), Team (..),
                                               TeamName (..), TeamNumber (..),
                                               fromActivity)
+import           Core.FromDb                 (dbRoundToRound,
+                                              dbScoresToScoreBoard,
+                                              dbTeamToTeam, quizIdToKey,
+                                              quizKeyToId, quizToIdentifier)
 import           Data.Aeson                  (FromJSON, ToJSON)
 import           Data.List                   (nub)
 import qualified Data.Map.Strict             as Map
 import           Data.Maybe                  (isJust)
 import           Data.Pool                   (Pool)
-import           Data.Text                   (Text)
 import           Database.Persist            (Entity (..), (=.), (==.))
-import           Database.Persist.Postgresql (delete, get, insert, selectList,
-                                              update, upsert)
-import           Database.Persist.Sql        (SqlBackend, fromSqlKey, toSqlKey)
+import           Database.Persist.Postgresql (get, insert, selectList, update,
+                                              upsert)
+import           Database.Persist.Sql        (SqlBackend)
 import qualified Db.Schema                   as Db
 import           GHC.Generics                (Generic)
 import           Servant
@@ -91,44 +94,6 @@ backOfficeServer pool (Authenticated user) =
     :<|> lockQuiz pool
     :<|> unlockQuiz pool user
 backOfficeServer _ _ = throwAll err401
-
-quizKeyToId :: Db.Key Db.Quiz -> QuizId
-quizKeyToId = QuizId . fromIntegral . fromSqlKey
-
-quizIdToKey :: QuizId -> Db.Key Db.Quiz
-quizIdToKey = toSqlKey . fromIntegral . unQuizId
-
-quizToIdentifier :: Db.Quiz -> QuizIdentifier
-quizToIdentifier quiz =
-  QuizIdentifier
-    { name = QuizName (Db.quizName quiz)
-    , place = Place (Db.quizPlace quiz)
-    , date = Db.quizDate quiz
-    }
-
-dbRoundToRound :: Db.Round -> Round
-dbRoundToRound round =
-  Round
-    { roundNumber = RoundNumber (Db.roundRoundNumber round)
-    , displayMaxPoints = Points (Db.roundReachablePoints round)
-    , numberOfQuestions = Db.roundNumberOfQuestions round
-    }
-
-dbTeamToTeam :: Db.Team -> Team
-dbTeamToTeam team =
-  Team
-    { number = TeamNumber (Db.teamNumber team)
-    , teamName = TeamName (Db.teamName team)
-    , active = Db.teamActive team
-    }
-
-dbScoresToScoreBoard :: [Entity Db.TeamRoundScore] -> ScoreBoard
-dbScoresToScoreBoard scoreEntities =
-  ScoreBoard $
-    Map.fromList
-      [ ((TeamNumber (Db.teamRoundScoreTeamNumber score), RoundNumber (Db.teamRoundScoreRoundNumber score)), Points (Db.teamRoundScorePoints score))
-      | Entity _ score <- scoreEntities
-      ]
 
 listQuizzes :: Pool SqlBackend -> Handler [QuizSummary]
 listQuizzes pool = runDb pool statement
