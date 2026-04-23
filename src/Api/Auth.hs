@@ -9,6 +9,7 @@ module Api.Auth where
 
 import           Api.BackOffice.Routes  (AuthenticatedUser (..))
 import           Config                 (Organizer (..))
+import           Control.Monad          (unless)
 import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt          (validatePassword)
 import           Data.Aeson             (FromJSON, ToJSON)
@@ -52,16 +53,12 @@ authServer :: [Organizer] -> JWTSettings -> NominalDiffTime -> Server AuthApi
 authServer organizers jwtSettings expirationSeconds = login
  where
   login :: LoginRequest -> Handler LoginResponse
-  login req =
-    case find (\o -> o.name == req.username) organizers of
-      Nothing -> throwError err401
-      Just org
-        | not (verifyPassword req.password org.passwordHash) -> throwError err401
-        | otherwise -> do
-            now <- liftIO getCurrentTime
-            let expiry = addUTCTime expirationSeconds now
-                user = AuthenticatedUser { isAdmin = org.isAdmin }
-            eToken <- liftIO $ makeJWT user jwtSettings (Just expiry)
-            case eToken of
-              Left _  -> throwError err500
-              Right t -> pure $ LoginResponse (decodeUtf8 $ LBS.toStrict t)
+  login req = do
+    org <- maybe (throwError err401) pure $ find (\o -> o.name == req.username) organizers
+    unless (verifyPassword req.password org.passwordHash) $ throwError err401
+    now <- liftIO getCurrentTime
+    let expiry = addUTCTime expirationSeconds now
+        user = AuthenticatedUser { isAdmin = org.isAdmin }
+    tokenCandidate <- liftIO $ makeJWT user jwtSettings (Just expiry)
+    token <- either (const $ throwError err500) pure tokenCandidate
+    pure $ LoginResponse (decodeUtf8 $ LBS.toStrict token)
