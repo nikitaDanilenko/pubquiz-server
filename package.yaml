@@ -23,6 +23,8 @@ ghc-options:
 dependencies:
   - aeson
   - base
+  - bcrypt
+  - bytestring
   - containers
   - dhall
   - jose
@@ -48,6 +50,8 @@ executables:
   pubquiz-server:
     main: Main.hs
     source-dirs: app
+    dependencies:
+      - pubquiz-server
     ghc-options:
       - -threaded
       - -rtsopts

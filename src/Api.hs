@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Api where
@@ -6,6 +5,7 @@ module Api where
 import           Api.Auth              (AuthApi, authServer)
 import           Api.BackOffice.Routes (BackOfficeApi, backOfficeServer)
 import           Api.Public.Routes     (PublicApi, publicServer)
+import           Config                (Organizer)
 import           Data.Pool             (Pool)
 import           Database.Persist.Sql  (SqlBackend)
 import           Servant
@@ -21,8 +21,8 @@ api :: Proxy Api
 api = Proxy
 
 -- Combined server
-server :: Pool SqlBackend -> CookieSettings -> JWTSettings -> Server Api
-server pool cs jwts =
+server :: Pool SqlBackend -> [Organizer] -> JWTSettings -> Server Api
+server pool organizers jwtSettings =
   publicServer
     :<|> backOfficeServer pool
-    :<|> authServer cs jwts
+    :<|> authServer organizers jwtSettings

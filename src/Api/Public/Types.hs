@@ -1,56 +1,61 @@
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Api.Public.Types where
 
-import Core.Domain (Place, Points, QuizIdentifier, QuizName, RoundNumber, TeamName, TeamNumber)
-import Data.Time.Calendar (Day)
+import           Core.Domain        (Place, Points, QuizIdentifier, QuizName,
+                                     RoundNumber, TeamName, TeamNumber)
+import           Data.Aeson         (FromJSON, ToJSON)
+import           Data.Time.Calendar (Day)
+import           GHC.Generics       (Generic)
 
 -- Public list view (search/browse quizzes)
 data QuizSummary = QuizSummary
   { identifier :: QuizIdentifier,
-    standings :: [StandingEntry]
+    standings  :: [StandingEntry]
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 -- Public single quiz view (leaderboard)
 data QuizView = QuizView
   { identifier :: QuizIdentifier,
-    standings :: [StandingEntry],
+    standings  :: [StandingEntry],
     roundStats :: [RoundStat]
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 -- Team's perspective (filtered to show only their scores and leaderboard)
 data TeamView = TeamView
   { identifier :: QuizIdentifier,
-    myTeam :: TeamInfo,
-    myScores :: [RoundScore],
-    standings :: [StandingEntry]
+    myTeam     :: TeamInfo,
+    myScores   :: [RoundScore],
+    standings  :: [StandingEntry]
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data StandingEntry = StandingEntry
-  { rank :: Int,
-    teamName :: TeamName,
+  { rank        :: Int,
+    teamName    :: TeamName,
     totalPoints :: Points
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data RoundStat = RoundStat
-  { roundNumber :: RoundNumber,
-    displayMaxPoints :: Points,
+  { roundNumber       :: RoundNumber,
+    displayMaxPoints  :: Points,
     numberOfQuestions :: Int
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data TeamInfo = TeamInfo
   { number :: TeamNumber,
-    name :: TeamName
+    name   :: TeamName
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data RoundScore = RoundScore
   { roundNumber :: RoundNumber,
-    points :: Points
+    points      :: Points
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)

@@ -1,25 +1,35 @@
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE DataKinds                #-}
+{-# LANGUAGE DeriveAnyClass           #-}
+{-# LANGUAGE DeriveGeneric            #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot      #-}
+{-# LANGUAGE OverloadedStrings        #-}
+{-# LANGUAGE TypeOperators            #-}
 
 module Api.Auth where
 
-import           Data.Aeson          (FromJSON, ToJSON)
-import           Data.Text           (Text)
-import           GHC.Generics        (Generic)
+import           Api.BackOffice.Routes  (AuthenticatedUser (..))
+import           Config                 (Organizer (..))
+import           Control.Monad.IO.Class (liftIO)
+import           Crypto.BCrypt          (validatePassword)
+import           Data.Aeson             (FromJSON, ToJSON)
+import qualified Data.ByteString.Lazy   as LBS
+import           Data.List              (find)
+import           Data.Text              (Text)
+import           Data.Text.Encoding     (decodeUtf8, encodeUtf8)
+import           GHC.Generics           (Generic)
 import           Servant
 import           Servant.Auth.Server
 
 -- Login request
 data LoginRequest = LoginRequest
-  { username :: Text,
-    password :: Text
+  { username :: Text
+  , password :: Text
   }
   deriving (Show, Eq, Generic, FromJSON)
 
 -- Login response (JWT token)
-data LoginResponse = LoginResponse
+newtype LoginResponse = LoginResponse
   { token :: Text
   }
   deriving (Show, Eq, Generic, ToJSON)
@@ -31,9 +41,24 @@ type AuthApi =
 authApi :: Proxy AuthApi
 authApi = Proxy
 
--- Handler (placeholder)
-authServer :: CookieSettings -> JWTSettings -> Server AuthApi
-authServer cookieSettings jwtSettings = login
-  where
-    login :: LoginRequest -> Handler LoginResponse
-    login = undefined
+-- Verify password using bcrypt
+verifyPassword :: Text -> Text -> Bool
+verifyPassword plaintext hash =
+  validatePassword (encodeUtf8 hash) (encodeUtf8 plaintext)
+
+-- Login handler
+authServer :: [Organizer] -> JWTSettings -> Server AuthApi
+authServer organizers jwtSettings = login
+ where
+  login :: LoginRequest -> Handler LoginResponse
+  login req = do
+    case find (\o -> o.name == req.username) organizers of
+      Nothing -> throwError err401
+      Just org
+        | not (verifyPassword req.password org.passwordHash) -> throwError err401
+        | otherwise -> do
+            let user = AuthenticatedUser { isAdmin = org.isAdmin }
+            eToken <- liftIO $ makeJWT user jwtSettings Nothing
+            case eToken of
+              Left _  -> throwError err500
+              Right t -> pure $ LoginResponse (decodeUtf8 $ LBS.toStrict t)

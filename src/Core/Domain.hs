@@ -8,12 +8,13 @@
 
 module Core.Domain where
 
-import           Data.Aeson         (FromJSON, ToJSON)
+import           Data.Aeson         (FromJSON, ToJSON (..))
 import           Data.Map.Strict    (Map)
 import           Data.Text          (Text)
 import           Data.Time.Calendar (Day)
 import           GHC.Generics       (Generic)
 import           Numeric.Natural    (Natural)
+import           Servant            (FromHttpApiData (..))
 
 data QuizState = Active | Locked
 
@@ -29,7 +30,13 @@ newtype Points = Points {unPoints :: Double} deriving (Show, Eq, Generic, FromJS
 
 newtype QuizId = QuizId {unQuizId :: Int} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
+instance FromHttpApiData QuizId where
+  parseUrlPiece = fmap QuizId . parseUrlPiece
+
 newtype TeamNumber = TeamNumber {unTeamNumber :: Int} deriving (Show, Eq, Ord, Generic, FromJSON, ToJSON)
+
+instance FromHttpApiData TeamNumber where
+  parseUrlPiece = fmap TeamNumber . parseUrlPiece
 
 newtype NumberOfQuestions = NumberOfQuestions {unNumberOfQuestions :: Natural} deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
@@ -54,7 +61,7 @@ data Quiz (state :: QuizState) = Quiz
     rounds     :: [Round],
     scoreBoard :: ScoreBoard
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data Round = Round
   { roundNumber       :: RoundNumber,
@@ -79,6 +86,10 @@ data ScoreBoard = ScoreBoard
 data SomeQuiz where
   SomeActive :: Quiz Active -> SomeQuiz
   SomeLocked :: Quiz Locked -> SomeQuiz
+
+instance ToJSON SomeQuiz where
+  toJSON (SomeActive quiz) = toJSON quiz
+  toJSON (SomeLocked quiz) = toJSON quiz
 
 fromActivity :: Bool -> (forall state . Quiz state) -> SomeQuiz
 fromActivity True  quiz = SomeActive quiz

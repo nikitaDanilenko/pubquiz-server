@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 39481aa2148be69f87e976f23fc4ecb9a7bb2a6868e8b4f44c3383a8d8c9e9b5
+-- hash: 09b997b58b1488d6c0f0f5859959fc8cfb97cae9e03332b4b03a2f729caced1c
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -31,7 +31,6 @@ library
       Api
       Api.Auth
       Api.BackOffice.Routes
-      Api.BackOffice.Types
       Api.Public.Routes
       Api.Public.Types
       Api.Util
@@ -48,6 +47,8 @@ library
   build-depends:
       aeson
     , base
+    , bcrypt
+    , bytestring
     , containers
     , dhall
     , jose
@@ -77,6 +78,8 @@ executable pubquiz-server
   build-depends:
       aeson
     , base
+    , bcrypt
+    , bytestring
     , containers
     , dhall
     , jose
@@ -85,6 +88,7 @@ executable pubquiz-server
     , persistent
     , persistent-postgresql
     , persistent-template
+    , pubquiz-server
     , resource-pool
     , servant
     , servant-auth
