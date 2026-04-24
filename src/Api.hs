@@ -24,6 +24,6 @@ api = Proxy
 -- Combined server
 server :: Pool SqlBackend -> [Organizer] -> JWTSettings -> NominalDiffTime -> Server Api
 server pool organizers jwtSettings jwtExpiration =
-  publicServer
+  publicServer pool
     :<|> backOfficeServer pool
     :<|> authServer organizers jwtSettings jwtExpiration

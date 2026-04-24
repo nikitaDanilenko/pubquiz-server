@@ -14,14 +14,12 @@ import           Core.Domain                 (Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
-                                              QuizState (..), QuizSummary,
-                                              RoundNumber (..), ScoreBoard (..),
-                                              SomeQuiz (..), Team (..),
-                                              TeamName (..), TeamNumber (..),
-                                              fromActivity)
-import           Core.FromDb                 (dbRoundToRound, dbToQuizSummary,
-                                              dbToScoreBoard, quizIdToKey,
-                                              quizKeyToId, quizToIdentifier)
+                                              QuizState (..), RoundNumber (..),
+                                              ScoreBoard (..), Team (..),
+                                              TeamName (..), TeamNumber (..))
+import           Core.FromDb                 (dbRoundToRound, dbToScoreBoard,
+                                              quizIdToKey, quizKeyToId,
+                                              quizToIdentifier)
 import           Data.Aeson                  (FromJSON, ToJSON)
 import           Data.List                   (nub)
 import           Data.Maybe                  (isJust)
@@ -87,10 +85,6 @@ data SetTeamActiveCommand = SetTeamActiveCommand
   }
   deriving (Show, Eq, Generic, FromJSON)
 
--- Queries (read operations)
--- GET  /backoffice                         → list quizzes
--- GET  /backoffice/:id                     → view quiz
---
 -- Commands (domain actions)
 -- POST /backoffice                         → create quiz
 -- POST /backoffice/:id/change-settings     → change quiz settings (name, place, date)
@@ -103,11 +97,7 @@ data SetTeamActiveCommand = SetTeamActiveCommand
 -- POST /backoffice/:id/unlock              → unlock quiz
 
 type BackOfficeRoutes =
-  -- Queries
-  Get '[JSON] [QuizSummary]
-    :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
-  -- Commands
-    :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
+  ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
     :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] ChangeSettingsCommand :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "add-teams" :> ReqBody '[JSON] AddTeamsCommand :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "record-round-scores" :> ReqBody '[JSON] RecordRoundScoresCommand :> Post '[JSON] NoContent
@@ -127,11 +117,7 @@ backOfficeApi = Proxy
 
 backOfficeServer :: Pool SqlBackend -> AuthResult AuthenticatedUser -> Server BackOfficeRoutes
 backOfficeServer pool (Authenticated user) =
-  -- Queries
-  listQuizzes pool
-    :<|> getQuiz pool
-  -- Commands
-    :<|> createQuiz pool
+  createQuiz pool
     :<|> changeSettings pool
     :<|> addTeams pool
     :<|> recordRoundScores pool
@@ -141,11 +127,6 @@ backOfficeServer pool (Authenticated user) =
     :<|> lockQuiz pool
     :<|> unlockQuiz pool user
 backOfficeServer _ _ = throwAll err401
-
-listQuizzes :: Pool SqlBackend -> Handler [QuizSummary]
-listQuizzes pool = runDb pool $ do
-  quizEntities <- selectList [] []
-  pure $ map dbToQuizSummary quizEntities
 
 createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler (Quiz 'Active)
 createQuiz pool request = do
@@ -164,9 +145,9 @@ createQuiz pool request = do
     quizId <-
       insert $
         Db.Quiz
-          { quizPlace = unPlace (place request.identifier)
-          , quizDate = date request.identifier
-          , quizName = unQuizName (name request.identifier)
+          { quizPlace = unPlace request.identifier.place
+          , quizDate = request.identifier.date
+          , quizName = unQuizName request.identifier.name
           , quizActive = True
           }
 
@@ -181,29 +162,6 @@ createQuiz pool request = do
           }
 
     pure quizId
-
-getQuiz :: Pool SqlBackend -> QuizId -> Handler SomeQuiz
-getQuiz pool quizId = runDb pool statement >>= maybe (throwError err404) pure
- where
-  dbQuizId = quizIdToKey quizId
-  statement = do
-    maybeQuiz <- get dbQuizId
-    forM maybeQuiz $ \quizRecord -> do
-      teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-      roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
-      scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
-
-      let quiz :: Quiz state
-          quiz =
-            Quiz
-              { quizId = quizId
-              , identifier = quizToIdentifier quizRecord
-              , rounds = map (dbRoundToRound . entityVal) roundEntities
-              , scoreBoard = dbToScoreBoard teamEntities scoreEntities
-              }
-
-      pure $ fromActivity (Db.quizActive quizRecord) quiz
-
 
 data CommandResult = QuizNotFound | QuizLocked | CommandSuccess
 
@@ -225,9 +183,9 @@ withActiveQuiz pool quizId action = do
 changeSettings :: Pool SqlBackend -> QuizId -> ChangeSettingsCommand -> Handler NoContent
 changeSettings pool quizId cmd = withActiveQuiz pool quizId $ do
   update (quizIdToKey quizId)
-    [ Db.QuizName =. unQuizName (name cmd.newIdentifier)
-    , Db.QuizPlace =. unPlace (place cmd.newIdentifier)
-    , Db.QuizDate =. date cmd.newIdentifier
+    [ Db.QuizName =. unQuizName cmd.newIdentifier.name
+    , Db.QuizPlace =. unPlace cmd.newIdentifier.place
+    , Db.QuizDate =. cmd.newIdentifier.date
     ]
   pure CommandSuccess
 

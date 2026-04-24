@@ -64,16 +64,16 @@ data Quiz (state :: QuizState) = Quiz
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data Round = Round
-  { roundNumber       :: RoundNumber,
+  { number            :: RoundNumber,
     displayMaxPoints  :: Points,
     numberOfQuestions :: Int
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 data Team = Team
-  { number   :: TeamNumber,
-    teamName :: TeamName,
-    active   :: Bool
+  { number :: TeamNumber,
+    name   :: TeamName,
+    active :: Bool
   }
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 

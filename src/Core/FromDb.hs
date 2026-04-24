@@ -6,6 +6,7 @@ module Core.FromDb
   , quizToIdentifier
   , dbRoundToRound
   , dbTeamToTeam
+  , dbToScores
   , dbToScoreBoard
   , dbToQuizSummary
   )
@@ -39,7 +40,7 @@ quizToIdentifier quiz =
 dbRoundToRound :: Db.Round -> Round
 dbRoundToRound round =
   Round
-    { roundNumber = RoundNumber (Db.roundRoundNumber round)
+    { number = RoundNumber (Db.roundRoundNumber round)
     , displayMaxPoints = Points (Db.roundReachablePoints round)
     , numberOfQuestions = Db.roundNumberOfQuestions round
     }
@@ -48,19 +49,22 @@ dbTeamToTeam :: Db.Team -> Team
 dbTeamToTeam team =
   Team
     { number = TeamNumber (Db.teamNumber team)
-    , teamName = TeamName (Db.teamName team)
+    , name = TeamName (Db.teamName team)
     , active = Db.teamActive team
     }
+
+dbToScores :: [Entity Db.TeamRoundScore] -> Map.Map (TeamNumber, RoundNumber) Points
+dbToScores scoreEntities =
+  Map.fromList
+    [ ((TeamNumber (Db.teamRoundScoreTeamNumber score), RoundNumber (Db.teamRoundScoreRoundNumber score)), Points (Db.teamRoundScorePoints score))
+    | Entity _ score <- scoreEntities
+    ]
 
 dbToScoreBoard :: [Entity Db.Team] -> [Entity Db.TeamRoundScore] -> ScoreBoard
 dbToScoreBoard teamEntities scoreEntities =
   ScoreBoard
     { teams = map (dbTeamToTeam . entityVal) teamEntities
-    , scores =
-        Map.fromList
-          [ ((TeamNumber (Db.teamRoundScoreTeamNumber score), RoundNumber (Db.teamRoundScoreRoundNumber score)), Points (Db.teamRoundScorePoints score))
-          | Entity _ score <- scoreEntities
-          ]
+    , scores = dbToScores scoreEntities
     }
 
 dbToQuizSummary :: Entity Db.Quiz -> QuizSummary
