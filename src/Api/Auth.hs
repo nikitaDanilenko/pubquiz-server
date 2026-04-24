@@ -20,30 +20,28 @@ import           Data.Text.Encoding     (decodeUtf8, encodeUtf8)
 import           Data.Time              (NominalDiffTime, addUTCTime,
                                          getCurrentTime)
 import           GHC.Generics           (Generic)
-import           Servant
-import           Servant.Auth.Server
+import           Servant                (Handler, JSON, Post, Proxy (..),
+                                         ReqBody, Server, err401, err500,
+                                         throwError, (:>))
+import           Servant.Auth.Server    (JWTSettings, makeJWT)
 
--- Login request
 data LoginRequest = LoginRequest
   { username :: Text
   , password :: Text
   }
   deriving (Show, Eq, Generic, FromJSON)
 
--- Login response (JWT token)
 newtype LoginResponse = LoginResponse
   { token :: Text
   }
   deriving (Show, Eq, Generic, ToJSON)
 
--- Auth API (public - for obtaining JWT)
 type AuthApi =
-  "auth" :> "login" :> ReqBody '[JSON] LoginRequest :> Post '[JSON] LoginResponse
+  "backoffice" :> "login" :> ReqBody '[JSON] LoginRequest :> Post '[JSON] LoginResponse
 
 authApi :: Proxy AuthApi
 authApi = Proxy
 
--- Verify password using bcrypt
 verifyPassword :: Text -> Text -> Bool
 verifyPassword plaintext hash =
   validatePassword (encodeUtf8 hash) (encodeUtf8 plaintext)
@@ -54,11 +52,11 @@ authServer organizers jwtSettings expirationSeconds = login
  where
   login :: LoginRequest -> Handler LoginResponse
   login req = do
-    org <- maybe (throwError err401) pure $ find (\o -> o.name == req.username) organizers
-    unless (verifyPassword req.password org.passwordHash) $ throwError err401
+    organizer <- maybe (throwError err401) pure $ find (\o -> o.name == req.username) organizers
+    unless (verifyPassword req.password organizer.passwordHash) $ throwError err401
     now <- liftIO getCurrentTime
     let expiry = addUTCTime expirationSeconds now
-        user = AuthenticatedUser { isAdmin = org.isAdmin }
+        user = AuthenticatedUser { isAdmin = organizer.isAdmin }
     tokenCandidate <- liftIO $ makeJWT user jwtSettings (Just expiry)
     token <- either (const $ throwError err500) pure tokenCandidate
     pure $ LoginResponse (decodeUtf8 $ LBS.toStrict token)
