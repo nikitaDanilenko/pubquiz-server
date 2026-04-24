@@ -13,9 +13,10 @@ import           Api.Util                    (runDb)
 import           Control.Monad.Trans.Class   (lift)
 import           Control.Monad.Trans.Maybe   (MaybeT (..), hoistMaybe)
 import           Core.Domain                 (Points (..), QuizId (..),
-                                              QuizSummary, RoundNumber (..),
-                                              SomeQuiz, Team (..),
-                                              TeamNumber (..), fromActivity)
+                                              QuizSummary, Round (..),
+                                              RoundNumber (..), SomeQuiz,
+                                              Team (..), TeamNumber (..),
+                                              fromActivity)
 import qualified Core.Domain                 as Domain
 import           Core.FromDb                 (dbRoundToRound, dbTeamToTeam,
                                               dbToQuizSummary, dbToScoreBoard,
@@ -92,11 +93,9 @@ getTeamView pool quizId teamNumber = runDb pool statement >>= maybe (throwError 
     scoreEntities <- lift $ selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
 
     let teams = map (dbTeamToTeam . entityVal) teamEntities
+        rounds = map (dbRoundToRound . entityVal) roundEntities
         scores = dbToScores scoreEntities
     team <- hoistMaybe $ find (\t -> t.number == teamNumber) teams
-
-    let standings = computeStandings roundEntities teams scores
-        teamScores = computeTeamScores teamNumber scores
 
     pure TeamView
       { identifier = quizToIdentifier quiz
@@ -104,29 +103,25 @@ getTeamView pool quizId teamNumber = runDb pool statement >>= maybe (throwError 
           { number = team.number
           , name = team.name
           }
-      , scores = teamScores
-      , standings = standings
+      , scores = computeTeamScores teamNumber scores
+      , standings = computeStandings rounds teams scores
       }
 
 -- Helper: compute standings from teams and scores
-computeStandings :: [Entity Db.Round] -> [Team] -> Map.Map (TeamNumber, RoundNumber) Points -> [StandingEntry]
-computeStandings roundEntities teams scores =
-  assignRanks sorted
+computeStandings :: [Round] -> [Team] -> Map.Map (TeamNumber, RoundNumber) Points -> [StandingEntry]
+computeStandings rounds teams scores = assignRanks sorted
  where
   -- Sum all reachable points across rounds
-  totalReachable = sum [ Db.roundReachablePoints r | Entity _ r <- roundEntities ]
+  totalReachable = sum [ unPoints r.displayMaxPoints | r <- rounds ]
 
   -- Build map of team number -> total points
   teamTotals = Map.fromListWith (+)
-    [ (tn, pts.unPoints)
+    [ (tn, unPoints pts)
     | ((tn, _), pts) <- Map.toList scores
     ]
 
   -- Build team info with totals
-  teamsWithTotals =
-    [ (tName, Map.findWithDefault 0 tn teamTotals)
-    | Team tn tName _ <- teams
-    ]
+  teamsWithTotals = map (\team -> (team.name, Map.findWithDefault 0 team.number teamTotals)) teams
 
   -- Sort by total points descending
   sorted = sortOn (\(_, pts) -> Down pts) teamsWithTotals
@@ -134,7 +129,7 @@ computeStandings roundEntities teams scores =
   -- Assign ranks with ties: teams with same score share the same rank (dense ranking)
   assignRanks ts = zipWith toEntry ranks ts
    where
-    allScores = [ pts | (_, pts) <- ts ]
+    allScores = map snd ts
     distinctScores = nub allScores
     ranks = [ 1 + length (filter (> pts) distinctScores) | pts <- allScores ]
 
