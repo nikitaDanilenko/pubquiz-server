@@ -1,4 +1,4 @@
--- All these are necessary for the schema definition.
+-- All of these are necessary for the schema definition.
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE DeriveGeneric              #-}
