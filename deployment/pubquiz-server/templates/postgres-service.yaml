@@ -9,10 +9,10 @@ spec:
   type: ClusterIP
   clusterIP: None
   ports:
-    - port: {{ .Values.database.port }}
+    - port: {{ .Values.postgres.port }}
       targetPort: postgres
       protocol: TCP
       name: postgres
   selector:
-    {{- include "pubquiz-server.selectorLabels" . | nindent 4 }}
+    {{- include "pubquiz-server.labels" . | nindent 4 }}
     app.kubernetes.io/component: database

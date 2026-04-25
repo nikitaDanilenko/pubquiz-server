@@ -5,11 +5,11 @@ metadata:
   labels:
     {{- include "pubquiz-server.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
+    - port: {{ .Values.backend.port }}
+      targetPort: {{ .Values.backend.port }}
       protocol: TCP
       name: http
   selector:
-    {{- include "pubquiz-server.selectorLabels" . | nindent 4 }}
+    {{- include "pubquiz-server.labels" . | nindent 4 }}
