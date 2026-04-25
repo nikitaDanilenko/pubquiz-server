@@ -1,0 +1,117 @@
+name: Build and Publish
+on:
+  push:
+    branches:
+      - "main"
+  workflow_dispatch:
+
+jobs:
+  create_new_version:
+    runs-on: ubuntu-latest
+    outputs:
+      version-tag: ${{ steps.semantic-version.outputs.version_tag }}
+      version: ${{ steps.semantic-version.outputs.version }}
+      paths-changed: ${{ steps.paths.outputs.src }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        # Depth setting is necessary for the semantic-version action.
+        with:
+          fetch-depth: 0
+      - name: Determine version
+        id: semantic-version
+        uses: paulhatch/semantic-version@f29500c9d60a99ed5168e39ee367e0976884c46e # v6.0.1
+        with:
+          # Since version 6.0.0, the action uses conventional commits.
+          major_pattern: "/(major)/i"
+          minor_pattern: "/(minor)/i"
+      - name: Check changed paths
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: paths
+        with:
+          filters: |
+            src:
+              - 'app/**'
+              - 'src/**'
+              - 'config/**'
+              - '*.cabal'
+              - 'stack.yaml'
+              - 'package.yaml'
+      - name: Publish new release
+        shell: bash
+        run: |
+          git tag ${{ steps.semantic-version.outputs.version_tag }} ${{ github.sha }}
+          git push origin ${{ steps.semantic-version.outputs.version_tag }}
+          echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token
+          gh release create ${{ steps.semantic-version.outputs.version_tag }} --generate-notes --verify-tag
+
+  build_and_publish:
+    needs:
+      - create_new_version
+    uses: ./.github/workflows/build-and-publish-back-end.yml
+    # The output is a string, hence the string comparison.
+    if: ${{ needs.create_new_version.outputs.paths-changed == 'true' }}
+    with:
+      version-tag: ${{ needs.create_new_version.outputs.version-tag }}
+    secrets: inherit
+
+  update_gitops_backend:
+    needs:
+      - create_new_version
+      - build_and_publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          path: ${{ github.workspace }}/source
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          client-id: ${{ vars.GITOPS_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.GITOPS_BOT_PRIVATE_KEY }}
+          owner: nikitaDanilenko
+          repositories: git-ops
+
+      - name: Check out GitOps repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: nikitaDanilenko/git-ops
+          token: ${{ steps.app-token.outputs.token }}
+          path: ${{ github.workspace }}/git-ops
+
+      - name: Copy templates and update image tag
+        run: |
+          GITOPS_DIR="${{ github.workspace }}/git-ops/pubquiz-server"
+          SOURCE_DIR="${{ github.workspace }}/source/deployment/pubquiz-server"
+
+          # Copy only templates directory
+          cp -r "$SOURCE_DIR/templates/" "$GITOPS_DIR/templates/"
+
+          # Update image tag in GitOps values.yaml
+          VERSION="${{ needs.create_new_version.outputs.version }}"
+          yq -i ".backend.image.tag = \"$VERSION\"" "$GITOPS_DIR/values.yaml"
+
+      - name: Determine commit title
+        id: commit
+        run: echo "title=$(echo '${{ github.event.head_commit.message }}' | head -n 1)" >> $GITHUB_OUTPUT
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          path: ${{ github.workspace }}/git-ops
+          branch: deploy/pubquiz-server-${{ needs.create_new_version.outputs.version }}
+          delete-branch: true
+          title: "Deploy `pubquiz-server:${{ needs.create_new_version.outputs.version }}`"
+          body: |
+            Automated deployment PR for pubquiz-server.
+
+            **Version:** `${{ needs.create_new_version.outputs.version }}`
+            **Triggered by:** [${{ steps.commit.outputs.title }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+          commit-message: "Update pubquiz-server to ${{ needs.create_new_version.outputs.version }}"
+          labels: |
+            deployment
+            automated
