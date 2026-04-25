@@ -4,6 +4,7 @@ metadata:
   name: {{ .Release.Name }}-backend
   labels:
     {{- include "pubquiz-server.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
 spec:
   type: ClusterIP
   ports:
@@ -13,3 +14,4 @@ spec:
       name: http
   selector:
     {{- include "pubquiz-server.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
