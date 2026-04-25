@@ -82,13 +82,14 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           path: ${{ github.workspace }}/git-ops
 
-      - name: Copy templates and update image tag
+      - name: Update templates and image tag
         run: |
           GITOPS_DIR="${{ github.workspace }}/git-ops/pubquiz-server"
           SOURCE_DIR="${{ github.workspace }}/source/deployment/pubquiz-server"
 
-          # Copy only templates directory
-          cp -r "$SOURCE_DIR/templates/" "$GITOPS_DIR/templates/"
+          # Sync backend and postgres templates (deletes removed files)
+          rsync -av --delete "$SOURCE_DIR/templates/backend/" "$GITOPS_DIR/templates/backend/"
+          rsync -av --delete "$SOURCE_DIR/templates/postgres/" "$GITOPS_DIR/templates/postgres/"
 
           # Update image tag in GitOps values.yaml
           VERSION="${{ needs.create_new_version.outputs.version }}"
