@@ -48,8 +48,6 @@ instance FromHttpApiData TeamNumber where
 newtype NumberOfQuestions = NumberOfQuestions {unNumberOfQuestions :: Natural}
   deriving (Show, Eq, Generic, FromJSON)
 
--- Composite request type
-
 data QuizIdentifier = QuizIdentifier
   { name  :: QuizName
   , place :: Place
@@ -62,8 +60,6 @@ data QuizSettings = QuizSettings
   , numberOfTeams     :: Int
   }
   deriving (Show, Eq, Generic, FromJSON)
-
--- Response-only types
 
 data QuizState = Active | Locked
 
