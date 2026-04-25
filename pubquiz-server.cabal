@@ -1,27 +1,26 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2a656d0ab1396dad939ec2875fe9607c0b1fa9b066af3af233d2efdc2ba2fc69
+-- hash: 730c58b6dfefeb5b60a8ed0b0283b9f0c0a8ac01c611b8202958ac80886aae2d
 
 name:           pubquiz-server
 version:        0.1.0.0
 synopsis:       Host server for pub quiz application.
-description:    Please see the README on GitHub at <https://github.com/githubuser/pubquiz-server-stack#readme>
+description:    Please see the README on GitHub at <https://github.com/nikitaDanilenko/pubquiz-server#readme>
 category:       Web
 homepage:       https://github.com/nikitaDanilenko/pubquiz-server#readme
 bug-reports:    https://github.com/nikitaDanilenko/pubquiz-server/issues
 author:         Nikita Danilenko
 maintainer:     nikita.danilenko.is@gmail.com
-copyright:      2020 Nikita Danilenko
+copyright:      2026 Nikita Danilenko
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     Readme.md
-    ChangeLog.md
 
 source-repository head
   type: git
@@ -29,153 +28,76 @@ source-repository head
 
 library
   exposed-modules:
-      Api.Core
-      Api.Requests.CreateQuizRequest
-      Api.Requests.QuizIdRequest
-      Api.Requests.QuizUpdateRequest
-      Api.Requests.SecretRequest
-      Api.Requests.UpdateQuizRatingsRequest
-      Api.Services.EstablishSecret
-      Api.Services.HashCheck
-      Api.Services.QuizService
-      Api.Services.SavedUserHandler
-      Api.Services.SnapUtil
-      Api.Services.UserService
-      Application
-      Constants
-      Db.Configuration
-      Db.Connection
-      Db.DbConversion
-      Db.Instances
-      Db.Storage
-      General.EitherT.Extra
-      General.ElmBridge
-      General.Labels
-      General.Types
-      Main
-      Sheet.Interval
-      Sheet.SheetMaker
-      Sheet.Tex
-      Site
-      Utils
+      Api
+      Api.Auth
+      Api.BackOffice.Routes
+      Api.BackOffice.Types
+      Api.FromDb
+      Api.Public.Routes
+      Api.Public.Types
+      Api.ToDb
+      Api.Types
+      Api.Util
+      Config
+      Db.Schema
+      Db.Util
   other-modules:
       Paths_pubquiz_server
   hs-source-dirs:
       src
+  ghc-options: -fwrite-ide-info -hiedir=.hie
   build-depends:
-      HaTeX >=3 && <4
-    , JuicyPixels
-    , aeson
-    , base >=4.7 && <5
-    , base64-bytestring
-    , blaze-builder
-    , bytestring >=0.10 && <0.11
-    , case-insensitive
-    , colour >=2.1 && <3
-    , containers >=0.1 && <1
-    , cryptonite >=0.2 && <1
-    , directory >=1 && <2
-    , either
-    , elm-bridge
-    , extra >=1 && <2
-    , filepath >=1.4 && <2.0
-    , http-types
-    , lens >=4.17 && <4.18
-    , modern-uri
+      aeson
+    , base
+    , bcrypt
+    , bytestring
+    , containers
+    , dhall
+    , jose
     , monad-logger
-    , parsec >=3.1 && <4
-    , path-pieces
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template
-    , process >=1 && <2
-    , qrcode-core
-    , qrcode-juicypixels
-    , random >=1 && <2
-    , resourcet
-    , snap >=1.1 && <1.2
-    , snap-core >=1.0 && <2
-    , snap-loader-static >=0.9 && <1.1
-    , snap-server >=1.1 && <1.2
-    , split >=0.2 && <1
-    , text >=1.2 && <1.3
+    , resource-pool
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-server
+    , text
     , time
     , transformers
+    , warp
   default-language: Haskell2010
 
-executable pubquiz-server-exe
+executable pubquiz-server
   main-is: Main.hs
   other-modules:
-      Api.Core
-      Api.Requests.CreateQuizRequest
-      Api.Requests.QuizIdRequest
-      Api.Requests.QuizUpdateRequest
-      Api.Requests.SecretRequest
-      Api.Requests.UpdateQuizRatingsRequest
-      Api.Services.EstablishSecret
-      Api.Services.HashCheck
-      Api.Services.QuizService
-      Api.Services.SavedUserHandler
-      Api.Services.SnapUtil
-      Api.Services.UserService
-      Application
-      Constants
-      Db.Configuration
-      Db.Connection
-      Db.DbConversion
-      Db.Instances
-      Db.Storage
-      General.EitherT.Extra
-      General.ElmBridge
-      General.Labels
-      General.Types
-      Sheet.Interval
-      Sheet.SheetMaker
-      Sheet.Tex
-      Site
-      Utils
       Paths_pubquiz_server
   hs-source-dirs:
-      src
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+      app
+  ghc-options: -fwrite-ide-info -hiedir=.hie -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      HaTeX >=3 && <4
-    , JuicyPixels
-    , aeson
-    , base >=4.7 && <5
-    , base64-bytestring
-    , blaze-builder
-    , bytestring >=0.10 && <0.11
-    , case-insensitive
-    , colour >=2.1 && <3
-    , containers >=0.1 && <1
-    , cryptonite >=0.2 && <1
-    , directory >=1 && <2
-    , either
-    , elm-bridge
-    , extra >=1 && <2
-    , filepath >=1.4 && <2.0
-    , http-types
-    , lens >=4.17 && <4.18
-    , modern-uri
+      aeson
+    , base
+    , bcrypt
+    , bytestring
+    , containers
+    , dhall
+    , jose
     , monad-logger
-    , parsec >=3.1 && <4
-    , path-pieces
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template
-    , process >=1 && <2
     , pubquiz-server
-    , qrcode-core
-    , qrcode-juicypixels
-    , random >=1 && <2
-    , resourcet
-    , snap >=1.1 && <1.2
-    , snap-core >=1.0 && <2
-    , snap-loader-static >=0.9 && <1.1
-    , snap-server >=1.1 && <1.2
-    , split >=0.2 && <1
-    , text >=1.2 && <1.3
+    , resource-pool
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-server
+    , text
     , time
     , transformers
+    , warp
   default-language: Haskell2010
