@@ -13,3 +13,5 @@ sheets/*
 .hie/*
 
 .DS_Store
+
+deployment/secret.local.yaml

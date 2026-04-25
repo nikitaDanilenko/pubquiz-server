@@ -26,28 +26,28 @@ let Config =
       }
 
 let config : Config =
-      { serverPath = env:SERVER_PATH as Text ? "http://localhost:8080"
-      , port = env:PORT ? 8080
+      { serverPath = env:SERVER_PATH as Text
+      , port = env:PORT
       , database =
-          { host = env:DATABASE_HOST as Text ? "localhost"
-          , name = env:DATABASE_NAME as Text ? "pubquiz"
-          , user = env:DATABASE_USER as Text ? "pubquiz"
-          , password = env:DATABASE_PASSWORD as Text ? "pubquiz"
-          , port = env:DATABASE_PORT ? 5432
+          { host = env:DATABASE_HOST as Text
+          , name = env:DATABASE_NAME as Text
+          , user = env:DATABASE_USER as Text
+          , password = env:DATABASE_PASSWORD as Text
+          , port = env:DATABASE_PORT
           }
       , organizers =
-          [ { name = env:ORGANIZER_ADMIN_NAME as Text ? "admin"
+          [ { name = env:ORGANIZER_ADMIN_NAME as Text
             , passwordHash = env:ORGANIZER_ADMIN_HASH as Text
             , isAdmin = True
             }
-          , { name = env:ORGANIZER_USER_NAME as Text ? "organizer"
+          , { name = env:ORGANIZER_USER_NAME as Text
             , passwordHash = env:ORGANIZER_USER_HASH as Text
             , isAdmin = False
             }
           ]
       , jwt =
           { secret = env:JWT_SECRET as Text
-          , expirationSeconds = env:JWT_EXPIRATION_SECONDS ? 259200
+          , expirationSeconds = env:JWT_EXPIRATION_SECONDS
           }
       }
 

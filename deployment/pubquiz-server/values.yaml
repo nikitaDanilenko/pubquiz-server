@@ -1,0 +1,43 @@
+replicaCount: 1
+
+image:
+  repository: nikitadanilenko/pubquiz-server
+  pullPolicy: IfNotPresent
+  tag: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  host: pubquiz.danilenko.io
+  clusterIssuer: letsencrypt-prod
+
+config:
+  serverPath: ""
+  port: 8080
+
+database:
+  port: 5432
+  name: pubquiz
+  user: pubquiz
+
+secretName: pubquiz-server-secret
+
+postgresql:
+  image:
+    repository: postgres
+    pullPolicy: IfNotPresent
+    tag: "16-alpine"
+  persistence:
+    size: 1Gi
+    storageClass: ""
+
+jwt:
+  expirationSeconds: 259200 # 3 days
+
+organizers:
+  admin:
+    name: admin
+  user:
+    name: organizer
