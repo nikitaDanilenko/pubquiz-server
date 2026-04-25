@@ -1,0 +1,10 @@
+.stack-work/
+.hie/
+*.hi
+*.o
+dist-newstyle/
+.git/
+.gitignore
+*.md
+LICENSE
+fourmolu.yaml
