@@ -48,12 +48,36 @@ jobs:
   build_and_publish:
     needs:
       - create_new_version
-    uses: ./.github/workflows/build-and-publish-back-end.yml
+    runs-on: ubuntu-latest
     # The output is a string, hence the string comparison.
     if: ${{ needs.create_new_version.outputs.paths-changed == 'true' }}
-    with:
-      version-tag: ${{ needs.create_new_version.outputs.version-tag }}
-    secrets: inherit
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Log in to DockerHub
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Set metadata
+        id: metadata
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        with:
+          images: nikitadanilenko/pubquiz-server
+          tags: |
+            type=sha
+            type=raw,value=latest
+            type=semver,pattern={{version}},value=${{ needs.create_new_version.outputs.version-tag }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   update_gitops_backend:
     needs:
