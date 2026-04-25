@@ -34,14 +34,16 @@ import           Servant
 
 -- Public API: no authentication required
 
--- GET /                       → list all quizzes (for searching)
--- GET /:id                    → single quiz
--- GET /:id/teams/:teamNumber  → team's perspective
+-- GET /public                       → list all quizzes (for searching)
+-- GET /public/:id                   → single quiz
+-- GET /public/:id/teams/:teamNumber → team's perspective
 
 type PublicApi =
-  Get '[JSON] [QuizSummary]
-    :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
-    :<|> Capture "quizId" QuizId :> "teams" :> Capture "teamNumber" TeamNumber :> Get '[JSON] TeamView
+  "public" :>
+    ( Get '[JSON] [QuizSummary]
+        :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
+        :<|> Capture "quizId" QuizId :> "teams" :> Capture "teamNumber" TeamNumber :> Get '[JSON] TeamView
+    )
 
 publicApi :: Proxy PublicApi
 publicApi = Proxy
