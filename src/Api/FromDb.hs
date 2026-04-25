@@ -2,7 +2,6 @@
 
 module Api.FromDb
   ( quizKeyToId
-  , quizIdToKey
   , quizToIdentifier
   , dbRoundToRound
   , dbTeamToTeam
@@ -20,14 +19,11 @@ import           Api.Types            (Place (..), Points (..), QuizId (..),
                                        TeamNumber (..))
 import qualified Data.Map.Strict      as Map
 import           Database.Persist     (Entity (..))
-import           Database.Persist.Sql (fromSqlKey, toSqlKey)
+import           Database.Persist.Sql (fromSqlKey)
 import qualified Db.Schema            as Db
 
 quizKeyToId :: Db.Key Db.Quiz -> QuizId
 quizKeyToId = QuizId . fromIntegral . fromSqlKey
-
-quizIdToKey :: QuizId -> Db.Key Db.Quiz
-quizIdToKey = toSqlKey . fromIntegral . unQuizId
 
 quizToIdentifier :: Db.Quiz -> QuizIdentifier
 quizToIdentifier quiz =

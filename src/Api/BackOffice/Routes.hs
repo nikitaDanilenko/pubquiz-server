@@ -13,11 +13,11 @@ import           Api.BackOffice.Types        (AddTeamsCommand (..),
                                               QuizMetaData (..),
                                               RecordRoundScoresCommand (..),
                                               RenameTeamCommand (..),
-                                              SetTeamActiveCommand (..),
-                                              ToggleTeamActiveCommand (..))
-import           Api.FromDb                  (dbRoundToRound, dbToScoreBoard,
-                                              quizIdToKey, quizKeyToId,
+                                              SetTeamActiveCommand (..))
+import           Api.FromDb                  (dbToScoreBoard, quizKeyToId,
                                               quizToIdentifier)
+import           Api.ToDb                    (identifierToQuiz, quizIdToKey,
+                                              teamRoundScoreToDb, teamToDb)
 import           Api.Types                   (Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
@@ -46,7 +46,6 @@ import           Servant.Auth.Server
 -- POST /backoffice/:id/correct-score       → fix a single score entry
 -- POST /backoffice/:id/rename-team         → rename a team
 -- POST /backoffice/:id/set-team-active     → activate/deactivate team
--- POST /backoffice/:id/toggle-team-active  → toggle team activity
 -- POST /backoffice/:id/lock                → lock quiz
 -- POST /backoffice/:id/unlock              → unlock quiz
 
@@ -96,24 +95,15 @@ createQuiz pool request = do
  where
   statement = do
     -- Insert quiz record
-    quizId <-
-      insert $
-        Db.Quiz
-          { quizPlace = unPlace request.identifier.place
-          , quizDate = request.identifier.date
-          , quizName = unQuizName request.identifier.name
-          , quizActive = True
-          }
+    quizId <- insert $ identifierToQuiz request.identifier
 
     -- Insert default teams
-    forM_ [1 .. request.settings.numberOfTeams] $ \teamNumber -> do
-      insert $
-        Db.Team
-          { teamQuizId = quizId
-          , teamNumber = teamNumber
-          , teamName = ""
-          , teamActive = True
-          }
+    forM_ [1 .. request.settings.numberOfTeams] $ \num -> do
+      insert $ teamToDb quizId Team
+        { number = TeamNumber num
+        , name = TeamName ""
+        , active = True
+        }
 
     pure quizId
 
@@ -154,12 +144,11 @@ addTeams pool quizId cmd = withActiveQuiz pool quizId $ do
                     else maximum $ map (Db.teamNumber . entityVal) teamEntities
 
   -- Add new teams
-  forM_ [maxTeamInDb + 1 .. maxTeamInDb + cmd.additionalTeams] $ \teamNum ->
-    insert $ Db.Team
-      { teamQuizId = dbQuizId
-      , teamNumber = teamNum
-      , teamName = ""
-      , teamActive = True
+  forM_ [maxTeamInDb + 1 .. maxTeamInDb + cmd.additionalTeams] $ \num ->
+    insert $ teamToDb dbQuizId Team
+      { number = TeamNumber num
+      , name = TeamName ""
+      , active = True
       }
 
   -- Add zero scores for new teams in rounds that already have scores
@@ -180,24 +169,14 @@ recordRoundScores :: Pool SqlBackend -> QuizId -> RecordRoundScoresCommand -> Ha
 recordRoundScores pool quizId cmd = withActiveQuiz pool quizId $ do
   let dbQuizId = quizIdToKey quizId
   forM_ cmd.scores $ \(teamNum, pts) ->
-    insert $ Db.TeamRoundScore
-      { teamRoundScoreQuizId = dbQuizId
-      , teamRoundScoreTeamNumber = unTeamNumber teamNum
-      , teamRoundScoreRoundNumber = unRoundNumber cmd.roundNumber
-      , teamRoundScorePoints = unPoints pts
-      }
+    insert $ teamRoundScoreToDb dbQuizId teamNum cmd.roundNumber pts
   pure CommandSuccess
 
 correctScore :: Pool SqlBackend -> QuizId -> CorrectScoreCommand -> Handler NoContent
 correctScore pool quizId cmd = withActiveQuiz pool quizId $ do
   let dbQuizId = quizIdToKey quizId
   upsert
-    Db.TeamRoundScore
-      { teamRoundScoreQuizId = dbQuizId
-      , teamRoundScoreTeamNumber = unTeamNumber cmd.teamNumber
-      , teamRoundScoreRoundNumber = unRoundNumber cmd.roundNumber
-      , teamRoundScorePoints = unPoints cmd.points
-      }
+    (teamRoundScoreToDb dbQuizId cmd.teamNumber cmd.roundNumber cmd.points)
     [Db.TeamRoundScorePoints =. unPoints cmd.points]
   pure CommandSuccess
 

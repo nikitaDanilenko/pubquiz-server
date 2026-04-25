@@ -6,22 +6,21 @@
 
 module Api.Public.Routes where
 
+import           Api.FromDb                  (dbRoundToRound, dbTeamToTeam,
+                                              dbToQuizSummary, dbToScoreBoard,
+                                              dbToScores, quizToIdentifier)
 import           Api.Public.Types            (RoundScore (..),
                                               StandingEntry (..), TeamInfo (..),
                                               TeamView (..))
-import           Db.Util                     (runDb)
-import           Control.Monad.Trans.Class   (lift)
-import           Control.Monad.Trans.Maybe   (MaybeT (..), hoistMaybe)
+import           Api.ToDb                    (quizIdToKey)
 import           Api.Types                   (Points (..), QuizId (..),
                                               QuizSummary, Round (..),
                                               RoundNumber (..), SomeQuiz,
                                               Team (..), TeamNumber (..),
                                               fromActivity)
 import qualified Api.Types                   as Api
-import           Api.FromDb                  (dbRoundToRound, dbTeamToTeam,
-                                              dbToQuizSummary, dbToScoreBoard,
-                                              dbToScores, quizIdToKey,
-                                              quizToIdentifier)
+import           Control.Monad.Trans.Class   (lift)
+import           Control.Monad.Trans.Maybe   (MaybeT (..), hoistMaybe)
 import           Data.List                   (find, nub, sortOn)
 import qualified Data.Map.Strict             as Map
 import           Data.Ord                    (Down (..))
@@ -30,6 +29,7 @@ import           Database.Persist            (Entity (..), (==.))
 import           Database.Persist.Postgresql (get, selectList)
 import           Database.Persist.Sql        (SqlBackend)
 import qualified Db.Schema                   as Db
+import           Db.Util                     (runDb)
 import           Servant
 
 -- Public API: no authentication required
