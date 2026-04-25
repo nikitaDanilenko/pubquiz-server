@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8cccdb980a0e6f7a5b64d0970b94496547f0625a7ebfd39d5ad4e36508faeb30
+-- hash: 71b38ba4787591b087430b2b7a6bd850d1e8529b83eb5090d2b1da616ef9aec5
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
       Api.Util
       Config
       Db.Schema
+      Db.Util
   other-modules:
       Paths_pubquiz_server
   hs-source-dirs:

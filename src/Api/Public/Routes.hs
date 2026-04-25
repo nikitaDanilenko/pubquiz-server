@@ -9,7 +9,7 @@ module Api.Public.Routes where
 import           Api.Public.Types            (RoundScore (..),
                                               StandingEntry (..), TeamInfo (..),
                                               TeamView (..))
-import           Api.Util                    (runDb)
+import           Db.Util                     (runDb)
 import           Control.Monad.Trans.Class   (lift)
 import           Control.Monad.Trans.Maybe   (MaybeT (..), hoistMaybe)
 import           Api.Types                   (Points (..), QuizId (..),

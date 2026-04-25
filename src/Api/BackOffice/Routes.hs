@@ -25,7 +25,6 @@ import           Api.Types                   (Place (..), Points (..),
                                               QuizState (..), RoundNumber (..),
                                               ScoreBoard (..), Team (..),
                                               TeamName (..), TeamNumber (..))
-import           Api.Util                    (runDb)
 import           Control.Monad               (forM, forM_, unless)
 import           Data.List                   (nub)
 import           Data.Maybe                  (isJust)
@@ -35,6 +34,7 @@ import           Database.Persist.Postgresql (get, insert, selectList, update,
                                               upsert)
 import           Database.Persist.Sql        (SqlBackend, SqlPersistT)
 import qualified Db.Schema                   as Db
+import           Db.Util                     (runDb)
 import           Servant
 import           Servant.Auth.Server
 

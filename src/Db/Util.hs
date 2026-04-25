@@ -1,9 +1,10 @@
-module Api.Util where
+module Db.Util where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader   (ReaderT)
 import           Data.Pool              (Pool)
 import           Database.Persist.Sql   (SqlBackend, runSqlPool)
+import           Servant                (Handler)
 
-runDb :: MonadIO m => Pool SqlBackend -> ReaderT SqlBackend IO a -> m a
+runDb :: Pool SqlBackend -> ReaderT SqlBackend IO a -> Handler a
 runDb pool action = liftIO $ runSqlPool action pool
