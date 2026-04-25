@@ -1,6 +1,6 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 
-module Core.FromDb
+module Api.FromDb
   ( quizKeyToId
   , quizIdToKey
   , quizToIdentifier
@@ -12,7 +12,7 @@ module Core.FromDb
   )
 where
 
-import           Core.Domain          (Place (..), Points (..), QuizId (..),
+import           Api.Types            (Place (..), Points (..), QuizId (..),
                                        QuizIdentifier (..), QuizName (..),
                                        QuizSummary (..), Round (..),
                                        RoundNumber (..), ScoreBoard (..),

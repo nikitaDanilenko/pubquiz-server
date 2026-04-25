@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedRecordDot   #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -8,19 +6,26 @@
 
 module Api.BackOffice.Routes where
 
-import           Api.Util                    (runDb)
-import           Control.Monad               (forM, forM_, unless)
-import           Core.Domain                 (Place (..), Points (..),
+import           Api.BackOffice.Types        (AddTeamsCommand (..),
+                                              AuthenticatedUser (..),
+                                              ChangeSettingsCommand (..),
+                                              CorrectScoreCommand (..),
+                                              QuizMetaData (..),
+                                              RecordRoundScoresCommand (..),
+                                              RenameTeamCommand (..),
+                                              SetTeamActiveCommand (..))
+import           Api.FromDb                  (dbRoundToRound, dbToScoreBoard,
+                                              quizIdToKey, quizKeyToId,
+                                              quizToIdentifier)
+import           Api.Types                   (Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
                                               QuizState (..), RoundNumber (..),
                                               ScoreBoard (..), Team (..),
                                               TeamName (..), TeamNumber (..))
-import           Core.FromDb                 (dbRoundToRound, dbToScoreBoard,
-                                              quizIdToKey, quizKeyToId,
-                                              quizToIdentifier)
-import           Data.Aeson                  (FromJSON, ToJSON)
+import           Api.Util                    (runDb)
+import           Control.Monad               (forM, forM_, unless)
 import           Data.List                   (nub)
 import           Data.Maybe                  (isJust)
 import           Data.Pool                   (Pool)
@@ -29,61 +34,8 @@ import           Database.Persist.Postgresql (get, insert, selectList, update,
                                               upsert)
 import           Database.Persist.Sql        (SqlBackend, SqlPersistT)
 import qualified Db.Schema                   as Db
-import           GHC.Generics                (Generic)
 import           Servant
 import           Servant.Auth.Server
-
--- JWT payload: authenticated organizer
-newtype AuthenticatedUser = AuthenticatedUser
-  {    isAdmin       :: Bool
-   }
-  deriving (Show, Eq, Generic, FromJSON, ToJSON, ToJWT, FromJWT)
-
-data QuizMetaData = QuizMetaData
-  {
-    identifier :: QuizIdentifier,
-    settings   :: QuizSettings
-  }
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
-
--- Command types for DDD-style endpoints.
--- We use POST for commands (not PATCH) because these represent domain actions/intents,
--- not partial resource updates. The URI names the action, the body carries the command payload.
-
-newtype ChangeSettingsCommand = ChangeSettingsCommand
-  { newIdentifier :: QuizIdentifier
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
-newtype AddTeamsCommand = AddTeamsCommand
-  { additionalTeams :: Int
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
-data RecordRoundScoresCommand = RecordRoundScoresCommand
-  { roundNumber :: RoundNumber
-  , scores      :: [(TeamNumber, Points)]
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
-data CorrectScoreCommand = CorrectScoreCommand
-  { teamNumber  :: TeamNumber
-  , roundNumber :: RoundNumber
-  , points      :: Points
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
-data RenameTeamCommand = RenameTeamCommand
-  { teamNumber :: TeamNumber
-  , newName    :: TeamName
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
-data SetTeamActiveCommand = SetTeamActiveCommand
-  { teamNumber :: TeamNumber
-  , active     :: Bool
-  }
-  deriving (Show, Eq, Generic, FromJSON)
 
 -- Commands (domain actions)
 -- POST /backoffice                         → create quiz
@@ -131,7 +83,7 @@ backOfficeServer _ _ = throwAll err401
 createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler (Quiz 'Active)
 createQuiz pool request = do
   quizKey <- runDb pool statement
-  let initialTeams = [ Team (TeamNumber n) (TeamName "") True | n <- [1 .. numberOfTeams request.settings] ]
+  let initialTeams = [ Team (TeamNumber n) (TeamName "") True | n <- [1 .. request.settings.numberOfTeams] ]
   pure $
     Quiz
       { quizId = quizKeyToId quizKey
@@ -152,7 +104,7 @@ createQuiz pool request = do
           }
 
     -- Insert default teams
-    forM_ [1 .. numberOfTeams request.settings] $ \teamNumber -> do
+    forM_ [1 .. request.settings.numberOfTeams] $ \teamNumber -> do
       insert $
         Db.Team
           { teamQuizId = quizId

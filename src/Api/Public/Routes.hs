@@ -12,13 +12,13 @@ import           Api.Public.Types            (RoundScore (..),
 import           Api.Util                    (runDb)
 import           Control.Monad.Trans.Class   (lift)
 import           Control.Monad.Trans.Maybe   (MaybeT (..), hoistMaybe)
-import           Core.Domain                 (Points (..), QuizId (..),
+import           Api.Types                   (Points (..), QuizId (..),
                                               QuizSummary, Round (..),
                                               RoundNumber (..), SomeQuiz,
                                               Team (..), TeamNumber (..),
                                               fromActivity)
-import qualified Core.Domain                 as Domain
-import           Core.FromDb                 (dbRoundToRound, dbTeamToTeam,
+import qualified Api.Types                   as Api
+import           Api.FromDb                  (dbRoundToRound, dbTeamToTeam,
                                               dbToQuizSummary, dbToScoreBoard,
                                               dbToScores, quizIdToKey,
                                               quizToIdentifier)
@@ -69,11 +69,11 @@ getQuiz pool quizId = runDb pool statement >>= maybe (throwError err404) pure
     roundEntities <- lift $ selectList [Db.RoundQuizId ==. dbQuizId] []
     scoreEntities <- lift $ selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
 
-    let quiz = Domain.Quiz
-          { Domain.quizId = quizId
-          , Domain.identifier = quizToIdentifier quizRecord
-          , Domain.rounds = map (dbRoundToRound . entityVal) roundEntities
-          , Domain.scoreBoard = dbToScoreBoard teamEntities scoreEntities
+    let quiz = Api.Quiz
+          { Api.quizId = quizId
+          , Api.identifier = quizToIdentifier quizRecord
+          , Api.rounds = map (dbRoundToRound . entityVal) roundEntities
+          , Api.scoreBoard = dbToScoreBoard teamEntities scoreEntities
           }
 
     pure $ fromActivity (Db.quizActive quizRecord) quiz

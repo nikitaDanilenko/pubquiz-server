@@ -7,7 +7,7 @@
 
 module Api.Auth where
 
-import           Api.BackOffice.Routes  (AuthenticatedUser (..))
+import           Api.BackOffice.Types   (AuthenticatedUser (..))
 import           Config                 (Organizer (..))
 import           Control.Monad          (unless)
 import           Control.Monad.IO.Class (liftIO)
