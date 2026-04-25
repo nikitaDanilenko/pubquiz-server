@@ -58,3 +58,8 @@ data SetTeamActiveCommand = SetTeamActiveCommand
   , active     :: Bool
   }
   deriving (Show, Eq, Generic, FromJSON)
+
+newtype ToggleTeamActiveCommand = ToggleTeamActiveCommand
+  { teamNumber :: TeamNumber
+  }
+  deriving (Show, Eq, Generic, FromJSON)

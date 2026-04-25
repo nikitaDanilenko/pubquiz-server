@@ -13,7 +13,8 @@ import           Api.BackOffice.Types        (AddTeamsCommand (..),
                                               QuizMetaData (..),
                                               RecordRoundScoresCommand (..),
                                               RenameTeamCommand (..),
-                                              SetTeamActiveCommand (..))
+                                              SetTeamActiveCommand (..),
+                                              ToggleTeamActiveCommand (..))
 import           Api.FromDb                  (dbRoundToRound, dbToScoreBoard,
                                               quizIdToKey, quizKeyToId,
                                               quizToIdentifier)
@@ -45,6 +46,7 @@ import           Servant.Auth.Server
 -- POST /backoffice/:id/correct-score       → fix a single score entry
 -- POST /backoffice/:id/rename-team         → rename a team
 -- POST /backoffice/:id/set-team-active     → activate/deactivate team
+-- POST /backoffice/:id/toggle-team-active  → toggle team activity
 -- POST /backoffice/:id/lock                → lock quiz
 -- POST /backoffice/:id/unlock              → unlock quiz
 
@@ -56,6 +58,7 @@ type BackOfficeRoutes =
     :<|> Capture "quizId" QuizId :> "correct-score" :> ReqBody '[JSON] CorrectScoreCommand :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "rename-team" :> ReqBody '[JSON] RenameTeamCommand :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "set-team-active" :> ReqBody '[JSON] SetTeamActiveCommand :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "toggle-team-active" :> ReqBody '[JSON] ToggleTeamActiveCommand :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "lock" :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "unlock" :> Post '[JSON] NoContent
 
@@ -76,6 +79,7 @@ backOfficeServer pool (Authenticated user) =
     :<|> correctScore pool
     :<|> renameTeam pool
     :<|> setTeamActive pool
+    :<|> toggleTeamActive pool
     :<|> lockQuiz pool
     :<|> unlockQuiz pool user
 backOfficeServer _ _ = throwAll err401
@@ -209,6 +213,14 @@ setTeamActive :: Pool SqlBackend -> QuizId -> SetTeamActiveCommand -> Handler No
 setTeamActive pool quizId cmd = withActiveQuiz pool quizId $ do
   update (Db.TeamKey (quizIdToKey quizId) (unTeamNumber cmd.teamNumber))
     [Db.TeamActive =. cmd.active]
+  pure CommandSuccess
+
+toggleTeamActive :: Pool SqlBackend -> QuizId -> ToggleTeamActiveCommand -> Handler NoContent
+toggleTeamActive pool quizId cmd = withActiveQuiz pool quizId $ do
+  let teamKey = Db.TeamKey (quizIdToKey quizId) (unTeamNumber cmd.teamNumber)
+  maybeTeam <- get teamKey
+  forM_ maybeTeam $ \team ->
+    update teamKey [Db.TeamActive =. not (Db.teamActive team)]
   pure CommandSuccess
 
 setQuizActiveHandler :: Pool SqlBackend -> QuizId -> Bool -> Handler NoContent
