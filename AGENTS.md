@@ -10,11 +10,18 @@
   - "Set up Haskell" not "Setup Haskell"
   - "Build project" not "Building"
 - Prefer YAML dash syntax for arrays over JSON bracket syntax:
+
   ```yaml
   # Good
   branches:
     - main
-  
+
   # Avoid
   branches: [main]
   ```
+
+## Coding Style
+
+- Use descriptive variables
+  - abbreviations are only fine if very common like `cmd` for `command`
+  - avoid abbreviations for context specific values, like `fbq: FooBarQux`
