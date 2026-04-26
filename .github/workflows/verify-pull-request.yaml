@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code-changed: ${{ steps.paths.outputs.src }}
+      deployment-changed: ${{ steps.paths.outputs.deployment }}
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -30,6 +31,8 @@ jobs:
               - '*.cabal'
               - 'stack.yaml'
               - 'package.yaml'
+            deployment:
+              - 'deployment/**'
 
   test:
     name: Run Tests
@@ -65,7 +68,43 @@ jobs:
       - name: Build project
         run: stack build --fast
 
-  status:
+  validate_templates:
+    name: Validate Helm Templates
+    needs:
+      - check_paths
+    if: ${{ needs.check_paths.outputs.deployment-changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          path: source
+
+      - name: Check out GitOps repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: nikitaDanilenko/git-ops
+          path: git-ops
+          sparse-checkout: pubquiz
+
+      - name: Copy templates to GitOps structure
+        run: |
+          # Caveat: This step needs to be in sync with the actual step during publishing
+          #         to provide a correct validation.
+          GITOPS_DIR="git-ops/pubquiz"
+          SOURCE_DIR="source/deployment/pubquiz-server"
+
+          mkdir -p "$GITOPS_DIR/templates/backend" "$GITOPS_DIR/templates/postgres"
+
+          cp "$SOURCE_DIR/templates/_helpers.tpl" "$GITOPS_DIR/templates/_helpers.tpl"
+
+          rsync -av --delete "$SOURCE_DIR/templates/backend/" "$GITOPS_DIR/templates/backend/"
+          rsync -av --delete "$SOURCE_DIR/templates/postgres/" "$GITOPS_DIR/templates/postgres/"
+
+      - name: Validate Helm template
+        run: helm template git-ops/pubquiz --name-template pubquiz --namespace pubquiz > /dev/null
+
+  test_status:
     name: Test
     needs:
       - test
@@ -76,11 +115,27 @@ jobs:
         run: |
           if [[ "${{ needs.test.result }}" == "success" ]]; then
             echo "Tests passed"
-            exit 0
           elif [[ "${{ needs.test.result }}" == "skipped" ]]; then
             echo "Tests skipped (no relevant changes)"
-            exit 0
           else
             echo "Tests failed"
+            exit 1
+          fi
+
+  validation_status:
+    name: Template Validation
+    needs:
+      - validate_templates
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check template validation result
+        run: |
+          if [[ "${{ needs.validate_templates.result }}" == "success" ]]; then
+            echo "Template validation passed"
+          elif [[ "${{ needs.validate_templates.result }}" == "skipped" ]]; then
+            echo "Template validation skipped (no relevant changes)"
+          else
+            echo "Template validation failed"
             exit 1
           fi
