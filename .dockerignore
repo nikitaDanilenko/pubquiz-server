@@ -5,6 +5,5 @@
 dist-newstyle/
 .git/
 .gitignore
-*.md
-LICENSE
+AGENTS.md
 fourmolu.yaml
