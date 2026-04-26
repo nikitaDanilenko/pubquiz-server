@@ -12,7 +12,6 @@ import           Database.Persist.Sql  (SqlBackend)
 import           Servant
 import           Servant.Auth.Server
 
--- Combined API
 type Api =
   PublicApi
     :<|> BackOfficeApi
@@ -21,7 +20,6 @@ type Api =
 api :: Proxy Api
 api = Proxy
 
--- Combined server
 server :: Pool SqlBackend -> [Organizer] -> JWTSettings -> NominalDiffTime -> Server Api
 server pool organizers jwtSettings jwtExpiration =
   publicServer pool
