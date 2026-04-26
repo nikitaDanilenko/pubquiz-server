@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
       - name: Determine version
         id: semantic-version
-        uses: paulhatch/semantic-version@f29500c9d60a99ed5168e39ee367e0976884c46e # v6.0.1
+        uses: paulhatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
         with:
           # Since version 6.0.0, the action uses conventional commits.
           major_pattern: "/(major)/i"
