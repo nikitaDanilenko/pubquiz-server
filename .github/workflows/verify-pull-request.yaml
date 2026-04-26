@@ -92,7 +92,7 @@ jobs:
           # Caveat: This step needs to be in sync with the actual step during publishing
           #         to provide a correct validation.
           GITOPS_DIR="git-ops/pubquiz"
-          SOURCE_DIR="source/deployment/pubquiz-server"
+          SOURCE_DIR="source/deployment"
 
           mkdir -p "$GITOPS_DIR/templates/backend" "$GITOPS_DIR/templates/postgres"
 
