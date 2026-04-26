@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y libpq-dev pkg-config && rm -rf /var/lib
 # Copy Stack files first for better caching
 COPY stack.yaml stack.yaml.lock package.yaml ./
 
+# '--no-library-profiling': With profiling, something with Postgres fails
+# '--no-haddock' reduces the resource usage during the build
 RUN stack build --only-dependencies --system-ghc --no-library-profiling --no-haddock
 
 COPY . .
