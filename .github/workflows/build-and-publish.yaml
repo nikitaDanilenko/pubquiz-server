@@ -124,7 +124,8 @@ jobs:
 
       - name: Update templates and image tag
         run: |
-          GITOPS_DIR="${{ github.workspace }}/git-ops/pubquiz-server"
+          # Careful: The target is called 'pubquiz' in GitOps, because it contains the entire application.
+          GITOPS_DIR="${{ github.workspace }}/git-ops/pubquiz"
           SOURCE_DIR="${{ github.workspace }}/source/deployment/pubquiz-server"
 
           # Ensure target directories exist
