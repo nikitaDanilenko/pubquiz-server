@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - "main"
-  workflow_dispatch:
 
 jobs:
   determine_changes:
@@ -38,35 +37,38 @@ jobs:
               - '*.cabal'
               - 'stack.yaml'
               - 'package.yaml'
+              - 'Dockerfile'
 
-  create_new_version:
+  create_new_release:
     needs:
       - determine_changes
     name: Create New Release
     runs-on: ubuntu-latest
     if: ${{ needs.determine_changes.outputs.paths-changed == 'true' }}
     steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Publish new release
         shell: bash
         run: |
-          git tag ${{ steps.semantic-version.outputs.version_tag }} ${{ github.sha }}
-          git push origin ${{ steps.semantic-version.outputs.version_tag }}
+          git tag ${{ needs.determine_changes.outputs.version-tag }} ${{ github.sha }}
+          git push origin ${{ needs.determine_changes.outputs.version-tag }}
           echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token
-          gh release create ${{ steps.semantic-version.outputs.version_tag }} --generate-notes --verify-tag
+          gh release create ${{ needs.determine_changes.outputs.version-tag }} --generate-notes --verify-tag
 
   build_and_publish:
     needs:
-      - create_new_version
+      - determine_changes
     name: Build and Publish Docker Image
     runs-on: ubuntu-latest
     # The output is a string, hence the string comparison.
-    if: ${{ needs.create_new_version.outputs.paths-changed == 'true' }}
+    if: ${{ needs.determine_changes.outputs.paths-changed == 'true' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-      - name: Log in to DockerHub
+      - name: Log in to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
@@ -79,7 +81,7 @@ jobs:
           tags: |
             type=sha
             type=raw,value=latest
-            type=semver,pattern={{version}},value=${{ needs.create_new_version.outputs.version-tag }}
+            type=semver,pattern={{version}},value=${{ needs.determine_changes.outputs.version-tag }}
       - name: Build and push Docker image
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
@@ -91,7 +93,7 @@ jobs:
 
   update_gitops:
     needs:
-      - create_new_version
+      - determine_changes
       - build_and_publish
     name: Update GitOps Repository
     runs-on: ubuntu-latest
@@ -127,7 +129,7 @@ jobs:
           rsync -av --delete "$SOURCE_DIR/templates/postgres/" "$GITOPS_DIR/templates/postgres/"
 
           # Update image tag in GitOps values.yaml
-          VERSION="${{ needs.create_new_version.outputs.version }}"
+          VERSION="${{ needs.determine_changes.outputs.version }}"
           yq -i ".backend.image.tag = \"$VERSION\"" "$GITOPS_DIR/values.yaml"
 
       - name: Determine commit title
@@ -139,15 +141,15 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           path: ${{ github.workspace }}/git-ops
-          branch: deploy/pubquiz-server-${{ needs.create_new_version.outputs.version }}
+          branch: deploy/pubquiz-server-${{ needs.determine_changes.outputs.version }}
           delete-branch: true
-          title: "Deploy `pubquiz-server:${{ needs.create_new_version.outputs.version }}`"
+          title: "Deploy `pubquiz-server:${{ needs.determine_changes.outputs.version }}`"
           body: |
-            Automated deployment PR for pubquiz-server.
+            Automated deployment PR for `pubquiz-server`.
 
-            **Version:** `${{ needs.create_new_version.outputs.version }}`
+            **Version:** `${{ needs.determine_changes.outputs.version }}`
             **Triggered by:** [${{ steps.commit.outputs.title }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
-          commit-message: "Update pubquiz-server to ${{ needs.create_new_version.outputs.version }}"
+          commit-message: "Update pubquiz-server to ${{ needs.determine_changes.outputs.version }}"
           labels: |
             deployment
             automated
