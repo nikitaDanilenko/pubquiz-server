@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  create_new_version:
+  determine_changes:
+    name: Determine Changes and Version
     runs-on: ubuntu-latest
     outputs:
       version-tag: ${{ steps.semantic-version.outputs.version_tag }}
@@ -37,6 +38,14 @@ jobs:
               - '*.cabal'
               - 'stack.yaml'
               - 'package.yaml'
+
+  create_new_version:
+    needs:
+      - determine_changes
+    name: Create New Release
+    runs-on: ubuntu-latest
+    if: ${{ needs.determine_changes.outputs.paths-changed == 'true' }}
+    steps:
       - name: Publish new release
         shell: bash
         run: |
@@ -48,6 +57,7 @@ jobs:
   build_and_publish:
     needs:
       - create_new_version
+    name: Build and Publish Docker Image
     runs-on: ubuntu-latest
     # The output is a string, hence the string comparison.
     if: ${{ needs.create_new_version.outputs.paths-changed == 'true' }}
@@ -79,10 +89,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  update_gitops_backend:
+  update_gitops:
     needs:
       - create_new_version
       - build_and_publish
+    name: Update GitOps Repository
     runs-on: ubuntu-latest
     steps:
       - name: Check out source repository
