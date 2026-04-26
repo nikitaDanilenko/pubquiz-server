@@ -25,3 +25,6 @@
 - Use descriptive variables
   - abbreviations are only fine if very common like `cmd` for `command`
   - avoid abbreviations for context specific values, like `fbq: FooBarQux`
+- Avoid redundant comments, examples are:
+  - repeat one line implementations in words
+  - commenting a section `Foo configuration` in a configuration file starting with `foo:`
