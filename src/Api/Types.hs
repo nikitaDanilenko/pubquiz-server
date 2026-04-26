@@ -1,10 +1,12 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE KindSignatures        #-}
-{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DuplicateRecordFields      #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE RankNTypes                 #-}
 
 module Api.Types where
 
@@ -19,34 +21,42 @@ import           Servant            (FromHttpApiData (..))
 -- Newtypes shared across request and response boundaries
 
 newtype QuizName = QuizName {unQuizName :: Text}
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
 newtype Place = Place {unPlace :: Text}
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
 newtype TeamName = TeamName {unTeamName :: Text}
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
 newtype RoundNumber = RoundNumber {unRoundNumber :: Int}
-  deriving (Show, Eq, Ord, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
 newtype Points = Points {unPoints :: Double}
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
 newtype QuizId = QuizId {unQuizId :: Int}
-  deriving (Show, Eq, Generic, ToJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving newtype (ToJSON)
 
 instance FromHttpApiData QuizId where
   parseUrlPiece = fmap QuizId . parseUrlPiece
 
 newtype TeamNumber = TeamNumber {unTeamNumber :: Int}
-  deriving (Show, Eq, Ord, Generic, FromJSON, ToJSON)
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
 instance FromHttpApiData TeamNumber where
   parseUrlPiece = fmap TeamNumber . parseUrlPiece
 
 newtype NumberOfQuestions = NumberOfQuestions {unNumberOfQuestions :: Natural}
-  deriving (Show, Eq, Generic, FromJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving newtype (FromJSON)
 
 data QuizIdentifier = QuizIdentifier
   { name  :: QuizName
