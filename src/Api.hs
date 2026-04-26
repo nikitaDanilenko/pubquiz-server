@@ -4,6 +4,7 @@ module Api where
 
 import           Api.Auth              (AuthApi, authServer)
 import           Api.BackOffice.Routes (BackOfficeApi, backOfficeServer)
+import           Api.OpenApi           (OpenApiApi, openApiServer)
 import           Api.Public.Routes     (PublicApi, publicServer)
 import           Config                (Organizer)
 import           Data.Pool             (Pool)
@@ -13,7 +14,8 @@ import           Servant
 import           Servant.Auth.Server
 
 type Api =
-  PublicApi
+  OpenApiApi
+    :<|> PublicApi
     :<|> BackOfficeApi
     :<|> AuthApi
 
@@ -22,6 +24,7 @@ api = Proxy
 
 server :: Pool SqlBackend -> [Organizer] -> JWTSettings -> NominalDiffTime -> Server Api
 server pool organizers jwtSettings jwtExpiration =
-  publicServer pool
+  openApiServer
+    :<|> publicServer pool
     :<|> backOfficeServer pool
     :<|> authServer organizers jwtSettings jwtExpiration

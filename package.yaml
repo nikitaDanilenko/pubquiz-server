@@ -30,6 +30,7 @@ dependencies:
   - jose
   - monad-logger
   - mtl
+  - openapi3
   - persistent
   - persistent-postgresql
   - persistent-template
@@ -37,6 +38,7 @@ dependencies:
   - servant
   - servant-auth
   - servant-auth-server
+  - servant-openapi3
   - servant-server
   - text
   - time
