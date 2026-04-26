@@ -63,6 +63,9 @@ jobs:
     runs-on: ubuntu-latest
     # The output is a string, hence the string comparison.
     if: ${{ needs.determine_changes.outputs.paths-changed == 'true' }}
+    env:
+      DOCKER_BUILD_SUMMARY: false
+      DOCKER_BUILD_RECORD_UPLOAD: false
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
