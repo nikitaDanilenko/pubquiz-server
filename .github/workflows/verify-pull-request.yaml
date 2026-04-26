@@ -6,12 +6,36 @@ on:
       - main
 
 jobs:
+  check_paths:
+    name: Check Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      code-changed: ${{ steps.paths.outputs.src }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check changed paths
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: paths
+        with:
+          filters: |
+            src:
+              - 'app/**'
+              - 'src/**'
+              - 'config/**'
+              - '*.cabal'
+              - 'stack.yaml'
+              - 'package.yaml'
+
   test:
-    name: Test
+    name: Run Tests
+    needs:
+      - check_paths
+    if: ${{ needs.check_paths.outputs.code-changed == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out
+      - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Set up Haskell
@@ -36,3 +60,23 @@ jobs:
 
       - name: Build project
         run: stack build --fast
+
+  status:
+    name: Test
+    needs:
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check test result
+        run: |
+          if [[ "${{ needs.test.result }}" == "success" ]]; then
+            echo "Tests passed"
+            exit 0
+          elif [[ "${{ needs.test.result }}" == "skipped" ]]; then
+            echo "Tests skipped (no relevant changes)"
+            exit 0
+          else
+            echo "Tests failed"
+            exit 1
+          fi
