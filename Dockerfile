@@ -8,10 +8,10 @@ RUN apt-get update && apt-get install -y libpq-dev pkg-config && rm -rf /var/lib
 # Copy Stack files first for better caching
 COPY stack.yaml stack.yaml.lock package.yaml ./
 
-RUN stack build --only-dependencies --system-ghc --no-library-profiling
+RUN stack build --only-dependencies --system-ghc --no-library-profiling --no-haddock
 
 COPY . .
-RUN stack build --system-ghc --copy-bins --local-bin-path /app/bin --no-library-profiling
+RUN stack build --system-ghc --copy-bins --local-bin-path /app/bin --no-library-profiling --no-haddock
 
 FROM debian:bookworm-slim
 
