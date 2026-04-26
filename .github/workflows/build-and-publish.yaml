@@ -131,6 +131,9 @@ jobs:
           # Ensure target directories exist
           mkdir -p "$GITOPS_DIR/templates/backend" "$GITOPS_DIR/templates/postgres"
 
+          # Sync _helpers.tpl (shared template definitions)
+          cp "$SOURCE_DIR/templates/_helpers.tpl" "$GITOPS_DIR/templates/_helpers.tpl"
+
           # Sync backend and postgres templates (deletes removed files)
           rsync -av --delete "$SOURCE_DIR/templates/backend/" "$GITOPS_DIR/templates/backend/"
           rsync -av --delete "$SOURCE_DIR/templates/postgres/" "$GITOPS_DIR/templates/postgres/"
