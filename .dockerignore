@@ -7,4 +7,3 @@ dist-newstyle/
 .gitignore
 AGENTS.md
 fourmolu.yaml
-log*.txt
