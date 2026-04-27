@@ -10,10 +10,11 @@ COPY stack.yaml stack.yaml.lock package.yaml ./
 
 # '--no-library-profiling': with profiling, something with Postgres fails
 # '--no-haddock': reduces the resource usage during the build
-RUN stack build --only-dependencies --system-ghc --no-library-profiling --no-haddock
+# '--no-test': skip test dependencies in the production image
+RUN stack build --only-dependencies --system-ghc --no-library-profiling --no-haddock --no-test
 
 COPY . .
-RUN stack build --system-ghc --copy-bins --local-bin-path /app/bin --no-library-profiling --no-haddock
+RUN stack build --system-ghc --copy-bins --local-bin-path /app/bin --no-library-profiling --no-haddock --no-test
 
 FROM debian:bookworm-slim
 
