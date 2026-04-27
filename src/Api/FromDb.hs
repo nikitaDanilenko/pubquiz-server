@@ -35,7 +35,7 @@ quizToIdentifier quiz =
 dbRoundToRound :: Db.Round -> Round
 dbRoundToRound round =
   Round
-    { number = RoundNumber (Db.roundRoundNumber round)
+    { number = RoundNumber (Db.roundNumber round)
     , displayMaxPoints = Points (Db.roundReachablePoints round)
     , numberOfQuestions = NumberOfQuestions (fromIntegral $ Db.roundNumberOfQuestions round)
     }
