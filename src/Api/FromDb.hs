@@ -4,14 +4,13 @@ module Api.FromDb
   ( quizKeyToId
   , quizToIdentifier
   , dbRoundToRound
-  , dbTeamToTeam
-  , dbToScores
   , dbToScoreBoard
   , dbToQuizSummary
   )
 where
 
-import           Api.Types            (Place (..), Points (..), QuizId (..),
+import           Api.Types            (NumberOfQuestions (..), Place (..),
+                                       Points (..), QuizId (..),
                                        QuizIdentifier (..), QuizName (..),
                                        QuizSummary (..), Round (..),
                                        RoundNumber (..), ScoreBoard (..),
@@ -36,9 +35,9 @@ quizToIdentifier quiz =
 dbRoundToRound :: Db.Round -> Round
 dbRoundToRound round =
   Round
-    { number = RoundNumber (Db.roundRoundNumber round)
+    { number = RoundNumber (Db.roundNumber round)
     , displayMaxPoints = Points (Db.roundReachablePoints round)
-    , numberOfQuestions = Db.roundNumberOfQuestions round
+    , numberOfQuestions = NumberOfQuestions (fromIntegral $ Db.roundNumberOfQuestions round)
     }
 
 dbTeamToTeam :: Db.Team -> Team

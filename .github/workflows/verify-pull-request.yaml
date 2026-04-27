@@ -27,6 +27,7 @@ jobs:
             src:
               - 'app/**'
               - 'src/**'
+              - 'test/**'
               - 'config/**'
               - '*.cabal'
               - 'stack.yaml'
@@ -63,10 +64,10 @@ jobs:
             ${{ runner.os }}-stack-
 
       - name: Install dependencies
-        run: stack build --only-dependencies --fast
+        run: stack build --only-dependencies --test --fast
 
-      - name: Build project
-        run: stack build --fast
+      - name: Build and test
+        run: stack test --fast
 
   validate_templates:
     name: Validate Helm Templates

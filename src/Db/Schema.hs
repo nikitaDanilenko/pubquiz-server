@@ -42,10 +42,10 @@ Team
   deriving Show
 Round
   quizId QuizId
-  roundNumber Int
+  number Int
   reachablePoints Double
   numberOfQuestions Int
-  Primary quizId roundNumber
+  Primary quizId number
   deriving Show
 TeamRoundScore
   quizId QuizId

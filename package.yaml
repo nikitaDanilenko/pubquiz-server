@@ -30,6 +30,7 @@ dependencies:
   - jose
   - monad-logger
   - mtl
+  - openapi3
   - persistent
   - persistent-postgresql
   - persistent-template
@@ -37,6 +38,7 @@ dependencies:
   - servant
   - servant-auth
   - servant-auth-server
+  - servant-openapi3
   - servant-server
   - text
   - time
@@ -52,6 +54,27 @@ executables:
     source-dirs: app
     dependencies:
       - pubquiz-server
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+tests:
+  pubquiz-server-test:
+    main: Spec.hs
+    source-dirs: test
+    dependencies:
+      - pubquiz-server
+      - aeson
+      - hspec
+      - hspec-discover
+      - hspec-wai
+      - hspec-wai-json
+      - http-types
+      - testcontainers
+      - time
+      - wai
+      - wai-extra
     ghc-options:
       - -threaded
       - -rtsopts

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 730c58b6dfefeb5b60a8ed0b0283b9f0c0a8ac01c611b8202958ac80886aae2d
+-- hash: 5cf2aafc04f5769779ef29fed62873f09fb9508c25a9ebd6eaacdf8f5f532f54
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -33,8 +33,8 @@ library
       Api.BackOffice.Routes
       Api.BackOffice.Types
       Api.FromDb
+      Api.OpenApi
       Api.Public.Routes
-      Api.Public.Types
       Api.ToDb
       Api.Types
       Api.Util
@@ -56,6 +56,7 @@ library
     , jose
     , monad-logger
     , mtl
+    , openapi3
     , persistent
     , persistent-postgresql
     , persistent-template
@@ -63,6 +64,7 @@ library
     , servant
     , servant-auth
     , servant-auth-server
+    , servant-openapi3
     , servant-server
     , text
     , time
@@ -87,6 +89,7 @@ executable pubquiz-server
     , jose
     , monad-logger
     , mtl
+    , openapi3
     , persistent
     , persistent-postgresql
     , persistent-template
@@ -95,9 +98,55 @@ executable pubquiz-server
     , servant
     , servant-auth
     , servant-auth-server
+    , servant-openapi3
     , servant-server
     , text
     , time
     , transformers
+    , warp
+  default-language: Haskell2010
+
+test-suite pubquiz-server-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Api.PublicSpec
+      Test.Database
+      Paths_pubquiz_server
+  hs-source-dirs:
+      test
+  ghc-options: -fwrite-ide-info -hiedir=.hie -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base
+    , bcrypt
+    , bytestring
+    , containers
+    , dhall
+    , hspec
+    , hspec-discover
+    , hspec-wai
+    , hspec-wai-json
+    , http-types
+    , jose
+    , monad-logger
+    , mtl
+    , openapi3
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , pubquiz-server
+    , resource-pool
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-openapi3
+    , servant-server
+    , testcontainers
+    , text
+    , time
+    , transformers
+    , wai
+    , wai-extra
     , warp
   default-language: Haskell2010
