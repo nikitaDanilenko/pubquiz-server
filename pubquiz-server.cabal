@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6587b5589e4659657f30dc347f0ec463abce9d0fcf1b0b86395488fab1e5d310
+-- hash: 5cf2aafc04f5769779ef29fed62873f09fb9508c25a9ebd6eaacdf8f5f532f54
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -103,5 +103,50 @@ executable pubquiz-server
     , text
     , time
     , transformers
+    , warp
+  default-language: Haskell2010
+
+test-suite pubquiz-server-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Api.PublicSpec
+      Test.Database
+      Paths_pubquiz_server
+  hs-source-dirs:
+      test
+  ghc-options: -fwrite-ide-info -hiedir=.hie -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base
+    , bcrypt
+    , bytestring
+    , containers
+    , dhall
+    , hspec
+    , hspec-discover
+    , hspec-wai
+    , hspec-wai-json
+    , http-types
+    , jose
+    , monad-logger
+    , mtl
+    , openapi3
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , pubquiz-server
+    , resource-pool
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-openapi3
+    , servant-server
+    , testcontainers
+    , text
+    , time
+    , transformers
+    , wai
+    , wai-extra
     , warp
   default-language: Haskell2010
