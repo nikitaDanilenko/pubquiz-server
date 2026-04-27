@@ -65,12 +65,14 @@ tests:
     source-dirs: test
     dependencies:
       - pubquiz-server
+      - aeson
       - hspec
       - hspec-discover
       - hspec-wai
       - hspec-wai-json
       - http-types
       - testcontainers
+      - time
       - wai
       - wai-extra
     ghc-options:

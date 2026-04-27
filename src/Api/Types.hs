@@ -53,7 +53,7 @@ newtype TeamNumber = TeamNumber {unTeamNumber :: Int}
 
 newtype NumberOfQuestions = NumberOfQuestions {unNumberOfQuestions :: Natural}
   deriving stock (Show, Eq, Generic)
-  deriving newtype (FromJSON)
+  deriving newtype (FromJSON, ToJSON)
 
 data QuizIdentifier = QuizIdentifier
   { name  :: QuizName
@@ -81,7 +81,7 @@ data Quiz (state :: QuizState) = Quiz
 data Round = Round
   { number            :: RoundNumber
   , displayMaxPoints  :: Points
-  , numberOfQuestions :: Int
+  , numberOfQuestions :: NumberOfQuestions
   }
   deriving (Show, Eq, Generic, ToJSON)
 

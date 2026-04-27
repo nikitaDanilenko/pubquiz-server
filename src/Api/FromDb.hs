@@ -9,7 +9,8 @@ module Api.FromDb
   )
 where
 
-import           Api.Types            (Place (..), Points (..), QuizId (..),
+import           Api.Types            (NumberOfQuestions (..), Place (..),
+                                       Points (..), QuizId (..),
                                        QuizIdentifier (..), QuizName (..),
                                        QuizSummary (..), Round (..),
                                        RoundNumber (..), ScoreBoard (..),
@@ -36,7 +37,7 @@ dbRoundToRound round =
   Round
     { number = RoundNumber (Db.roundRoundNumber round)
     , displayMaxPoints = Points (Db.roundReachablePoints round)
-    , numberOfQuestions = Db.roundNumberOfQuestions round
+    , numberOfQuestions = NumberOfQuestions (fromIntegral $ Db.roundNumberOfQuestions round)
     }
 
 dbTeamToTeam :: Db.Team -> Team
