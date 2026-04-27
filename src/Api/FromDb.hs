@@ -4,8 +4,6 @@ module Api.FromDb
   ( quizKeyToId
   , quizToIdentifier
   , dbRoundToRound
-  , dbTeamToTeam
-  , dbToScores
   , dbToScoreBoard
   , dbToQuizSummary
   )

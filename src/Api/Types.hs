@@ -51,9 +51,6 @@ newtype TeamNumber = TeamNumber {unTeamNumber :: Int}
   deriving stock (Show, Eq, Ord, Generic)
   deriving newtype (FromJSON, ToJSON)
 
-instance FromHttpApiData TeamNumber where
-  parseUrlPiece = fmap TeamNumber . parseUrlPiece
-
 newtype NumberOfQuestions = NumberOfQuestions {unNumberOfQuestions :: Natural}
   deriving stock (Show, Eq, Generic)
   deriving newtype (FromJSON)

@@ -24,8 +24,6 @@ import           Api.BackOffice.Types  (AddTeamsCommand, AuthenticatedUser (..),
                                         RecordRoundScoresCommand,
                                         RenameTeamCommand, SetTeamActiveCommand)
 import           Api.Public.Routes     (PublicApi)
-import           Api.Public.Types      (RoundScore, StandingEntry, TeamInfo,
-                                        TeamView)
 import           Api.Types             (NumberOfQuestions, Place, Points, Quiz,
                                         QuizId, QuizIdentifier, QuizName,
                                         QuizSettings, QuizState (..),
@@ -99,9 +97,6 @@ instance ToParamSchema QuizId where
 instance ToSchema TeamNumber where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Int)
 
-instance ToParamSchema TeamNumber where
-  toParamSchema _ = toParamSchema (Proxy :: Proxy Int)
-
 instance ToSchema NumberOfQuestions where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Natural)
 
@@ -128,12 +123,6 @@ instance ToSchema (Quiz 'Locked) where
 -- SomeQuiz is a GADT that wraps Quiz - schema is the same as Quiz
 instance ToSchema SomeQuiz where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Quiz 'Active))
-
--- Public types
-instance ToSchema TeamView
-instance ToSchema StandingEntry
-instance ToSchema TeamInfo
-instance ToSchema RoundScore
 
 -- Auth types
 instance ToSchema LoginRequest
