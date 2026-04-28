@@ -34,9 +34,15 @@ newtype AddTeamsCommand = AddTeamsCommand
   }
   deriving (Show, Eq, Generic, FromJSON)
 
+data TeamScore = TeamScore
+  { teamNumber :: TeamNumber
+  , points     :: Points
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
 data RecordRoundScoresCommand = RecordRoundScoresCommand
   { roundNumber :: RoundNumber
-  , scores      :: [(TeamNumber, Points)]
+  , scores      :: [TeamScore]
   }
   deriving (Show, Eq, Generic, FromJSON)
 

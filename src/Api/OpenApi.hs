@@ -20,7 +20,8 @@ import           Api.BackOffice.Types  (AddTeamsCommand, AuthenticatedUser (..),
                                         ChangeSettingsCommand,
                                         CorrectScoreCommand, QuizMetaData,
                                         RecordRoundScoresCommand,
-                                        RenameTeamCommand, SetTeamActiveCommand)
+                                        RenameTeamCommand, SetTeamActiveCommand,
+                                        TeamScore)
 import           Api.Public.Routes     (PublicApi)
 import           Api.Types             (NumberOfQuestions, Place, Points, Quiz,
                                         QuizId, QuizIdentifier, QuizName,
@@ -131,6 +132,7 @@ instance ToSchema AuthenticatedUser
 instance ToSchema QuizMetaData
 instance ToSchema ChangeSettingsCommand
 instance ToSchema AddTeamsCommand
+instance ToSchema TeamScore
 instance ToSchema RecordRoundScoresCommand
 instance ToSchema CorrectScoreCommand
 instance ToSchema RenameTeamCommand
