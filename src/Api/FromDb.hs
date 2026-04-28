@@ -14,9 +14,8 @@ import           Api.Types            (NumberOfQuestions (..), Place (..),
                                        QuizIdentifier (..), QuizName (..),
                                        QuizSummary (..), Round (..),
                                        RoundNumber (..), ScoreBoard (..),
-                                       Team (..), TeamName (..),
-                                       TeamNumber (..))
-import qualified Data.Map.Strict      as Map
+                                       ScoreEntry (..), Team (..),
+                                       TeamName (..), TeamNumber (..))
 import           Database.Persist     (Entity (..))
 import           Database.Persist.Sql (fromSqlKey)
 import qualified Db.Schema            as Db
@@ -48,12 +47,15 @@ dbTeamToTeam team =
     , active = Db.teamActive team
     }
 
-dbToScores :: [Entity Db.TeamRoundScore] -> Map.Map (TeamNumber, RoundNumber) Points
+dbToScores :: [Entity Db.TeamRoundScore] -> [ScoreEntry]
 dbToScores scoreEntities =
-  Map.fromList
-    [ ((TeamNumber (Db.teamRoundScoreTeamNumber score), RoundNumber (Db.teamRoundScoreRoundNumber score)), Points (Db.teamRoundScorePoints score))
-    | Entity _ score <- scoreEntities
-    ]
+  [ ScoreEntry
+      { teamNumber = TeamNumber (Db.teamRoundScoreTeamNumber score)
+      , roundNumber = RoundNumber (Db.teamRoundScoreRoundNumber score)
+      , points = Points (Db.teamRoundScorePoints score)
+      }
+  | Entity _ score <- scoreEntities
+  ]
 
 dbToScoreBoard :: [Entity Db.Team] -> [Entity Db.TeamRoundScore] -> ScoreBoard
 dbToScoreBoard teamEntities scoreEntities =

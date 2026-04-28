@@ -13,7 +13,8 @@ import           Api.BackOffice.Types        (AddTeamsCommand (..),
                                               QuizMetaData (..),
                                               RecordRoundScoresCommand (..),
                                               RenameTeamCommand (..),
-                                              SetTeamActiveCommand (..))
+                                              SetTeamActiveCommand (..),
+                                              TeamScore (..))
 import           Api.FromDb                  (dbToScoreBoard, quizKeyToId,
                                               quizToIdentifier)
 import           Api.ToDb                    (identifierToQuiz, quizIdToKey,
@@ -90,7 +91,7 @@ createQuiz pool request = do
       { quizId = quizKeyToId quizKey
       , identifier = request.identifier
       , rounds = []
-      , scoreBoard = ScoreBoard { teams = initialTeams, scores = mempty }
+      , scoreBoard = ScoreBoard { teams = initialTeams, scores = [] }
       }
  where
   statement = do
@@ -168,8 +169,8 @@ addTeams pool quizId cmd = withActiveQuiz pool quizId $ do
 recordRoundScores :: Pool SqlBackend -> QuizId -> RecordRoundScoresCommand -> Handler NoContent
 recordRoundScores pool quizId cmd = withActiveQuiz pool quizId $ do
   let dbQuizId = quizIdToKey quizId
-  forM_ cmd.scores $ \(teamNum, pts) ->
-    insert $ teamRoundScoreToDb dbQuizId teamNum cmd.roundNumber pts
+  forM_ cmd.scores $ \teamScore ->
+    insert $ teamRoundScoreToDb dbQuizId teamScore.teamNumber cmd.roundNumber teamScore.points
   pure CommandSuccess
 
 correctScore :: Pool SqlBackend -> QuizId -> CorrectScoreCommand -> Handler NoContent

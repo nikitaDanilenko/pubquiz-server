@@ -11,7 +11,6 @@
 module Api.Types where
 
 import           Data.Aeson         (FromJSON, ToJSON (..))
-import           Data.Map.Strict    (Map)
 import           Data.Text          (Text)
 import           Data.Time.Calendar (Day)
 import           GHC.Generics       (Generic)
@@ -92,9 +91,16 @@ data Team = Team
   }
   deriving (Show, Eq, Generic, ToJSON)
 
+data ScoreEntry = ScoreEntry
+  { teamNumber  :: TeamNumber
+  , roundNumber :: RoundNumber
+  , points      :: Points
+  }
+  deriving (Show, Eq, Generic, ToJSON)
+
 data ScoreBoard = ScoreBoard
   { teams  :: [Team]
-  , scores :: Map (TeamNumber, RoundNumber) Points
+  , scores :: [ScoreEntry]
   }
   deriving (Show, Eq, Generic, ToJSON)
 

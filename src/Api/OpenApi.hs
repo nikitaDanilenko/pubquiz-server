@@ -1,11 +1,9 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
@@ -22,14 +20,15 @@ import           Api.BackOffice.Types  (AddTeamsCommand, AuthenticatedUser (..),
                                         ChangeSettingsCommand,
                                         CorrectScoreCommand, QuizMetaData,
                                         RecordRoundScoresCommand,
-                                        RenameTeamCommand, SetTeamActiveCommand)
+                                        RenameTeamCommand, SetTeamActiveCommand,
+                                        TeamScore)
 import           Api.Public.Routes     (PublicApi)
 import           Api.Types             (NumberOfQuestions, Place, Points, Quiz,
                                         QuizId, QuizIdentifier, QuizName,
                                         QuizSettings, QuizState (..),
                                         QuizSummary, Round, RoundNumber,
-                                        ScoreBoard, SomeQuiz (..), Team,
-                                        TeamName, TeamNumber)
+                                        ScoreBoard, ScoreEntry, SomeQuiz (..),
+                                        Team, TeamName, TeamNumber)
 import           Data.Aeson            (ToJSON (..))
 import           Data.Function         ((&))
 import           Data.Functor.Identity (Identity (..))
@@ -106,9 +105,9 @@ instance ToSchema QuizSettings
 instance ToSchema Round
 instance ToSchema Team
 instance ToSchema QuizSummary
+instance ToSchema ScoreEntry
 
--- ScoreBoard uses Map with tuple keys, which doesn't serialize nicely to JSON schema.
--- The JSON serialization converts it to an array of key-value pairs.
+-- ScoreBoard now uses a list of ScoreEntry, which serializes naturally.
 instance ToSchema ScoreBoard where
   declareNamedSchema = genericDeclareNamedSchema OpenApi.defaultSchemaOptions
 
@@ -133,6 +132,7 @@ instance ToSchema AuthenticatedUser
 instance ToSchema QuizMetaData
 instance ToSchema ChangeSettingsCommand
 instance ToSchema AddTeamsCommand
+instance ToSchema TeamScore
 instance ToSchema RecordRoundScoresCommand
 instance ToSchema CorrectScoreCommand
 instance ToSchema RenameTeamCommand
