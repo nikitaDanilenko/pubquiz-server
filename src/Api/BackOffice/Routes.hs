@@ -90,7 +90,7 @@ createQuiz pool request = do
       { quizId = quizKeyToId quizKey
       , identifier = request.identifier
       , rounds = []
-      , scoreBoard = ScoreBoard { teams = initialTeams, scores = mempty }
+      , scoreBoard = ScoreBoard { teams = initialTeams, scores = [] }
       }
  where
   statement = do
