@@ -29,7 +29,9 @@ import           Api.Types             (NumberOfQuestions, Place, Points, Quiz,
                                         QuizSummary, Round, RoundNumber,
                                         ScoreBoard, ScoreEntry, SomeQuiz (..),
                                         Team, TeamName, TeamNumber)
-import           Data.Aeson            (ToJSON (..))
+import           Data.Aeson            (ToJSON (..), Value (..))
+import qualified Data.Aeson.Key        as Key
+import qualified Data.Aeson.KeyMap     as KM
 import           Data.Function         ((&))
 import           Data.Functor.Identity (Identity (..))
 import           Data.OpenApi          (HasComponents (..), HasSchema (..),
@@ -52,10 +54,11 @@ import           Servant.OpenApi       (HasOpenApi (..), toOpenApi)
 instance HasOpenApi api => HasOpenApi (Auth auths user :> api) where
   toOpenApi _ = toOpenApi (Proxy :: Proxy api)
 
-type OpenApiApi = "openapi.json" :> Get '[JSON] OpenApi
+-- Serve the OpenAPI spec as a raw JSON Value so we can post-process it
+type OpenApiApi = "openapi.json" :> Get '[JSON] Value
 
 openApiServer :: Server OpenApiApi
-openApiServer = pure openApiSpec
+openApiServer = pure $ cleanMediaTypes $ toJSON openApiSpec
 
 -- Combined API type for schema generation (excluding OpenAPI endpoint itself)
 type DocumentedApi = PublicApi :<|> BackOfficeApi :<|> AuthApi
@@ -70,6 +73,16 @@ openApiSpec =
 -- Simple lens setter (avoids full lens dependency)
 set :: ((a -> Identity a) -> s -> Identity s) -> a -> s -> s
 set l a s = runIdentity (l (const (Identity a)) s)
+
+-- Remove charset suffix from media type keys in the OpenAPI spec
+cleanMediaTypes :: Value -> Value
+cleanMediaTypes (Object obj) = Object $ KM.mapKeyVal cleanKey cleanMediaTypes obj
+  where
+    cleanKey k
+      | Key.toText k == "application/json;charset=utf-8" = Key.fromText "application/json"
+      | otherwise = k
+cleanMediaTypes (Array arr) = Array $ fmap cleanMediaTypes arr
+cleanMediaTypes v = v
 
 -- ToSchema instances for newtypes (delegate to inner type's schema)
 instance ToSchema QuizName where
