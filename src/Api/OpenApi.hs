@@ -29,7 +29,7 @@ import           Api.Types             (NumberOfQuestions, Place, Points, Quiz,
                                         QuizSummary, Round, RoundNumber,
                                         ScoreBoard, ScoreEntry, SomeQuiz (..),
                                         Team, TeamName, TeamNumber)
-import           Data.Aeson            (ToJSON (..))
+import           Data.Aeson            (ToJSON (..), encode)
 import           Data.Function         ((&))
 import           Data.Functor.Identity (Identity (..))
 import           Data.OpenApi          (HasComponents (..), HasSchema (..),
@@ -41,9 +41,10 @@ import qualified Data.OpenApi          as OpenApi
 import           Data.Proxy            (Proxy (..))
 import           Data.Text             (Text)
 import           GHC.Generics          (Generic)
+import           Network.HTTP.Media    ((//))
 import           Numeric.Natural       (Natural)
-import           Servant               (Get, Handler, JSON, Server, (:<|>),
-                                        (:>))
+import           Servant               (Accept (..), Get, Handler,
+                                        MimeRender (..), Server, (:<|>), (:>))
 import           Servant.Auth          (Auth, JWT)
 import           Servant.OpenApi       (HasOpenApi (..), toOpenApi)
 
@@ -52,7 +53,16 @@ import           Servant.OpenApi       (HasOpenApi (..), toOpenApi)
 instance HasOpenApi api => HasOpenApi (Auth auths user :> api) where
   toOpenApi _ = toOpenApi (Proxy :: Proxy api)
 
-type OpenApiApi = "openapi.json" :> Get '[JSON] OpenApi
+-- Custom content type: application/json without charset suffix
+data PlainJSON
+
+instance Accept PlainJSON where
+  contentType _ = "application" // "json"
+
+instance ToJSON a => MimeRender PlainJSON a where
+  mimeRender _ = encode
+
+type OpenApiApi = "openapi.json" :> Get '[PlainJSON] OpenApi
 
 openApiServer :: Server OpenApiApi
 openApiServer = pure openApiSpec

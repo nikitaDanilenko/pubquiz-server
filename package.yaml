@@ -27,6 +27,7 @@ dependencies:
   - bytestring
   - containers
   - dhall
+  - http-media
   - jose
   - monad-logger
   - mtl

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5cf2aafc04f5769779ef29fed62873f09fb9508c25a9ebd6eaacdf8f5f532f54
+-- hash: 61e89e4fc453b9e0e2b8c1cb4d5d172d8faf0fc7a6febef8430af8d9a2cf93da
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -53,6 +53,7 @@ library
     , bytestring
     , containers
     , dhall
+    , http-media
     , jose
     , monad-logger
     , mtl
@@ -86,6 +87,7 @@ executable pubquiz-server
     , bytestring
     , containers
     , dhall
+    , http-media
     , jose
     , monad-logger
     , mtl
@@ -127,6 +129,7 @@ test-suite pubquiz-server-test
     , hspec-discover
     , hspec-wai
     , hspec-wai-json
+    , http-media
     , http-types
     , jose
     , monad-logger
