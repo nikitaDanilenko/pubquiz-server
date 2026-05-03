@@ -18,16 +18,14 @@ let JwtConfig =
       }
 
 let Config =
-      { serverPath : Text
-      , port : Natural
+      { port : Natural
       , database : DatabaseConfig
       , organizers : List Organizer
       , jwt : JwtConfig
       }
 
 let config : Config =
-      { serverPath = env:SERVER_PATH as Text
-      , port = env:PORT
+      { port = env:PORT
       , database =
           { host = env:DATABASE_HOST as Text
           , name = env:DATABASE_NAME as Text
