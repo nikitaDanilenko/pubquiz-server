@@ -56,6 +56,24 @@ jobs:
           echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token
           gh release create ${{ needs.determine_changes.outputs.version-tag }} --generate-notes --verify-tag
 
+  # There is no need for this job in CI, but PRs benefit from an existing cache, because they can use the cache from the main branch.
+  warm_cache:
+    needs:
+      - determine_changes
+    name: Warm Stack Cache
+    runs-on: ubuntu-latest
+    if: ${{ needs.determine_changes.outputs.paths-changed == 'true' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build dependencies
+        uses: freckle/stack-action@acc59ce470bb6f7b20e1469d6c520a1b27a36818 # v5.7.17
+        with:
+          test: false
+          stack-build-arguments: --fast --no-haddock --no-library-profiling
+          cache-save-always: true
+
   build_and_publish:
     needs:
       - determine_changes
