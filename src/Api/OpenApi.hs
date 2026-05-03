@@ -13,40 +13,49 @@ module Api.OpenApi
   , openApiServer
   ) where
 
-import           Api.Auth              (AuthApi, LoginRequest)
-import           Api.BackOffice.Routes (BackOfficeApi)
-import           Api.BackOffice.Types  (AddTeamsCommand, AuthenticatedUser (..),
-                                        ChangeSettingsCommand,
-                                        CorrectScoreCommand, QuizMetaData,
-                                        RecordRoundScoresCommand,
-                                        RenameTeamCommand, SetTeamActiveCommand,
-                                        TeamScore)
-import           Api.Public.Routes     (PublicApi)
-import           Api.Types             (NumberOfQuestions, Place, Points, Quiz,
-                                        QuizId, QuizIdentifier, QuizName,
-                                        QuizSettings, QuizState (..),
-                                        QuizSummary, Round, RoundNumber,
-                                        ScoreBoard, ScoreEntry, SomeQuiz (..),
-                                        Team, TeamName, TeamNumber)
-import           Data.Aeson            (ToJSON (..), Value (..))
-import qualified Data.Aeson.Key        as Key
-import qualified Data.Aeson.KeyMap     as KM
-import           Data.Function         ((&))
-import           Data.Functor.Identity (Identity (..))
-import           Data.OpenApi          (HasComponents (..), HasSchema (..),
-                                        HasSchemas (..), OpenApi,
-                                        ToParamSchema (..), ToSchema,
-                                        declareNamedSchema, declareSchemaRef,
-                                        genericDeclareNamedSchema)
-import qualified Data.OpenApi          as OpenApi
-import           Data.Proxy            (Proxy (..))
-import           Data.Text             (Text)
-import           GHC.Generics          (Generic)
-import           Numeric.Natural       (Natural)
-import           Servant               (Get, Handler, JSON, Server, (:<|>),
-                                        (:>))
-import           Servant.Auth          (Auth, JWT)
-import           Servant.OpenApi       (HasOpenApi (..), toOpenApi)
+import           Api.Auth                   (AuthApi, LoginRequest)
+import           Api.BackOffice.Routes      (BackOfficeApi)
+import           Api.BackOffice.Types       (AddTeamsCommand,
+                                             AuthenticatedUser (..),
+                                             ChangeSettingsCommand,
+                                             CorrectScoreCommand, QuizMetaData,
+                                             RecordRoundScoresCommand,
+                                             RenameTeamCommand,
+                                             SetTeamActiveCommand, TeamScore)
+import           Api.Public.Routes          (PublicApi)
+import           Api.Types                  (NumberOfQuestions, Place, Points,
+                                             Quiz, QuizId, QuizIdentifier,
+                                             QuizName, QuizSettings,
+                                             QuizState (..), QuizSummary, Round,
+                                             RoundNumber, ScoreBoard,
+                                             ScoreEntry, SomeQuiz (..), Team,
+                                             TeamName, TeamNumber)
+import           Data.Aeson                 (ToJSON (..), Value (..))
+import qualified Data.Aeson.Key             as Key
+import qualified Data.Aeson.KeyMap          as KM
+import           Data.Function              ((&))
+import           Data.Functor.Const         (Const (..))
+import           Data.Functor.Identity      (Identity (..))
+import qualified Data.HashMap.Strict.InsOrd as InsOrd
+import           Data.OpenApi               (HasComponents (..), HasSchema (..),
+                                             HasSchemas (..), HasSecurity (..),
+                                             OpenApi, SecurityRequirement (..),
+                                             SecurityScheme (..),
+                                             SecuritySchemeType (..),
+                                             ToParamSchema (..), ToSchema,
+                                             declareNamedSchema,
+                                             declareSchemaRef,
+                                             genericDeclareNamedSchema)
+import qualified Data.OpenApi               as OpenApi
+import           Data.Proxy                 (Proxy (..))
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
+import           GHC.Generics               (Generic)
+import           Numeric.Natural            (Natural)
+import           Servant                    (Get, Handler, JSON, Server, (:<|>),
+                                             (:>))
+import           Servant.Auth               (Auth, JWT)
+import           Servant.OpenApi            (HasOpenApi (..), toOpenApi)
 
 -- HasOpenApi instance for Auth - just delegate to the underlying API
 -- (Auth doesn't change the API structure, it just adds authentication)
@@ -68,6 +77,27 @@ openApiSpec =
   toOpenApi (Proxy :: Proxy DocumentedApi)
     & set (OpenApi.info . OpenApi.title) "PubQuiz API"
     & set (OpenApi.info . OpenApi.version) "1.0"
+    & set (OpenApi.components . OpenApi.securitySchemes) securitySchemes
+    & over OpenApi.allOperations addSecurityToBackOffice
+
+securitySchemes :: OpenApi.SecurityDefinitions
+securitySchemes = OpenApi.SecurityDefinitions $ InsOrd.fromList
+  [("cookieAuth", SecurityScheme (SecuritySchemeApiKey (OpenApi.ApiKeyParams "JWT-Cookie" OpenApi.ApiKeyCookie)) Nothing)]
+
+addSecurityToBackOffice :: OpenApi.Operation -> OpenApi.Operation
+addSecurityToBackOffice op =
+  case op ^. OpenApi.operationId of
+    Just opId | "backoffice" `T.isPrefixOf` opId && not ("login" `T.isInfixOf` opId) ->
+      op & set OpenApi.security [SecurityRequirement $ InsOrd.singleton "cookieAuth" []]
+    _ -> op
+
+-- Lens getter
+(^.) :: s -> ((a -> Const a a) -> s -> Const a s) -> a
+s ^. l = getConst (l Const s)
+
+-- Lens over
+over :: ((a -> Identity a) -> s -> Identity s) -> (a -> a) -> s -> s
+over l f s = runIdentity (l (Identity . f) s)
 
 -- Simple lens setter (avoids full lens dependency)
 set :: ((a -> Identity a) -> s -> Identity s) -> a -> s -> s
