@@ -31,8 +31,7 @@ data JwtConfig = JwtConfig
   deriving (Show, Generic, FromDhall)
 
 data Config = Config
-  { serverPath :: Text,
-    port       :: Natural,
+  { port       :: Natural,
     database   :: DatabaseConfig,
     organizers :: [Organizer],
     jwt        :: JwtConfig
