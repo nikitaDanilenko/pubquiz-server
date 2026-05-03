@@ -39,11 +39,12 @@ import           Db.Util                     (runDb)
 import           Servant
 import           Servant.Auth.Server
 
--- Workaround: "Post '[JSON] NoContent" is fine API-wise,
--- but yields a JSON response with an empty body and no schema in the OpenAPI,
--- and that in turn may not be processed correctly.
--- The custom verb approach resolves this issue.
-type Post204 = Verb 'POST 204 '[JSON] NoContent
+-- Workaround: "Post '[JSON] NoContent" is returns a 200 code, but we want 204.
+-- API-wise this solution is already good enough, but the OpenAPI specification
+-- will still create a JSON response with an empty body, and no schema.
+-- OpenAPI generators may not handle this correctly,
+-- so we will address the issue by manually editing the generated OpenAPI specification.
+type Post204 = Verb 'POST 204 '[] NoContent
 
 -- Most bodies are empty, because these are the domain actions.
 type BackOfficeRoutes =
