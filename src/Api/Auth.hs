@@ -20,8 +20,8 @@ import           Data.Time              (NominalDiffTime)
 import           GHC.Generics           (Generic)
 import           Servant                (Handler, Header, Headers, JSON,
                                          NoContent (..), Post, Proxy (..),
-                                         ReqBody, Server, err401, err500,
-                                         throwError, (:>))
+                                         ReqBody, Server, StdMethod (POST),
+                                         Verb, err401, err500, throwError, (:>))
 import           Servant.Auth.Server    (CookieSettings, JWTSettings, SetCookie,
                                          acceptLogin)
 
@@ -34,8 +34,10 @@ data LoginRequest = LoginRequest
 -- Auth Cookie + CSRF cookie
 type LoginHeaders = '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie]
 
+-- The response type is explicit, because we need the same workaround as in BackOfficeApi for the OpenAPI generation.
+-- At the same time, we need to have the headers in the type, too.
 type AuthApi =
-  "backoffice" :> "login" :> ReqBody '[JSON] LoginRequest :> Post '[JSON] (Headers LoginHeaders NoContent)
+  "backoffice" :> "login" :> ReqBody '[JSON] LoginRequest :> Verb 'POST 204 '[JSON] (Headers LoginHeaders NoContent)
 
 authApi :: Proxy AuthApi
 authApi = Proxy
