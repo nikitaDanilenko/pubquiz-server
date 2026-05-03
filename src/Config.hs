@@ -30,11 +30,18 @@ data JwtConfig = JwtConfig
   }
   deriving (Show, Generic, FromDhall)
 
+data CookieConfig = CookieConfig
+  { secure   :: Bool,
+    sameSite :: Text  -- "strict", "lax", or "none"
+  }
+  deriving (Show, Generic, FromDhall)
+
 data Config = Config
   { port       :: Natural,
     database   :: DatabaseConfig,
     organizers :: [Organizer],
-    jwt        :: JwtConfig
+    jwt        :: JwtConfig,
+    cookie     :: CookieConfig
   }
   deriving (Show, Generic, FromDhall)
 

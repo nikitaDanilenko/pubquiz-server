@@ -22,9 +22,9 @@ type Api =
 api :: Proxy Api
 api = Proxy
 
-server :: Pool SqlBackend -> [Organizer] -> JWTSettings -> NominalDiffTime -> Server Api
-server pool organizers jwtSettings jwtExpiration =
+server :: Pool SqlBackend -> [Organizer] -> CookieSettings -> JWTSettings -> NominalDiffTime -> Server Api
+server pool organizers cookieSettings jwtSettings jwtExpiration =
   openApiServer
     :<|> publicServer pool
     :<|> backOfficeServer pool
-    :<|> authServer organizers jwtSettings jwtExpiration
+    :<|> authServer organizers cookieSettings jwtSettings jwtExpiration

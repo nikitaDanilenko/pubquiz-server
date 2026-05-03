@@ -17,11 +17,17 @@ let JwtConfig =
       , expirationSeconds : Natural
       }
 
+let CookieConfig =
+      { secure : Bool
+      , sameSite : Text
+      }
+
 let Config =
       { port : Natural
       , database : DatabaseConfig
       , organizers : List Organizer
       , jwt : JwtConfig
+      , cookie : CookieConfig
       }
 
 let config : Config =
@@ -46,6 +52,10 @@ let config : Config =
       , jwt =
           { secret = env:JWT_SECRET as Text
           , expirationSeconds = env:JWT_EXPIRATION_SECONDS
+          }
+      , cookie =
+          { secure = env:COOKIE_SECURE ? True
+          , sameSite = env:COOKIE_SAME_SITE as Text ? "strict"
           }
       }
 
