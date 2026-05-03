@@ -39,27 +39,23 @@ import           Db.Util                     (runDb)
 import           Servant
 import           Servant.Auth.Server
 
--- Commands (domain actions)
--- POST /backoffice                         → create quiz
--- POST /backoffice/:id/change-settings     → change quiz settings (name, place, date)
--- POST /backoffice/:id/add-teams           → add teams
--- POST /backoffice/:id/record-round-scores → record scores for a round
--- POST /backoffice/:id/correct-score       → fix a single score entry
--- POST /backoffice/:id/rename-team         → rename a team
--- POST /backoffice/:id/set-team-active     → activate/deactivate team
--- POST /backoffice/:id/lock                → lock quiz
--- POST /backoffice/:id/unlock              → unlock quiz
+-- Workaround: "Post '[JSON] NoContent" is fine API-wise,
+-- but yields a JSON response with an empty body and no schema in the OpenAPI,
+-- and that in turn may not be processed correctly.
+-- The custom verb approach resolves this issue.
+type Post204 = Verb 'POST 204 '[JSON] NoContent
 
+-- Most bodies are empty, because these are the domain actions.
 type BackOfficeRoutes =
   ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
-    :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] ChangeSettingsCommand :> Post '[JSON] NoContent
-    :<|> Capture "quizId" QuizId :> "add-teams" :> ReqBody '[JSON] AddTeamsCommand :> Post '[JSON] NoContent
-    :<|> Capture "quizId" QuizId :> "record-round-scores" :> ReqBody '[JSON] RecordRoundScoresCommand :> Post '[JSON] NoContent
-    :<|> Capture "quizId" QuizId :> "correct-score" :> ReqBody '[JSON] CorrectScoreCommand :> Post '[JSON] NoContent
-    :<|> Capture "quizId" QuizId :> "rename-team" :> ReqBody '[JSON] RenameTeamCommand :> Post '[JSON] NoContent
-    :<|> Capture "quizId" QuizId :> "set-team-active" :> ReqBody '[JSON] SetTeamActiveCommand :> Post '[JSON] NoContent
-    :<|> Capture "quizId" QuizId :> "lock" :> Post '[JSON] NoContent
-    :<|> Capture "quizId" QuizId :> "unlock" :> Post '[JSON] NoContent
+    :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] ChangeSettingsCommand :> Post204
+    :<|> Capture "quizId" QuizId :> "add-teams" :> ReqBody '[JSON] AddTeamsCommand :> Post204
+    :<|> Capture "quizId" QuizId :> "record-round-scores" :> ReqBody '[JSON] RecordRoundScoresCommand :> Post204
+    :<|> Capture "quizId" QuizId :> "correct-score" :> ReqBody '[JSON] CorrectScoreCommand :> Post204
+    :<|> Capture "quizId" QuizId :> "rename-team" :> ReqBody '[JSON] RenameTeamCommand :> Post204
+    :<|> Capture "quizId" QuizId :> "set-team-active" :> ReqBody '[JSON] SetTeamActiveCommand :> Post204
+    :<|> Capture "quizId" QuizId :> "lock" :> Post204
+    :<|> Capture "quizId" QuizId :> "unlock" :> Post204
 
 type BackOfficeApi = "backoffice" :> Auth '[Cookie, JWT] AuthenticatedUser :> BackOfficeRoutes
 
