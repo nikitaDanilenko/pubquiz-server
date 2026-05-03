@@ -46,28 +46,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Haskell
-        uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2.11.0
-        with:
-          ghc-version: ""
-          enable-stack: true
-          stack-version: "latest"
-
-      - name: Cache dependencies
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |
-            ~/.stack
-            .stack-work
-          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-stack-
-
-      - name: Install dependencies
-        run: stack build --only-dependencies --test --fast
-
       - name: Build and test
-        run: stack test --fast
+        uses: freckle/stack-action@acc59ce470bb6f7b20e1469d6c520a1b27a36818 # v5.7.17
+        with:
+          stack-build-arguments: --fast --no-haddock --no-library-profiling
+          cache-save-always: true
 
   validate_templates:
     name: Validate Helm Templates
