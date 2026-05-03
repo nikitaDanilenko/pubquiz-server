@@ -13,8 +13,7 @@ module Api.OpenApi
   , openApiServer
   ) where
 
-import           Api.Auth              (AuthApi, LoginRequest,
-                                        LoginResponse (..))
+import           Api.Auth              (AuthApi, LoginRequest)
 import           Api.BackOffice.Routes (BackOfficeApi)
 import           Api.BackOffice.Types  (AddTeamsCommand, AuthenticatedUser (..),
                                         ChangeSettingsCommand,
@@ -138,7 +137,6 @@ instance ToSchema SomeQuiz where
 
 -- Auth types
 instance ToSchema LoginRequest
-instance ToSchema LoginResponse
 instance ToSchema AuthenticatedUser
 
 -- BackOffice command types

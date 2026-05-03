@@ -12,18 +12,18 @@ import           Config                 (Organizer (..))
 import           Control.Monad          (unless)
 import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt          (validatePassword)
-import           Data.Aeson             (FromJSON, ToJSON)
-import qualified Data.ByteString.Lazy   as LBS
+import           Data.Aeson             (FromJSON)
 import           Data.List              (find)
 import           Data.Text              (Text)
-import           Data.Text.Encoding     (decodeUtf8, encodeUtf8)
-import           Data.Time              (NominalDiffTime, addUTCTime,
-                                         getCurrentTime)
+import           Data.Text.Encoding     (encodeUtf8)
+import           Data.Time              (NominalDiffTime)
 import           GHC.Generics           (Generic)
-import           Servant                (Handler, JSON, Post, Proxy (..),
+import           Servant                (Handler, Header, Headers, JSON,
+                                         NoContent (..), Post, Proxy (..),
                                          ReqBody, Server, err401, err500,
                                          throwError, (:>))
-import           Servant.Auth.Server    (JWTSettings, makeJWT)
+import           Servant.Auth.Server    (CookieSettings, JWTSettings, SetCookie,
+                                         acceptLogin)
 
 data LoginRequest = LoginRequest
   { username :: Text
@@ -31,13 +31,11 @@ data LoginRequest = LoginRequest
   }
   deriving (Show, Eq, Generic, FromJSON)
 
-newtype LoginResponse = LoginResponse
-  { token :: Text
-  }
-  deriving (Show, Eq, Generic, ToJSON)
+-- Auth Cookie + CSRF cookie
+type LoginHeaders = '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie]
 
 type AuthApi =
-  "backoffice" :> "login" :> ReqBody '[JSON] LoginRequest :> Post '[JSON] LoginResponse
+  "backoffice" :> "login" :> ReqBody '[JSON] LoginRequest :> Post '[JSON] (Headers LoginHeaders NoContent)
 
 authApi :: Proxy AuthApi
 authApi = Proxy
@@ -46,17 +44,13 @@ verifyPassword :: Text -> Text -> Bool
 verifyPassword plaintext hash =
   validatePassword (encodeUtf8 hash) (encodeUtf8 plaintext)
 
--- Login handler
-authServer :: [Organizer] -> JWTSettings -> NominalDiffTime -> Server AuthApi
-authServer organizers jwtSettings expirationSeconds = login
+authServer :: [Organizer] -> CookieSettings -> JWTSettings -> NominalDiffTime -> Server AuthApi
+authServer organizers cookieSettings jwtSettings _expirationSeconds = login
  where
-  login :: LoginRequest -> Handler LoginResponse
+  login :: LoginRequest -> Handler (Headers LoginHeaders NoContent)
   login req = do
     organizer <- maybe (throwError err401) pure $ find (\o -> o.name == req.username) organizers
     unless (verifyPassword req.password organizer.passwordHash) $ throwError err401
-    now <- liftIO getCurrentTime
-    let expiry = addUTCTime expirationSeconds now
-        user = AuthenticatedUser { isAdmin = organizer.isAdmin }
-    tokenCandidate <- liftIO $ makeJWT user jwtSettings (Just expiry)
-    token <- either (const $ throwError err500) pure tokenCandidate
-    pure $ LoginResponse (decodeUtf8 $ LBS.toStrict token)
+    let user = AuthenticatedUser { isAdmin = organizer.isAdmin }
+    applyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings user
+    maybe (throwError err500) (\addCookies -> pure $ addCookies NoContent) applyCookies

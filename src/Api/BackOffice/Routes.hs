@@ -61,8 +61,7 @@ type BackOfficeRoutes =
     :<|> Capture "quizId" QuizId :> "lock" :> Post '[JSON] NoContent
     :<|> Capture "quizId" QuizId :> "unlock" :> Post '[JSON] NoContent
 
--- Wrap routes with JWT authentication
-type BackOfficeApi = "backoffice" :> Auth '[JWT] AuthenticatedUser :> BackOfficeRoutes
+type BackOfficeApi = "backoffice" :> Auth '[Cookie, JWT] AuthenticatedUser :> BackOfficeRoutes
 
 backOfficeApi :: Proxy BackOfficeApi
 backOfficeApi = Proxy

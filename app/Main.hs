@@ -10,13 +10,15 @@ import           Control.Monad.Reader        (runReaderT)
 import           Data.Pool                   (Pool, withResource)
 import           Data.Text                   (pack, unpack)
 import           Data.Text.Encoding          (encodeUtf8)
-import           Data.Time                   (secondsToNominalDiffTime)
+import           Data.Time                   (nominalDiffTimeToSeconds,
+                                              secondsToDiffTime,
+                                              secondsToNominalDiffTime)
 import           Database.Persist.Postgresql (createPostgresqlPool)
 import           Database.Persist.Sql        (SqlBackend, runMigration)
 import           Db.Schema                   (migrateAll)
 import           Network.Wai.Handler.Warp    (run)
 import           Servant                     (Context (..), serveWithContext)
-import           Servant.Auth.Server         (CookieSettings, JWTSettings,
+import           Servant.Auth.Server         (CookieSettings (..),
                                               defaultCookieSettings,
                                               defaultJWTSettings, fromSecret)
 
@@ -32,12 +34,13 @@ main = do
   let jwtKey = fromSecret (encodeUtf8 config.jwt.secret)
       jwtSettings = defaultJWTSettings jwtKey
       jwtExpiration = secondsToNominalDiffTime (fromIntegral config.jwt.expirationSeconds)
-      cookieSettings = defaultCookieSettings
+      cookieMaxAgeSeconds = floor $ nominalDiffTimeToSeconds jwtExpiration
+      cookieSettings = defaultCookieSettings { cookieMaxAge = Just $ secondsToDiffTime cookieMaxAgeSeconds }
       ctx = cookieSettings :. jwtSettings :. EmptyContext
       appPort = fromIntegral config.port
 
   putStrLn $ unwords ["Starting server on port", show appPort]
-  run appPort $ serveWithContext api ctx (server pool config.organizers jwtSettings jwtExpiration)
+  run appPort $ serveWithContext api ctx (server pool config.organizers cookieSettings jwtSettings jwtExpiration)
 
 createPool :: DatabaseConfig -> IO (Pool SqlBackend)
 createPool dbConfig = runStdoutLoggingT $ do
