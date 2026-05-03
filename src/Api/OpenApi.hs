@@ -66,7 +66,7 @@ instance HasOpenApi api => HasOpenApi (Auth auths user :> api) where
 type OpenApiApi = "openapi.json" :> Get '[JSON] Value
 
 openApiServer :: Server OpenApiApi
-openApiServer = pure $ cleanMediaTypes $ toJSON openApiSpec
+openApiServer = pure $ cleanMediaTypes $ clean204Responses $ toJSON openApiSpec
 
 -- Combined API type for schema generation (excluding OpenAPI endpoint itself)
 type DocumentedApi = PublicApi :<|> BackOfficeApi :<|> AuthApi
@@ -112,6 +112,17 @@ cleanMediaTypes (Object obj) = Object $ KM.mapKeyVal cleanKey cleanMediaTypes ob
       | otherwise = k
 cleanMediaTypes (Array arr) = Array $ fmap cleanMediaTypes arr
 cleanMediaTypes v = v
+
+-- Remove content from 204 responses: NoContent should have no body
+clean204Responses :: Value -> Value
+clean204Responses (Object obj) =
+  case KM.lookup "204" obj of
+    Just (Object response) ->
+      let cleanedResponse = Object $ KM.delete "content" response
+      in Object $ KM.insert "204" cleanedResponse $ KM.mapKeyVal id clean204Responses obj
+    _ -> Object $ KM.mapKeyVal id clean204Responses obj
+clean204Responses (Array arr) = Array $ fmap clean204Responses arr
+clean204Responses v = v
 
 -- ToSchema instances for newtypes (delegate to inner type's schema)
 instance ToSchema QuizName where
