@@ -44,7 +44,7 @@ import           Servant.Auth.Server
 -- will still create a JSON response with an empty body, and no schema.
 -- OpenAPI generators may not handle this correctly,
 -- so we will address the issue by manually editing the generated OpenAPI specification.
-type Post204 = Verb 'POST 204 '[] NoContent
+type Post204 = Verb 'POST 204 '[JSON] NoContent
 
 -- Most bodies are empty, because these are the domain actions.
 type BackOfficeRoutes =
