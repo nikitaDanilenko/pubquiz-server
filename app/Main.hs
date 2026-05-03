@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE OverloadedStrings   #-}
 
 module Main where
 
@@ -60,7 +61,6 @@ createPool dbConfig = runStdoutLoggingT $ do
   createPostgresqlPool (encodeUtf8 $ pack connStr) 10
 
 parseSameSite :: Text -> SameSite
-parseSameSite "strict" = SameSiteStrict
-parseSameSite "lax"    = SameSiteLax
-parseSameSite "none"   = SameSiteNone
-parseSameSite _        = SameSiteStrict
+parseSameSite "lax"  = SameSiteLax
+parseSameSite "none" = AnySite
+parseSameSite _      = SameSiteStrict
