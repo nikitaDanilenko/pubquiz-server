@@ -42,6 +42,7 @@ main = do
         { cookieMaxAge = Just $ secondsToDiffTime cookieMaxAgeSeconds
         , cookieIsSecure = if config.cookie.secure then Secure else NotSecure
         , cookieSameSite = parseSameSite config.cookie.sameSite
+        , cookieXsrfSetting = Nothing
         }
       ctx = cookieSettings :. jwtSettings :. EmptyContext
       appPort = fromIntegral config.port
