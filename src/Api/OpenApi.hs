@@ -78,18 +78,31 @@ openApiSpec =
     & set (OpenApi.info . OpenApi.title) "PubQuiz API"
     & set (OpenApi.info . OpenApi.version) "1.0"
     & set (OpenApi.components . OpenApi.securitySchemes) securitySchemes
-    & over OpenApi.allOperations addSecurityToBackOffice
+    & over OpenApi.paths addSecurityToBackOfficePaths
 
 securitySchemes :: OpenApi.SecurityDefinitions
 securitySchemes = OpenApi.SecurityDefinitions $ InsOrd.fromList
   [("cookieAuth", SecurityScheme (SecuritySchemeApiKey (OpenApi.ApiKeyParams "JWT-Cookie" OpenApi.ApiKeyCookie)) Nothing)]
 
-addSecurityToBackOffice :: OpenApi.Operation -> OpenApi.Operation
-addSecurityToBackOffice op =
-  case op ^. OpenApi.operationId of
-    Just opId | "backoffice" `T.isPrefixOf` opId && not ("login" `T.isInfixOf` opId) ->
-      op & set OpenApi.security [SecurityRequirement $ InsOrd.singleton "cookieAuth" []]
-    _ -> op
+cookieAuthSecurity :: [SecurityRequirement]
+cookieAuthSecurity = [SecurityRequirement $ InsOrd.singleton "cookieAuth" []]
+
+addSecurityToBackOfficePaths :: InsOrd.InsOrdHashMap FilePath OpenApi.PathItem -> InsOrd.InsOrdHashMap FilePath OpenApi.PathItem
+addSecurityToBackOfficePaths = InsOrd.mapWithKey addSecurityIfBackOffice
+  where
+    addSecurityIfBackOffice :: FilePath -> OpenApi.PathItem -> OpenApi.PathItem
+    addSecurityIfBackOffice path item
+      | "/backoffice" `T.isPrefixOf` T.pack path && "/backoffice/login" /= path =
+          item { OpenApi._pathItemPost = fmap addSecurity (OpenApi._pathItemPost item)
+               , OpenApi._pathItemGet = fmap addSecurity (OpenApi._pathItemGet item)
+               , OpenApi._pathItemPut = fmap addSecurity (OpenApi._pathItemPut item)
+               , OpenApi._pathItemDelete = fmap addSecurity (OpenApi._pathItemDelete item)
+               , OpenApi._pathItemPatch = fmap addSecurity (OpenApi._pathItemPatch item)
+               }
+      | otherwise = item
+
+    addSecurity :: OpenApi.Operation -> OpenApi.Operation
+    addSecurity = set OpenApi.security cookieAuthSecurity
 
 -- Lens getter
 (^.) :: s -> ((a -> Const a a) -> s -> Const a s) -> a
