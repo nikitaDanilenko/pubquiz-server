@@ -34,16 +34,13 @@ import           Data.Aeson                 (ToJSON (..), Value (..))
 import qualified Data.Aeson.Key             as Key
 import qualified Data.Aeson.KeyMap          as KM
 import           Data.Function              ((&))
-import           Data.Functor.Const         (Const (..))
+import qualified Data.Functor.Const         as Const
 import           Data.Functor.Identity      (Identity (..))
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
-import           Data.OpenApi               (HasComponents (..), HasSchema (..),
-                                             HasSchemas (..), HasSecurity (..),
-                                             OpenApi, SecurityRequirement (..),
-                                             SecurityScheme (..),
-                                             SecuritySchemeType (..),
-                                             ToParamSchema (..), ToSchema,
-                                             declareNamedSchema,
+import           Data.OpenApi               (HasDescription (..),
+                                             HasSchema (..), HasSchemas (..),
+                                             OpenApi, ToParamSchema (..),
+                                             ToSchema, declareNamedSchema,
                                              declareSchemaRef,
                                              genericDeclareNamedSchema)
 import qualified Data.OpenApi               as OpenApi
@@ -77,36 +74,36 @@ openApiSpec =
   toOpenApi (Proxy :: Proxy DocumentedApi)
     & set (OpenApi.info . OpenApi.title) "PubQuiz API"
     & set (OpenApi.info . OpenApi.version) "1.0"
-    & set (OpenApi.components . OpenApi.securitySchemes) securitySchemes
-    & over OpenApi.paths addSecurityToBackOfficePaths
+    & over OpenApi.paths addAuthDescriptionToBackOffice
 
-securitySchemes :: OpenApi.SecurityDefinitions
-securitySchemes = OpenApi.SecurityDefinitions $ InsOrd.fromList
-  [("cookieAuth", SecurityScheme (SecuritySchemeApiKey (OpenApi.ApiKeyParams "JWT-Cookie" OpenApi.ApiKeyCookie)) Nothing)]
-
-cookieAuthSecurity :: [SecurityRequirement]
-cookieAuthSecurity = [SecurityRequirement $ InsOrd.singleton "cookieAuth" []]
-
-addSecurityToBackOfficePaths :: InsOrd.InsOrdHashMap FilePath OpenApi.PathItem -> InsOrd.InsOrdHashMap FilePath OpenApi.PathItem
-addSecurityToBackOfficePaths = InsOrd.mapWithKey addSecurityIfBackOffice
+-- Add auth requirement description to back office routes
+addAuthDescriptionToBackOffice :: InsOrd.InsOrdHashMap FilePath OpenApi.PathItem -> InsOrd.InsOrdHashMap FilePath OpenApi.PathItem
+addAuthDescriptionToBackOffice = InsOrd.mapWithKey addDescIfBackOffice
   where
-    addSecurityIfBackOffice :: FilePath -> OpenApi.PathItem -> OpenApi.PathItem
-    addSecurityIfBackOffice path item
+    addDescIfBackOffice :: FilePath -> OpenApi.PathItem -> OpenApi.PathItem
+    addDescIfBackOffice path item
       | "/backoffice" `T.isPrefixOf` T.pack path && "/backoffice/login" /= path =
-          item { OpenApi._pathItemPost = fmap addSecurity (OpenApi._pathItemPost item)
-               , OpenApi._pathItemGet = fmap addSecurity (OpenApi._pathItemGet item)
-               , OpenApi._pathItemPut = fmap addSecurity (OpenApi._pathItemPut item)
-               , OpenApi._pathItemDelete = fmap addSecurity (OpenApi._pathItemDelete item)
-               , OpenApi._pathItemPatch = fmap addSecurity (OpenApi._pathItemPatch item)
+          item { OpenApi._pathItemPost = fmap addAuthDescription (OpenApi._pathItemPost item)
+               , OpenApi._pathItemGet = fmap addAuthDescription (OpenApi._pathItemGet item)
+               , OpenApi._pathItemPut = fmap addAuthDescription (OpenApi._pathItemPut item)
+               , OpenApi._pathItemDelete = fmap addAuthDescription (OpenApi._pathItemDelete item)
+               , OpenApi._pathItemPatch = fmap addAuthDescription (OpenApi._pathItemPatch item)
                }
       | otherwise = item
 
-    addSecurity :: OpenApi.Operation -> OpenApi.Operation
-    addSecurity = set OpenApi.security cookieAuthSecurity
+    addAuthDescription :: OpenApi.Operation -> OpenApi.Operation
+    addAuthDescription op =
+      let existing = op ^. OpenApi.description
+          authNote = "**Requires authentication.** Call `/backoffice/login` first; the returned cookie is sent automatically."
+          newDesc = case existing of
+            Nothing  -> Just authNote
+            Just ""  -> Just authNote
+            Just old -> Just (authNote <> "\n\n" <> old)
+      in set OpenApi.description newDesc op
 
 -- Lens getter
-(^.) :: s -> ((a -> Const a a) -> s -> Const a s) -> a
-s ^. l = getConst (l Const s)
+(^.) :: s -> ((a -> Const.Const a a) -> s -> Const.Const a s) -> a
+(^.) s l = Const.getConst (l Const.Const s)
 
 -- Lens over
 over :: ((a -> Identity a) -> s -> Identity s) -> (a -> a) -> s -> s
