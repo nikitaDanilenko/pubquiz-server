@@ -48,7 +48,8 @@ type Post204 = Verb 'POST 204 '[JSON] NoContent
 
 -- Most bodies are empty, because these are the domain actions.
 type BackOfficeRoutes =
-  ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
+  "whoami" :> Get '[JSON] AuthenticatedUser
+    :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
     :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] ChangeSettingsCommand :> Post204
     :<|> Capture "quizId" QuizId :> "add-teams" :> ReqBody '[JSON] AddTeamsCommand :> Post204
     :<|> Capture "quizId" QuizId :> "record-round-scores" :> ReqBody '[JSON] RecordRoundScoresCommand :> Post204
@@ -67,7 +68,8 @@ backOfficeApi = Proxy
 
 backOfficeServer :: Pool SqlBackend -> AuthResult AuthenticatedUser -> Server BackOfficeRoutes
 backOfficeServer pool (Authenticated user) =
-  createQuiz pool
+  whoami user
+    :<|> createQuiz pool
     :<|> changeSettings pool
     :<|> addTeams pool
     :<|> recordRoundScores pool
@@ -77,6 +79,9 @@ backOfficeServer pool (Authenticated user) =
     :<|> lockQuiz pool
     :<|> unlockQuiz pool user
 backOfficeServer _ _ = throwAll err401
+
+whoami :: AuthenticatedUser -> Handler AuthenticatedUser
+whoami = pure
 
 createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler (Quiz 'Active)
 createQuiz pool request = do

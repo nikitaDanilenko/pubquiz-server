@@ -31,7 +31,7 @@ data LoginRequest = LoginRequest
   }
   deriving (Show, Eq, Generic, FromJSON)
 
--- Auth Cookie + CSRF cookie
+-- Auth Cookie (CSRF disabled via cookieXsrfSetting = Nothing)
 type LoginHeaders = '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie]
 
 -- The response type is explicit, because we need the same workaround as in BackOfficeApi for the OpenAPI generation.
