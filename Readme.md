@@ -61,3 +61,8 @@ However, the latest rewrite (April/May 2026) focuses on a learning experience.
    The dependencies are kept as LTS focused as possible.
    Also, there is an active effort to keep build-heavy libraries out of the project,
    e.g. `lens` is intentionally not used, because the few helpful lenses can be much more easily implemented by hand.
+3. Originally, the intention was to have one central OpenAPI specification, and have both the back end and the front end generate types and functions from it.
+   However, the OpenAPI generation from `servant` sounded interesting enough, that I wanted to test it.
+   There are some kinks here and there, for example, the content type `application/json` is suffixed with `; charset=utf-8` in the generated OpenAPI specification,
+   which presents a problem for OpenAPI generators that are very strict, like `elm-open-api-cli`.
+   Still, the "back end first" approach sounds interesting, and works generally well.
