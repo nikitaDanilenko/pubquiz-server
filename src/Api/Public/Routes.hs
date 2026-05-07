@@ -8,8 +8,7 @@ module Api.Public.Routes where
 import           Api.FromDb                  (dbRoundToRound, dbToQuizSummary,
                                               dbToScoreBoard, quizToIdentifier)
 import           Api.ToDb                    (quizIdToKey)
-import           Api.Types                   (QuizId (..), QuizSummary,
-                                              SomeQuiz, fromActivity)
+import           Api.Types                   (Quiz, QuizId (..), QuizSummary)
 import qualified Api.Types                   as Api
 import           Control.Monad.Trans.Class   (lift)
 import           Control.Monad.Trans.Maybe   (MaybeT (..))
@@ -29,7 +28,7 @@ import           Servant
 type PublicApi =
   "public" :>
     ( Get '[JSON] [QuizSummary]
-        :<|> Capture "quizId" QuizId :> Get '[JSON] SomeQuiz
+        :<|> Capture "quizId" QuizId :> Get '[JSON] Quiz
     )
 
 publicApi :: Proxy PublicApi
@@ -47,7 +46,7 @@ listQuizzes pool = runDb pool $ do
   quizEntities <- selectList [] []
   pure $ map dbToQuizSummary quizEntities
 
-getQuiz :: Pool SqlBackend -> QuizId -> Handler SomeQuiz
+getQuiz :: Pool SqlBackend -> QuizId -> Handler Quiz
 getQuiz pool quizId = runDb pool statement >>= maybe (throwError err404) pure
  where
   dbQuizId = quizIdToKey quizId
@@ -57,11 +56,12 @@ getQuiz pool quizId = runDb pool statement >>= maybe (throwError err404) pure
     roundEntities <- lift $ selectList [Db.RoundQuizId ==. dbQuizId] []
     scoreEntities <- lift $ selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
 
-    let quiz = Api.Quiz
+    pure $ Api.Quiz
+      { Api.summary = Api.QuizSummary
           { Api.quizId = quizId
           , Api.identifier = quizToIdentifier quizRecord
-          , Api.rounds = map (dbRoundToRound . entityVal) roundEntities
-          , Api.scoreBoard = dbToScoreBoard teamEntities scoreEntities
+          , Api.active = Db.quizActive quizRecord
           }
-
-    pure $ fromActivity (Db.quizActive quizRecord) quiz
+      , Api.rounds = map (dbRoundToRound . entityVal) roundEntities
+      , Api.scoreBoard = dbToScoreBoard teamEntities scoreEntities
+      }

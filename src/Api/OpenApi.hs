@@ -26,9 +26,8 @@ import           Api.Public.Routes          (PublicApi)
 import           Api.Types                  (NumberOfQuestions, Place, Points,
                                              Quiz, QuizId, QuizIdentifier,
                                              QuizName, QuizSettings,
-                                             QuizState (..), QuizSummary, Round,
-                                             RoundNumber, ScoreBoard,
-                                             ScoreEntry, SomeQuiz (..), Team,
+                                             QuizSummary, Round, RoundNumber,
+                                             ScoreBoard, ScoreEntry, Team,
                                              TeamName, TeamNumber)
 import           Data.Aeson                 (ToJSON (..), Value (..))
 import qualified Data.Aeson.Key             as Key
@@ -174,17 +173,7 @@ instance ToSchema ScoreEntry
 instance ToSchema ScoreBoard where
   declareNamedSchema = genericDeclareNamedSchema OpenApi.defaultSchemaOptions
 
--- Quiz has a phantom type parameter, but the JSON is the same regardless.
--- We define instances for the specific states.
-instance ToSchema (Quiz 'Active) where
-  declareNamedSchema = genericDeclareNamedSchema OpenApi.defaultSchemaOptions
-
-instance ToSchema (Quiz 'Locked) where
-  declareNamedSchema = genericDeclareNamedSchema OpenApi.defaultSchemaOptions
-
--- SomeQuiz is a GADT that wraps Quiz - schema is the same as Quiz
-instance ToSchema SomeQuiz where
-  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Quiz 'Active))
+instance ToSchema Quiz
 
 -- Auth types
 instance ToSchema LoginRequest
