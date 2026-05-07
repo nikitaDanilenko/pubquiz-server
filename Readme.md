@@ -42,4 +42,22 @@ but deletion can be usually handled manually by someone with access to the datab
 
 1. There is a [deployment directory](./deployment) in this repository.
    The deployment option relies on Helm templates,
-   and is a suggestion based on certain assumptions
+   and is a suggestion based on certain assumptions.
+
+   In particular, there are no default values for simplicity -- there can be one deployment file for the entire
+   application (front end and back end), or multiple files, depending on the deployment style.
+
+## Concept
+
+The project is essentially a CRUD application (without the delete option).
+However, the latest rewrite (April/May 2026) focuses on a learning experience.
+
+1. Focus on Domain-Driven Design.
+   The endpoints represent conceptual operations, rather than SQL counterparts.
+
+   However, since there are no actual computations anywhere in the back end,
+   the domain is the API itself.
+2. Focus on a compatibility.
+   The dependencies are kept as LTS focused as possible.
+   Also, there is an active effort to keep build-heavy libraries out of the project,
+   e.g. `lens` is intentionally not used, because the few helpful lenses can be much more easily implemented by hand.
