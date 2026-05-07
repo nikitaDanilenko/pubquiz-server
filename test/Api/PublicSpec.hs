@@ -47,9 +47,8 @@ data RoundResponse = RoundResponse
   deriving (Show, Eq, Generic, FromJSON)
 
 data QuizResponse = QuizResponse
-  { quizId     :: Int
-  , identifier :: QuizIdentifier
-  , rounds     :: [RoundResponse]
+  { summary :: QuizSummaryResponse
+  , rounds  :: [RoundResponse]
   }
   deriving (Show, Eq, Generic, FromJSON)
 
@@ -68,10 +67,8 @@ toResponseRound round = RoundResponse
   }
 
 toResponseQuiz :: QuizSummary -> QuizResponse
-toResponseQuiz (QuizSummary quizId identifier _) = QuizResponse
-  { quizId = unQuizId quizId
-  , identifier = identifier
-  -- only for testing
+toResponseQuiz quizSummary = QuizResponse
+  { summary = toResponseSummary quizSummary
   , rounds = []
   }
 

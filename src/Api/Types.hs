@@ -1,12 +1,8 @@
-{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE DuplicateRecordFields      #-}
-{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE KindSignatures             #-}
-{-# LANGUAGE RankNTypes                 #-}
 
 module Api.Types where
 
@@ -67,11 +63,15 @@ data QuizSettings = QuizSettings
   }
   deriving (Show, Eq, Generic, FromJSON)
 
-data QuizState = Active | Locked
-
-data Quiz (state :: QuizState) = Quiz
+data QuizSummary = QuizSummary
   { quizId     :: QuizId
   , identifier :: QuizIdentifier
+  , active     :: Bool
+  }
+  deriving (Show, Eq, Generic, ToJSON)
+
+data Quiz = Quiz
+  { summary    :: QuizSummary
   , rounds     :: [Round]
   , scoreBoard :: ScoreBoard
   }
@@ -101,24 +101,5 @@ data ScoreEntry = ScoreEntry
 data ScoreBoard = ScoreBoard
   { teams  :: [Team]
   , scores :: [ScoreEntry]
-  }
-  deriving (Show, Eq, Generic, ToJSON)
-
-data SomeQuiz where
-  SomeActive :: Quiz Active -> SomeQuiz
-  SomeLocked :: Quiz Locked -> SomeQuiz
-
-instance ToJSON SomeQuiz where
-  toJSON (SomeActive quiz) = toJSON quiz
-  toJSON (SomeLocked quiz) = toJSON quiz
-
-fromActivity :: Bool -> (forall state. Quiz state) -> SomeQuiz
-fromActivity True  quiz = SomeActive quiz
-fromActivity False quiz = SomeLocked quiz
-
-data QuizSummary = QuizSummary
-  { quizId     :: QuizId
-  , identifier :: QuizIdentifier
-  , active     :: Bool
   }
   deriving (Show, Eq, Generic, ToJSON)

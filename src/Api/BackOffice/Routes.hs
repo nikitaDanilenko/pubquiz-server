@@ -23,9 +23,10 @@ import           Api.Types                   (Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
-                                              QuizState (..), RoundNumber (..),
-                                              ScoreBoard (..), Team (..),
-                                              TeamName (..), TeamNumber (..))
+                                              QuizSummary (..),
+                                              RoundNumber (..), ScoreBoard (..),
+                                              Team (..), TeamName (..),
+                                              TeamNumber (..))
 import           Control.Monad               (forM, forM_, unless)
 import           Data.List                   (nub)
 import           Data.Maybe                  (isJust)
@@ -49,7 +50,7 @@ type Post204 = Verb 'POST 204 '[JSON] NoContent
 -- Most bodies are empty, because these are the domain actions.
 type BackOfficeRoutes =
   "whoami" :> Get '[JSON] AuthenticatedUser
-    :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] (Quiz 'Active)
+    :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] Quiz
     :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] ChangeSettingsCommand :> Post204
     :<|> Capture "quizId" QuizId :> "add-teams" :> ReqBody '[JSON] AddTeamsCommand :> Post204
     :<|> Capture "quizId" QuizId :> "record-round-scores" :> ReqBody '[JSON] RecordRoundScoresCommand :> Post204
@@ -83,14 +84,17 @@ backOfficeServer _ _ = throwAll err401
 whoami :: AuthenticatedUser -> Handler AuthenticatedUser
 whoami = pure
 
-createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler (Quiz 'Active)
+createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler Quiz
 createQuiz pool request = do
   quizKey <- runDb pool statement
   let initialTeams = [ Team (TeamNumber n) (TeamName "") True | n <- [1 .. request.settings.numberOfTeams] ]
   pure $
     Quiz
-      { quizId = quizKeyToId quizKey
-      , identifier = request.identifier
+      { summary = QuizSummary
+          { quizId = quizKeyToId quizKey
+          , identifier = request.identifier
+          , active = True
+          }
       , rounds = []
       , scoreBoard = ScoreBoard { teams = initialTeams, scores = [] }
       }
