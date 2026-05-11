@@ -4,8 +4,9 @@
 
 module Api.BackOffice.Types where
 
-import           Api.Types           (Points, QuizIdentifier, QuizSettings,
-                                      RoundNumber, TeamName, TeamNumber)
+import           Api.Types           (NumberOfQuestions, Points, QuizIdentifier,
+                                      QuizSettings, RoundNumber, TeamName,
+                                      TeamNumber)
 import           Data.Aeson          (FromJSON, ToJSON)
 import           GHC.Generics        (Generic)
 import           Servant.Auth.Server (FromJWT, ToJWT)
@@ -21,6 +22,17 @@ newtype AuthenticatedUser = AuthenticatedUser
 data QuizMetaData = QuizMetaData
   { identifier :: QuizIdentifier
   , settings   :: QuizSettings
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+data ChangeSettingsCommand = ChangeSettingsCommand
+  { newIdentifier     :: QuizIdentifier
+  , questionsPerRound :: [NumberOfQuestions]
+  }
+  deriving (Show, Eq, Generic, FromJSON)
+
+newtype AddTeamsCommand = AddTeamsCommand
+  { additionalTeams :: Int
   }
   deriving (Show, Eq, Generic, FromJSON)
 
