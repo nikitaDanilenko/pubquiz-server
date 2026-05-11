@@ -16,14 +16,16 @@ import           Api.BackOffice.Types        (AuthenticatedUser (..),
 import           Api.FromDb                  (dbToScoreBoard, quizKeyToId,
                                               quizToIdentifier)
 import           Api.ToDb                    (identifierToQuiz, quizIdToKey,
-                                              teamRoundScoreToDb, teamToDb)
+                                              roundToDb, teamRoundScoreToDb,
+                                              teamToDb)
 import           Api.Types                   (NumberOfQuestions (..),
                                               Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
                                               QuizSummary (..),
-                                              RoundNumber (..), ScoreBoard (..),
+                                              Round (..), RoundNumber (..),
+                                              ScoreBoard (..),
                                               Team (..), TeamName (..),
                                               TeamNumber (..))
 import           Control.Monad               (forM, forM_, unless)
@@ -84,7 +86,10 @@ whoami = pure
 createQuiz :: Pool SqlBackend -> QuizMetaData -> Handler Quiz
 createQuiz pool request = do
   quizKey <- runDb pool statement
-  let initialTeams = [ Team (TeamNumber n) (TeamName "") True | n <- [1 .. request.settings.numberOfTeams] ]
+  let qpr = request.settings.questionsPerRound
+      initialTeams = [ Team (TeamNumber n) (TeamName "") True | n <- [1 .. request.settings.numberOfTeams] ]
+      initialRounds = [ Round (RoundNumber n) (Points (fromIntegral (unNumberOfQuestions q))) q
+                      | (n, q) <- zip [1 ..] qpr ]
   pure $
     Quiz
       { summary = QuizSummary
@@ -92,22 +97,20 @@ createQuiz pool request = do
           , identifier = request.identifier
           , active = True
           }
-      , rounds = []
+      , rounds = initialRounds
       , scoreBoard = ScoreBoard { teams = initialTeams, scores = [] }
       }
  where
   statement = do
-    -- Insert quiz record
     quizId <- insert $ identifierToQuiz request.identifier
-
-    -- Insert default teams
-    forM_ [1 .. request.settings.numberOfTeams] $ \num -> do
+    forM_ [1 .. request.settings.numberOfTeams] $ \num ->
       insert $ teamToDb quizId Team
         { number = TeamNumber num
         , name = TeamName ""
         , active = True
         }
-
+    forM_ (zip [1 ..] request.settings.questionsPerRound) $ \(num, nq) ->
+      insert $ roundToDb quizId num nq
     pure quizId
 
 data CommandResult = QuizNotFound | QuizLocked | CommandSuccess
@@ -159,9 +162,13 @@ changeSettings pool quizId cmd = withActiveQuiz pool quizId $ do
 
   roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
   let sortedRounds = sortOn (Db.roundNumber . entityVal) roundEntities
-  forM_ (zip sortedRounds cmd.settings.questionsPerRound) $ \(roundEntity, nq) ->
+      existingCount = length sortedRounds
+      newRounds = cmd.settings.questionsPerRound
+  forM_ (zip sortedRounds newRounds) $ \(roundEntity, nq) ->
     update (entityKey roundEntity)
       [Db.RoundNumberOfQuestions =. fromIntegral (unNumberOfQuestions nq)]
+  forM_ (zip [existingCount + 1 ..] (drop existingCount newRounds)) $ \(num, nq) ->
+    insert $ roundToDb dbQuizId num nq
 
   pure CommandSuccess
 

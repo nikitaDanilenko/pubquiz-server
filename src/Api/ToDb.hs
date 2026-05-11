@@ -4,12 +4,14 @@
 module Api.ToDb
   ( quizIdToKey
   , identifierToQuiz
+  , roundToDb
   , teamToDb
   , teamRoundScoreToDb
   )
 where
 
-import           Api.Types            (Place (..), Points (..), QuizId (..),
+import           Api.Types            (NumberOfQuestions (..), Place (..),
+                                       Points (..), QuizId (..),
                                        QuizIdentifier (..), QuizName (..),
                                        RoundNumber (..), Team (..),
                                        TeamName (..), TeamNumber (..))
@@ -26,6 +28,15 @@ identifierToQuiz ident =
     , Db.quizDate = ident.date
     , Db.quizName = unQuizName ident.name
     , Db.quizActive = True
+    }
+
+roundToDb :: Db.Key Db.Quiz -> Int -> NumberOfQuestions -> Db.Round
+roundToDb quizKey num nq =
+  Db.Round
+    { Db.roundQuizId = quizKey
+    , Db.roundNumber = num
+    , Db.roundReachablePoints = fromIntegral (unNumberOfQuestions nq)
+    , Db.roundNumberOfQuestions = fromIntegral (unNumberOfQuestions nq)
     }
 
 teamRoundScoreToDb :: Db.Key Db.Quiz -> TeamNumber -> RoundNumber -> Points -> Db.TeamRoundScore
