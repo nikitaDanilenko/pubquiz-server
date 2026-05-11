@@ -6,9 +6,7 @@
 
 module Api.BackOffice.Routes where
 
-import           Api.BackOffice.Types        (AddTeamsCommand (..),
-                                              AuthenticatedUser (..),
-                                              ChangeSettingsCommand (..),
+import           Api.BackOffice.Types        (AuthenticatedUser (..),
                                               CorrectScoreCommand (..),
                                               QuizMetaData (..),
                                               RecordRoundScoresCommand (..),
@@ -19,7 +17,8 @@ import           Api.FromDb                  (dbToScoreBoard, quizKeyToId,
                                               quizToIdentifier)
 import           Api.ToDb                    (identifierToQuiz, quizIdToKey,
                                               teamRoundScoreToDb, teamToDb)
-import           Api.Types                   (Place (..), Points (..),
+import           Api.Types                   (NumberOfQuestions (..),
+                                              Place (..), Points (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
@@ -28,7 +27,7 @@ import           Api.Types                   (Place (..), Points (..),
                                               Team (..), TeamName (..),
                                               TeamNumber (..))
 import           Control.Monad               (forM, forM_, unless)
-import           Data.List                   (nub)
+import           Data.List                   (nub, sortOn)
 import           Data.Maybe                  (isJust)
 import           Data.Pool                   (Pool)
 import           Database.Persist            (Entity (..), (=.), (==.))
@@ -51,8 +50,7 @@ type Post204 = Verb 'POST 204 '[JSON] NoContent
 type BackOfficeRoutes =
   "whoami" :> Get '[JSON] AuthenticatedUser
     :<|> ReqBody '[JSON] QuizMetaData :> Post '[JSON] Quiz
-    :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] ChangeSettingsCommand :> Post204
-    :<|> Capture "quizId" QuizId :> "add-teams" :> ReqBody '[JSON] AddTeamsCommand :> Post204
+    :<|> Capture "quizId" QuizId :> "change-settings" :> ReqBody '[JSON] QuizMetaData :> Post204
     :<|> Capture "quizId" QuizId :> "record-round-scores" :> ReqBody '[JSON] RecordRoundScoresCommand :> Post204
     :<|> Capture "quizId" QuizId :> "correct-score" :> ReqBody '[JSON] CorrectScoreCommand :> Post204
     :<|> Capture "quizId" QuizId :> "rename-team" :> ReqBody '[JSON] RenameTeamCommand :> Post204
@@ -72,7 +70,6 @@ backOfficeServer pool (Authenticated user) =
   whoami user
     :<|> createQuiz pool
     :<|> changeSettings pool
-    :<|> addTeams pool
     :<|> recordRoundScores pool
     :<|> correctScore pool
     :<|> renameTeam pool
@@ -130,37 +127,28 @@ withActiveQuiz pool quizId action = do
     QuizLocked     -> throwError err409
     CommandSuccess -> pure NoContent
 
-changeSettings :: Pool SqlBackend -> QuizId -> ChangeSettingsCommand -> Handler NoContent
+changeSettings :: Pool SqlBackend -> QuizId -> QuizMetaData -> Handler NoContent
 changeSettings pool quizId cmd = withActiveQuiz pool quizId $ do
-  update (quizIdToKey quizId)
-    [ Db.QuizName =. unQuizName cmd.newIdentifier.name
-    , Db.QuizPlace =. unPlace cmd.newIdentifier.place
-    , Db.QuizDate =. cmd.newIdentifier.date
-    ]
-  pure CommandSuccess
-
-addTeams :: Pool SqlBackend -> QuizId -> AddTeamsCommand -> Handler NoContent
-addTeams pool quizId cmd = withActiveQuiz pool quizId $ do
   let dbQuizId = quizIdToKey quizId
 
-  -- Find current max team number
-  teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
-  let maxTeamInDb = if null teamEntities
-                    then 0
-                    else maximum $ map (Db.teamNumber . entityVal) teamEntities
+  update dbQuizId
+    [ Db.QuizName =. unQuizName cmd.identifier.name
+    , Db.QuizPlace =. unPlace cmd.identifier.place
+    , Db.QuizDate =. cmd.identifier.date
+    ]
 
-  -- Add new teams
-  forM_ [maxTeamInDb + 1 .. maxTeamInDb + cmd.additionalTeams] $ \num ->
+  teamEntities <- selectList [Db.TeamQuizId ==. dbQuizId] []
+  let maxTeamInDb = if null teamEntities then 0 else maximum $ map (Db.teamNumber . entityVal) teamEntities
+      newTeamCount = cmd.settings.numberOfTeams
+  forM_ [maxTeamInDb + 1 .. newTeamCount] $ \num ->
     insert $ teamToDb dbQuizId Team
       { number = TeamNumber num
       , name = TeamName ""
       , active = True
       }
-
-  -- Add zero scores for new teams in rounds that already have scores
   scoreEntities <- selectList [Db.TeamRoundScoreQuizId ==. dbQuizId] []
   let roundsWithScores = nub $ map (Db.teamRoundScoreRoundNumber . entityVal) scoreEntities
-  forM_ [maxTeamInDb + 1 .. maxTeamInDb + cmd.additionalTeams] $ \teamNum ->
+  forM_ [maxTeamInDb + 1 .. newTeamCount] $ \teamNum ->
     forM_ roundsWithScores $ \roundNum ->
       insert $ Db.TeamRoundScore
         { teamRoundScoreQuizId = dbQuizId
@@ -168,6 +156,12 @@ addTeams pool quizId cmd = withActiveQuiz pool quizId $ do
         , teamRoundScoreRoundNumber = roundNum
         , teamRoundScorePoints = 0
         }
+
+  roundEntities <- selectList [Db.RoundQuizId ==. dbQuizId] []
+  let sortedRounds = sortOn (Db.roundNumber . entityVal) roundEntities
+  forM_ (zip sortedRounds cmd.settings.questionsPerRound) $ \(roundEntity, nq) ->
+    update (entityKey roundEntity)
+      [Db.RoundNumberOfQuestions =. fromIntegral (unNumberOfQuestions nq)]
 
   pure CommandSuccess
 
