@@ -15,9 +15,7 @@ module Api.OpenApi
 
 import           Api.Auth                   (AuthApi, LoginRequest)
 import           Api.BackOffice.Routes      (BackOfficeApi)
-import           Api.BackOffice.Types       (AddTeamsCommand,
-                                             AuthenticatedUser (..),
-                                             ChangeSettingsCommand,
+import           Api.BackOffice.Types       (AuthenticatedUser (..),
                                              CorrectScoreCommand, QuizMetaData,
                                              RecordRoundScoresCommand,
                                              RenameTeamCommand,
@@ -181,8 +179,6 @@ instance ToSchema AuthenticatedUser
 
 -- BackOffice command types
 instance ToSchema QuizMetaData
-instance ToSchema ChangeSettingsCommand
-instance ToSchema AddTeamsCommand
 instance ToSchema TeamScore
 instance ToSchema RecordRoundScoresCommand
 instance ToSchema CorrectScoreCommand

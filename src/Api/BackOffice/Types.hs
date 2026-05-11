@@ -24,16 +24,6 @@ data QuizMetaData = QuizMetaData
   }
   deriving (Show, Eq, Generic, FromJSON)
 
-newtype ChangeSettingsCommand = ChangeSettingsCommand
-  { newIdentifier :: QuizIdentifier
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
-newtype AddTeamsCommand = AddTeamsCommand
-  { additionalTeams :: Int
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
 data TeamScore = TeamScore
   { teamNumber :: TeamNumber
   , points     :: Points
