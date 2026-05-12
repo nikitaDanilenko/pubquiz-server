@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 982835db63e1f7e7ffc2a3a962379c434691514728a8ac9201717fd21744345c
+-- hash: 52f41ecffde012a46040f2572e83bb4708899da9b2c96675ad43809e0521f819
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -95,6 +95,8 @@ executable pubquiz-server
     , persistent
     , persistent-postgresql
     , persistent-template
+    , postgresql-migration
+    , postgresql-simple
     , pubquiz-server
     , resource-pool
     , servant

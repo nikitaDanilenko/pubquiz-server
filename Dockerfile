@@ -32,5 +32,6 @@ WORKDIR /app
 
 COPY --from=builder /app/bin/pubquiz-server /app/pubquiz-server
 COPY --from=builder /app/config /app/config
+COPY --from=builder /app/migrations /app/migrations
 
 CMD ["/app/pubquiz-server"]

@@ -23,9 +23,8 @@ import           Api.Types                   (NumberOfQuestions (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
-                                              QuizSummary (..),
-                                              Round (..), RoundNumber (..),
-                                              ScoreBoard (..),
+                                              QuizSummary (..), Round (..),
+                                              RoundNumber (..), ScoreBoard (..),
                                               Team (..), TeamName (..),
                                               TeamNumber (..))
 import           Control.Monad               (forM, forM_, unless)

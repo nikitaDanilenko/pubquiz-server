@@ -55,6 +55,8 @@ executables:
     source-dirs: app
     dependencies:
       - pubquiz-server
+      - postgresql-migration
+      - postgresql-simple
     ghc-options:
       - -threaded
       - -rtsopts
