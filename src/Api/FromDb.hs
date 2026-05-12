@@ -37,6 +37,7 @@ dbRoundToRound round =
     { number = RoundNumber (Db.roundNumber round)
     , displayMaxPoints = Points (Db.roundReachablePoints round)
     , numberOfQuestions = NumberOfQuestions (fromIntegral $ Db.roundNumberOfQuestions round)
+    , published = Db.roundPublished round
     }
 
 dbTeamToTeam :: Db.Team -> Team

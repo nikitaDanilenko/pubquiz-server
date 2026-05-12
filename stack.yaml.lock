@@ -11,6 +11,13 @@ packages:
       size: 1470
   original:
     hackage: testcontainers-0.5.3.0@sha256:1708ea94f6697b34e4e6621abb61be4418084bd08e5898e38b03c76744473c0a,2563
+- completed:
+    hackage: postgresql-migration-0.2.1.8@sha256:6d395f6529a2d3a811af7209607e9b26350142574ab757a04c67e61f6fe737b2,4502
+    pantry-tree:
+      sha256: 84938c25482440af01693d0a9502f0507387f08079caf4f23069553d2c305435
+      size: 1146
+  original:
+    hackage: postgresql-migration-0.2.1.8
 snapshots:
 - completed:
     sha256: 655e468f774beee1badf07dc4c45fb50288d5c66ce7bef6f487b7f92891a90b0

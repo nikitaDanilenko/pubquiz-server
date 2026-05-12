@@ -45,6 +45,7 @@ Round
   number Int
   reachablePoints Double
   numberOfQuestions Int
+  published Bool
   Primary quizId number
   deriving Show
 TeamRoundScore

@@ -23,9 +23,8 @@ import           Api.Types                   (NumberOfQuestions (..),
                                               Quiz (..), QuizId (..),
                                               QuizIdentifier (..),
                                               QuizName (..), QuizSettings (..),
-                                              QuizSummary (..),
-                                              Round (..), RoundNumber (..),
-                                              ScoreBoard (..),
+                                              QuizSummary (..), Round (..),
+                                              RoundNumber (..), ScoreBoard (..),
                                               Team (..), TeamName (..),
                                               TeamNumber (..))
 import           Control.Monad               (forM, forM_, unless)
@@ -59,6 +58,8 @@ type BackOfficeRoutes =
     :<|> Capture "quizId" QuizId :> "set-team-active" :> ReqBody '[JSON] SetTeamActiveCommand :> Post204
     :<|> Capture "quizId" QuizId :> "lock" :> Post204
     :<|> Capture "quizId" QuizId :> "unlock" :> Post204
+    :<|> Capture "quizId" QuizId :> "publish-round" :> Capture "roundNumber" RoundNumber :> Post204
+    :<|> Capture "quizId" QuizId :> "unpublish-round" :> Capture "roundNumber" RoundNumber :> Post204
 
 type BackOfficeApi = "backoffice" :> Auth '[Cookie, JWT] AuthenticatedUser :> BackOfficeRoutes
 
@@ -78,6 +79,8 @@ backOfficeServer pool (Authenticated user) =
     :<|> setTeamActive pool
     :<|> lockQuiz pool
     :<|> unlockQuiz pool user
+    :<|> publishRound pool
+    :<|> unpublishRound pool
 backOfficeServer _ _ = throwAll err401
 
 whoami :: AuthenticatedUser -> Handler AuthenticatedUser
@@ -88,7 +91,7 @@ createQuiz pool request = do
   quizKey <- runDb pool statement
   let qpr = request.settings.questionsPerRound
       initialTeams = [ Team (TeamNumber n) (TeamName "") True | n <- [1 .. request.settings.numberOfTeams] ]
-      initialRounds = [ Round (RoundNumber n) (Points (fromIntegral (unNumberOfQuestions q))) q
+      initialRounds = [ Round (RoundNumber n) (Points (fromIntegral (unNumberOfQuestions q))) q False
                       | (n, q) <- zip [1 ..] qpr ]
   pure $
     Quiz
@@ -208,6 +211,18 @@ setQuizActiveHandler pool quizId active = do
     pure (isJust maybeQuiz)
   unless found $ throwError err404
   pure NoContent
+
+setRoundPublished :: Pool SqlBackend -> QuizId -> RoundNumber -> Bool -> Handler NoContent
+setRoundPublished pool quizId roundNum pub = withActiveQuiz pool quizId $ do
+  update (Db.RoundKey (quizIdToKey quizId) (unRoundNumber roundNum))
+    [Db.RoundPublished =. pub]
+  pure CommandSuccess
+
+publishRound :: Pool SqlBackend -> QuizId -> RoundNumber -> Handler NoContent
+publishRound pool quizId roundNum = setRoundPublished pool quizId roundNum True
+
+unpublishRound :: Pool SqlBackend -> QuizId -> RoundNumber -> Handler NoContent
+unpublishRound pool quizId roundNum = setRoundPublished pool quizId roundNum False
 
 lockQuiz :: Pool SqlBackend -> QuizId -> Handler NoContent
 lockQuiz pool quizId = setQuizActiveHandler pool quizId False
