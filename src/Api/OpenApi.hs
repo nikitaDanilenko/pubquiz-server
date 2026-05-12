@@ -153,6 +153,9 @@ instance ToSchema QuizId where
 instance ToParamSchema QuizId where
   toParamSchema _ = toParamSchema (Proxy :: Proxy Int)
 
+instance ToParamSchema RoundNumber where
+  toParamSchema _ = toParamSchema (Proxy :: Proxy Int)
+
 instance ToSchema TeamNumber where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Int)
 

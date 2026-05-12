@@ -42,6 +42,9 @@ newtype QuizId = QuizId {unQuizId :: Int}
 instance FromHttpApiData QuizId where
   parseUrlPiece = fmap QuizId . parseUrlPiece
 
+instance FromHttpApiData RoundNumber where
+  parseUrlPiece = fmap RoundNumber . parseUrlPiece
+
 newtype TeamNumber = TeamNumber {unTeamNumber :: Int}
   deriving stock (Show, Eq, Ord, Generic)
   deriving newtype (FromJSON, ToJSON)
@@ -81,6 +84,7 @@ data Round = Round
   { number            :: RoundNumber
   , displayMaxPoints  :: Points
   , numberOfQuestions :: NumberOfQuestions
+  , published         :: Bool
   }
   deriving (Show, Eq, Generic, ToJSON)
 

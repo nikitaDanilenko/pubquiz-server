@@ -37,6 +37,7 @@ roundToDb quizKey num nq =
     , Db.roundNumber = num
     , Db.roundReachablePoints = fromIntegral (unNumberOfQuestions nq)
     , Db.roundNumberOfQuestions = fromIntegral (unNumberOfQuestions nq)
+    , Db.roundPublished = False
     }
 
 teamRoundScoreToDb :: Db.Key Db.Quiz -> TeamNumber -> RoundNumber -> Points -> Db.TeamRoundScore
