@@ -11,12 +11,9 @@ on:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.merge-token }}
     steps:
-      - name: Debug length
-        run: |
-          echo "Length of GH_TOKEN: ${#GH_TOKEN}"
-      - name: Log in to GitHub CLI
-        run: echo ${{ secrets.merge-token }} | gh auth login --with-token
       - name: Approve Pull Request
         run: gh pr review --approve ${{ github.event.pull_request.html_url }}
       - name: Merge Pull Request
