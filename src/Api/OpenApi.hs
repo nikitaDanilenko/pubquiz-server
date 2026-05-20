@@ -15,6 +15,7 @@ module Api.OpenApi
 
 import           Api.Auth                   (AuthApi, LoginRequest)
 import           Api.BackOffice.Routes      (BackOfficeApi)
+import           Api.Health                 (HealthApi)
 import           Api.BackOffice.Types       (AuthenticatedUser (..),
                                              CorrectScoreCommand, QuizMetaData,
                                              RecordRoundScoresCommand,
@@ -63,7 +64,7 @@ openApiServer :: Server OpenApiApi
 openApiServer = pure $ cleanMediaTypes $ clean204Responses $ toJSON openApiSpec
 
 -- Combined API type for schema generation (excluding OpenAPI endpoint itself)
-type DocumentedApi = PublicApi :<|> BackOfficeApi :<|> AuthApi
+type DocumentedApi = HealthApi :<|> PublicApi :<|> BackOfficeApi :<|> AuthApi
 
 -- Generate the OpenAPI spec
 openApiSpec :: OpenApi

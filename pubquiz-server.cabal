@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 52f41ecffde012a46040f2572e83bb4708899da9b2c96675ad43809e0521f819
+-- hash: 3d2ce0e6de59a98771b4142f76ffd26604307c105323897371d04ed6caba40ee
 
 name:           pubquiz-server
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
       Api.BackOffice.Routes
       Api.BackOffice.Types
       Api.FromDb
+      Api.Health
       Api.OpenApi
       Api.Public.Routes
       Api.ToDb
