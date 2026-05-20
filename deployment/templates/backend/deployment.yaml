@@ -63,6 +63,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secretName }}
                   key: organizer-user-hash
+            - name: LOG_SQL
+              value: {{ .Values.backend.logSql | default false | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.backend.port }}

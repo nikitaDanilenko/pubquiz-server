@@ -41,7 +41,8 @@ data Config = Config
     database   :: DatabaseConfig,
     organizers :: [Organizer],
     jwt        :: JwtConfig,
-    cookie     :: CookieConfig
+    cookie     :: CookieConfig,
+    logSql     :: Bool
   }
   deriving (Show, Generic, FromDhall)
 

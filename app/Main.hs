@@ -9,7 +9,8 @@ import           Config                               (Config (..),
                                                        DatabaseConfig (..),
                                                        JwtConfig (..),
                                                        loadConfig)
-import           Control.Monad.Logger                 (runStdoutLoggingT)
+import           Control.Monad.Logger                 (runNoLoggingT,
+                                                       runStdoutLoggingT)
 import           Control.Monad.Reader                 (runReaderT)
 import           Data.Pool                            (Pool, withResource)
 import           Data.Text                            (Text, pack, unpack)
@@ -39,7 +40,7 @@ main :: IO ()
 main = do
   config <- loadConfig
   runDbMigrations config.database
-  pool <- createPool config.database
+  pool <- createPool config.logSql config.database
 
   -- Create JWT settings from secret
   let jwtKey = fromSecret (encodeUtf8 config.jwt.secret)
@@ -76,16 +77,20 @@ runDbMigrations dbConfig = do
     MigrationError err -> error $ "Migration failed: " <> err
     MigrationSuccess   -> pure ()
 
-createPool :: DatabaseConfig -> IO (Pool SqlBackend)
-createPool dbConfig = runStdoutLoggingT $ do
-  let connStr = mconcat
-        [ "host=", unpack dbConfig.host
-        , " dbname=", unpack dbConfig.name
-        , " user=", unpack dbConfig.user
-        , " password=", unpack dbConfig.password
-        , " port=", show dbConfig.port
-        ]
-  createPostgresqlPool (encodeUtf8 $ pack connStr) 10
+createPool :: Bool -> DatabaseConfig -> IO (Pool SqlBackend)
+createPool logSql dbConfig =
+  if logSql
+    -- duplication due to type inference
+    then runStdoutLoggingT (createPostgresqlPool conn 10)
+    else runNoLoggingT (createPostgresqlPool conn 10)
+  where
+    conn = encodeUtf8 $ pack $ mconcat
+      [ "host=", unpack dbConfig.host
+      , " dbname=", unpack dbConfig.name
+      , " user=", unpack dbConfig.user
+      , " password=", unpack dbConfig.password
+      , " port=", show dbConfig.port
+      ]
 
 parseSameSite :: Text -> SameSite
 parseSameSite "lax"  = SameSiteLax
