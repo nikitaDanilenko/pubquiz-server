@@ -28,6 +28,7 @@ let Config =
       , organizers : List Organizer
       , jwt : JwtConfig
       , cookie : CookieConfig
+      , logSql : Bool
       }
 
 let config : Config =
@@ -57,6 +58,7 @@ let config : Config =
           { secure = env:COOKIE_SECURE ? True
           , sameSite = env:COOKIE_SAME_SITE as Text ? "strict"
           }
+      , logSql = env:LOG_SQL ? False
       }
 
 in  config
