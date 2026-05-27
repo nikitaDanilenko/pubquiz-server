@@ -1,0 +1,20 @@
+name: Annual LTS Bump Reminder
+
+on:
+  schedule:
+    - cron: '0 9 1 2 *'
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh issue create \
+            --title "Bump Stackage LTS resolver ($(date +%Y))" \
+            --body "Check https://www.stackage.org/ for latest LTS major. Update \`stack.yaml\` resolver + run full test suite."

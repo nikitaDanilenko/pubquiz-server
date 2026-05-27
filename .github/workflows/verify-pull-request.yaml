@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
@@ -19,6 +22,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Check changed paths
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         id: paths
@@ -45,6 +50,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Build and test
         uses: freckle/stack-action@acc59ce470bb6f7b20e1469d6c520a1b27a36818 # v5.7.17
@@ -63,6 +70,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: source
+          persist-credentials: false
 
       - name: Check out GitOps repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -70,6 +78,7 @@ jobs:
           repository: nikitaDanilenko/git-ops
           path: git-ops
           sparse-checkout: pubquiz
+          persist-credentials: false
 
       - name: Copy templates to GitOps structure
         run: |
@@ -94,6 +103,7 @@ jobs:
       - test
     if: always()
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Check test result
         run: |
@@ -112,6 +122,7 @@ jobs:
       - validate_templates
     if: always()
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Check template validation result
         run: |

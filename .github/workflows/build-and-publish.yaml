@@ -4,6 +4,9 @@ on:
     branches:
       - "main"
 
+permissions:
+  contents: read
+
 jobs:
   determine_changes:
     name: Determine Changes and Version
@@ -18,6 +21,7 @@ jobs:
         # Depth setting is necessary for the semantic-version action.
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Determine version
         id: semantic-version
         uses: paulhatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
@@ -44,17 +48,17 @@ jobs:
       - determine_changes
     name: Create New Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: ${{ needs.determine_changes.outputs.paths-changed == 'true' }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Publish new release
-        shell: bash
-        run: |
-          git tag ${{ needs.determine_changes.outputs.version-tag }} ${{ github.sha }}
-          git push origin ${{ needs.determine_changes.outputs.version-tag }}
-          echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token
-          gh release create ${{ needs.determine_changes.outputs.version-tag }} --generate-notes --verify-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION_TAG: ${{ needs.determine_changes.outputs.version-tag }}
+          TARGET_SHA: ${{ github.sha }}
+        run: gh release create "$VERSION_TAG" --target "$TARGET_SHA" --generate-notes
 
   # There is no need for this job in CI, but PRs benefit from an existing cache, because they can use the cache from the main branch.
   warm_cache:
@@ -66,6 +70,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Build dependencies
         uses: freckle/stack-action@acc59ce470bb6f7b20e1469d6c520a1b27a36818 # v5.7.17
@@ -87,8 +93,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
       - name: Log in to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
@@ -96,7 +104,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Set metadata
         id: metadata
-        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
           images: nikitadanilenko/pubquiz-server
           tags: |
@@ -104,7 +112,7 @@ jobs:
             type=raw,value=latest
             type=semver,pattern={{version}},value=${{ needs.determine_changes.outputs.version-tag }}
       - name: Build and push Docker image
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
           push: true
@@ -123,15 +131,18 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: ${{ github.workspace }}/source
+          persist-credentials: false
 
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.GITOPS_BOT_CLIENT_ID }}
           private-key: ${{ secrets.GITOPS_BOT_PRIVATE_KEY }}
           owner: nikitaDanilenko
           repositories: git-ops
+          permission-contents: write
+          permission-pull-requests: write
 
       - name: Check out GitOps repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -139,8 +150,11 @@ jobs:
           repository: nikitaDanilenko/git-ops
           token: ${{ steps.app-token.outputs.token }}
           path: ${{ github.workspace }}/git-ops
+          persist-credentials: false
 
       - name: Update templates and image tag
+        env:
+          VERSION: ${{ needs.determine_changes.outputs.version }}
         run: |
           # Careful: The target is called 'pubquiz' in GitOps, because it contains the entire application.
           GITOPS_DIR="${{ github.workspace }}/git-ops/pubquiz"
@@ -157,12 +171,18 @@ jobs:
           rsync -av --delete "$SOURCE_DIR/templates/postgres/" "$GITOPS_DIR/templates/postgres/"
 
           # Update image tag in GitOps values.yaml
-          VERSION="${{ needs.determine_changes.outputs.version }}"
           yq -i ".backend.image.tag = \"$VERSION\"" "$GITOPS_DIR/values.yaml"
 
       - name: Determine commit title
         id: commit
-        run: echo "title=$(echo '${{ github.event.head_commit.message }}' | head -n 1)" >> $GITHUB_OUTPUT
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          {
+            echo "title<<EOF"
+            printf '%s\n' "$COMMIT_MSG" | head -n 1
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
