@@ -16,6 +16,11 @@
     {
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["haskell"],
+      "enabled": false
     }
   ]
 }
