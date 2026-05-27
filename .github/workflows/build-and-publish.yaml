@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: build-and-publish
+  cancel-in-progress: false
+
 jobs:
   determine_changes:
     name: Determine Changes and Version
