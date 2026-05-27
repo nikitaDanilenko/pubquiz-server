@@ -7,20 +7,22 @@ on:
 
 jobs:
   # Dependabot mostly concerns GitHub Actions, so we only auto-merge non-major updates.
-  fetch_metadata:
+  auto_merge:
+    name: Auto-merge Dependabot PRs
+    permissions:
+      pull-requests: write
+      contents: write
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    outputs:
-      update-type: ${{ steps.dependabot-metadata.outputs.update-type }}
     steps:
       - name: Fetch Dependabot Metadata
         id: dependabot-metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
-
-  call_auto_merge:
-    needs:
-      - fetch_metadata
-    if: needs.fetch_metadata.outputs.update-type != 'version-update:semver-major'
-    uses: ./.github/workflows/auto-merge-pull-requests.yaml
-    secrets:
-      merge-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Auto-merge non-major updates
+        if: steps.dependabot-metadata.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr review --approve "$URL"
+          gh pr merge --auto --squash --delete-branch "$URL"
