@@ -1,4 +1,4 @@
-FROM haskell:9.10.3-bookworm AS builder
+FROM haskell:9.14.1-bookworm AS builder
 
 WORKDIR /app
 
