@@ -10,6 +10,7 @@ permissions:
 concurrency:
   group: build-and-publish
   cancel-in-progress: false
+  queue: max
 
 jobs:
   determine_changes:

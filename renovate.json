@@ -6,6 +6,9 @@
   ],
   "schedule": ["before 06:00 on monday"],
   "timezone": "Europe/Berlin",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "branchConcurrentLimit": 0,
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch", "digest"],
