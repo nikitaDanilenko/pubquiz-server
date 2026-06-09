@@ -64,7 +64,7 @@ spec:
                   name: {{ .Values.secretName }}
                   key: organizer-user-hash
             - name: LOG_SQL
-              value: {{ .Values.backend.logSql | default false | quote }}
+              value: {{ if .Values.backend.logSql }}"True"{{ else }}"False"{{ end }}
           ports:
             - name: http
               containerPort: {{ .Values.backend.port }}
