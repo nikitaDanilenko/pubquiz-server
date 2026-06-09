@@ -164,10 +164,22 @@ jobs:
       - name: Update templates and image tag
         env:
           VERSION: ${{ needs.determine_changes.outputs.version }}
+          BUILD_SUCCEEDED: ${{ needs.build_and_publish.result == 'success' }}
         run: |
           # Careful: The target is called 'pubquiz' in GitOps, because it contains the entire application.
           GITOPS_DIR="${{ github.workspace }}/git-ops/pubquiz"
           SOURCE_DIR="${{ github.workspace }}/source/deployment"
+
+          # Preserve the existing backend image tag when no new image was built this run
+          # (e.g. deployment-only changes). Otherwise the gitops manifest would point at a
+          # tag for which no image exists.
+          if [ "$BUILD_SUCCEEDED" = "true" ]; then
+            BACKEND_TAG="$VERSION"
+          elif [ -f "$GITOPS_DIR/values.yaml" ]; then
+            BACKEND_TAG=$(yq -r '.backend.image.tag' "$GITOPS_DIR/values.yaml")
+          else
+            BACKEND_TAG="latest"
+          fi
 
           # Ensure target directories exist
           mkdir -p "$GITOPS_DIR/templates/backend" "$GITOPS_DIR/templates/postgres"
@@ -180,7 +192,8 @@ jobs:
           rsync -av --delete "$SOURCE_DIR/templates/postgres/" "$GITOPS_DIR/templates/postgres/"
 
           # Update image tag in GitOps values.yaml
-          yq -i ".backend.image.tag = \"$VERSION\"" "$GITOPS_DIR/values.yaml"
+          export BACKEND_TAG
+          yq -i '.backend.image.tag = env(BACKEND_TAG)' "$GITOPS_DIR/values.yaml"
 
       - name: Determine commit title
         id: commit
