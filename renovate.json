@@ -24,6 +24,12 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["haskell"],
       "enabled": false
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ]
 }
