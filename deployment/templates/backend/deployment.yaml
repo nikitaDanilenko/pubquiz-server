@@ -64,6 +64,7 @@ spec:
                   name: {{ .Values.secretName }}
                   key: organizer-user-hash
             - name: LOG_SQL
+              # The YAML convention is to use "true"/"false", but Dhall parses the Haskell style Booleans "True"/"False".
               value: {{ if .Values.backend.logSql }}"True"{{ else }}"False"{{ end }}
           ports:
             - name: http
