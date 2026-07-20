@@ -23,7 +23,7 @@ jobs:
       deployment-changed: ${{ steps.paths.outputs.deployment }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         # Depth setting is necessary for the semantic-version action.
         with:
           fetch-depth: 0
@@ -77,7 +77,7 @@ jobs:
     if: ${{ needs.determine_changes.outputs.paths-changed == 'true' }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -100,7 +100,7 @@ jobs:
       DOCKER_BUILD_RECORD_UPLOAD: false
     steps:
       - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: Set up Docker Buildx
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           path: ${{ github.workspace }}/source
           persist-credentials: false
@@ -154,7 +154,7 @@ jobs:
           permission-pull-requests: write
 
       - name: Check out GitOps repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: nikitaDanilenko/git-ops
           token: ${{ steps.app-token.outputs.token }}
