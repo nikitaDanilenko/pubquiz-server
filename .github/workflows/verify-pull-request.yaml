@@ -54,7 +54,7 @@ jobs:
           persist-credentials: false
 
       - name: Build and test
-        uses: freckle/stack-action@32094bb652edcca60ec2bd46cb2a0510343f5d05 # v5.7.25
+        uses: freckle/stack-action@1084fb6680b7c1ccfb8d80283098227bfea686e2 # v5.7.26
         with:
           stack-build-arguments: --fast --no-haddock --no-library-profiling
           cache-save-always: true
