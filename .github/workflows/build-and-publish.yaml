@@ -82,7 +82,7 @@ jobs:
           persist-credentials: false
 
       - name: Build dependencies
-        uses: freckle/stack-action@1084fb6680b7c1ccfb8d80283098227bfea686e2 # v5.7.26
+        uses: freckle/stack-action@844a9bd94091bb786dac29ea787c1b6cddb3bccf # v5.7.27
         with:
           test: false
           stack-build-arguments: --fast --no-haddock --no-library-profiling
